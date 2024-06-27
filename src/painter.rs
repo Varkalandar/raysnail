@@ -13,12 +13,18 @@ use {
 };
 
 
-pub trait PainterTarget : Send {
-    fn register_pixels(&mut self, _pixels: &Vec<(u8, u8, u8)>) {
-
-    }
+#[derive(Debug, PartialEq)]
+pub enum PainterCommand {
+    None,
+    Quit,
 }
 
+
+pub trait PainterTarget : Send {
+    fn register_pixels(&mut self, _pixels: &Vec<(u8, u8, u8)>) -> PainterCommand {
+        PainterCommand::None
+    }
+}
 
 
 #[derive(Debug)]
@@ -185,13 +191,6 @@ impl Painter {
         self
     }
 
-/*
-    pub fn target(mut self, target: &mut dyn PainterTarget) -> Self {
-        self.target = Some(Box::new(target));
-        self
-    }
-*/
-
     #[allow(clippy::cast_precision_loss)] // because row and column is small enough in practice
     fn calculate_uv(&self, row: usize, column: usize) -> (f64, f64) {
         if self.samples == 1 {
@@ -297,13 +296,16 @@ impl Painter {
     ) -> std::io::Result<()> {
 
         if let Some(target) = &mut context.target {
-            target.register_pixels(&pixels);
+            let command = target.register_pixels(&pixels);
+
+            if command == PainterCommand::Quit {
+                context.cancel.store(true, Ordering::Relaxed);
+            }
         }
 
         for pixel in pixels {
             writeln!(context.file, "{} {} {}", pixel.0, pixel.1, pixel.2)?;
         }
-
 
         context.file.flush()
     }
@@ -326,8 +328,10 @@ impl Painter {
 
         self.parallel_render_row_iter(uv_color, &cancel)
             .inspect(|_| {
-                let count = finished_row.fetch_add(1, Ordering::Relaxed);
-                info!("Scan line remaining: {}", self.height - count - 1);
+                let count = finished_row.fetch_add(1, Ordering::Relaxed);                
+                if cancel.load(Ordering::Relaxed) == false {
+                    info!("Scan line remaining: {}", self.height - count - 1);
+                }
             })
             .seq_for_each_with(
                 || self.create_output_context(path, target, &cancel),
