@@ -12,12 +12,26 @@ use {
     },
 };
 
+
+pub trait PainterTarget : Send {
+    fn register_pixels(&mut self, _pixels: &Vec<(u8, u8, u8)>) {
+
+    }
+}
+
+
+
 #[derive(Debug)]
 pub struct PPMImage {
     width: usize,
     height: usize,
     colors: Vec<Color>,
 }
+
+impl PainterTarget for PPMImage {
+
+}
+
 
 impl PPMImage {
     #[must_use]
@@ -118,7 +132,7 @@ impl IndexMut<usize> for PPMImage {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Painter {
     pub width: usize,
     pub height: usize,
@@ -131,6 +145,7 @@ pub struct Painter {
 struct PainterOutputContext<'c> {
     file: BufWriter<Box<dyn Write>>,
     cancel: &'c AtomicBool,
+    target: Option<Box<&'c mut dyn PainterTarget>>,
 }
 
 impl Painter {
@@ -170,6 +185,13 @@ impl Painter {
         self
     }
 
+/*
+    pub fn target(mut self, target: &mut dyn PainterTarget) -> Self {
+        self.target = Some(Box::new(target));
+        self
+    }
+*/
+
     #[allow(clippy::cast_precision_loss)] // because row and column is small enough in practice
     fn calculate_uv(&self, row: usize, column: usize) -> (f64, f64) {
         if self.samples == 1 {
@@ -203,10 +225,10 @@ impl Painter {
     }
 
     fn create_output_context<'c>(
-        &self, path: Option<&Path>, cancel: &'c AtomicBool,
+        &self, path: Option<&Path>, target: &'c mut dyn PainterTarget, cancel: &'c AtomicBool,
     ) -> std::io::Result<PainterOutputContext<'c>> {
         let file = self.create_output_file(path)?;
-        Ok(PainterOutputContext { file, cancel })
+        Ok(PainterOutputContext { file, cancel, target: Some(Box::new(target)) })
     }
 
     // TODO: make it return RGBInt type
@@ -273,9 +295,16 @@ impl Painter {
     fn real_row_pixels_to_file(
         context: &mut PainterOutputContext<'_>, pixels: Vec<(u8, u8, u8)>,
     ) -> std::io::Result<()> {
+
+        if let Some(target) = &mut context.target {
+            target.register_pixels(&pixels);
+        }
+
         for pixel in pixels {
             writeln!(context.file, "{} {} {}", pixel.0, pixel.1, pixel.2)?;
         }
+
+
         context.file.flush()
     }
 
@@ -288,7 +317,7 @@ impl Painter {
         })
     }
 
-    fn parallel_render_and_output<F>(&self, uv_color: F, path: Option<&Path>) -> std::io::Result<()>
+    fn parallel_render_and_output<F>(&self, uv_color: F, path: Option<&Path>, target: &mut dyn PainterTarget) -> std::io::Result<()>
     where
         F: Fn(f64, f64) -> Vec3 + Send + Sync,
     {
@@ -301,7 +330,7 @@ impl Painter {
                 info!("Scan line remaining: {}", self.height - count - 1);
             })
             .seq_for_each_with(
-                || self.create_output_context(path, &cancel),
+                || self.create_output_context(path, target, &cancel),
                 |context, pixels| Self::row_pixels_to_file(context, pixels),
             )
     }
@@ -321,7 +350,7 @@ impl Painter {
     /// # Errors
     ///
     /// When open or save to file failed
-    pub fn draw<P, F>(&self, path: &Option<P>, uv_color: F) -> std::io::Result<()>
+    pub fn draw<P, F>(&self, path: &Option<P>, target: &mut dyn PainterTarget, uv_color: F) -> std::io::Result<()>
     where
         P: AsRef<Path>,
         F: Fn(f64, f64) -> Vec3 + Send + Sync,
@@ -336,10 +365,10 @@ impl Painter {
 
             info!("Worker thread count: {}", pool.current_num_threads());
 
-            pool.install(|| self.parallel_render_and_output(uv_color, path))
+            pool.install(|| self.parallel_render_and_output(uv_color, path, target))
         } else {
             let cancel = AtomicBool::new(false); // useless in parallel mode
-            let mut context = self.create_output_context(path, &cancel)?;
+            let mut context = self.create_output_context(path, target, &cancel)?;
             for (row, pixels) in self.seq_render_row_iter(uv_color).enumerate() {
                 info!("Scan line remaining: {}", self.height - row);
                 Self::row_pixels_to_file(&mut context, pixels)?;
