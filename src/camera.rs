@@ -23,29 +23,38 @@ pub struct Camera {
     shutter_speed: f64,
 }
 
+
 impl Camera {
+
     #[allow(clippy::too_many_arguments, clippy::needless_pass_by_value)] // internal
     pub(self) fn new(
         look_from: &Point3, look_at: &Point3, vup: &Vec3, fov: f64, aspect_ratio: f64,
         aperture: f64, focus_distance: f64, shutter_speed: f64,
     ) -> Self {
-        let fov = fov.to_radians();
-        let h = (fov / 2.0).tan();
-        let vh = 2.0 * h;
-        let vw = vh * aspect_ratio;
 
+        // Determine viewport dimensions.
+        let theta = fov.to_radians();
+        let h = (theta / 2.0).tan();
+        let viewport_height = 2.0 * h * focus_distance;
+        let viewport_width = viewport_height * aspect_ratio;
+
+        // Calculate the u,v,w unit basis vectors for the camera coordinate frame.
         let w = (look_at - look_from).unit();
         let horizontal_unit = w.cross(vup).unit();
         let vertical_unit = horizontal_unit.cross(&w).unit();
 
-        let horizontal_full = focus_distance * vw * &horizontal_unit;
-        let vertical_full = focus_distance * vh * &vertical_unit;
-        let lb = look_from - &horizontal_full / 2.0 - &vertical_full / 2.0 + focus_distance * w;
+        // Calculate the vectors across the horizontal and down the vertical viewport edges.
+        let viewport_u = viewport_width * &horizontal_unit;
+        let viewport_v = viewport_height * &vertical_unit;
+
+        // Calculate the location of the upper left pixel.
+        let lb = look_from - &viewport_u / 2.0 - &viewport_v / 2.0 + focus_distance * w;
+
         Self {
             origin: look_from.clone(),
             lb,
-            horizontal_full,
-            vertical_full,
+            horizontal_full: viewport_u,
+            vertical_full: viewport_v,
             horizontal_unit,
             vertical_unit,
             aspect_ratio,
@@ -54,15 +63,18 @@ impl Camera {
         }
     }
 
+
     #[must_use]
     pub fn ray(&self, u: f64, v: f64) -> Ray {
+
         let rd = self.aperture / 2.0 * Vec3::random_unit_disk();
         let offset = &self.horizontal_unit * rd.x + &self.vertical_unit * rd.y;
         let origin = &self.origin + offset;
         let direction = &self.lb + u * &self.horizontal_full + v * &self.vertical_full - &origin;
 
-        Ray::new(origin, direction, self.shutter_speed * Random::normal())
+        Ray::new(origin, direction, self.shutter_speed * Random::normal())        
     }
+
 
     #[must_use]
     pub fn take_photo(&self, world: HittableList) -> TakePhotoSettings<'_> {
@@ -71,12 +83,13 @@ impl Camera {
     }
 }
 
+
 #[derive(Debug)]
 pub struct TakePhotoSettings<'c> {
     camera: &'c Camera,
     world: World,
     depth: usize,
-    picture_height: usize,
+    picture_height: usize,       // Rendered image height
     gamma: bool,
     samples: usize,
     threads: usize,
@@ -169,16 +182,17 @@ impl<'c> TakePhotoSettings<'c> {
             clippy::cast_precision_loss,
             clippy::cast_possible_truncation
         )]
-        Painter::new(
-            (self.picture_height as f64 * self.camera.aspect_ratio).round() as usize,
-            self.picture_height,
-        )
+
+        let picture_width = (self.picture_height as f64 * self.camera.aspect_ratio).round();
+        
+        Painter::new(picture_width as usize, self.picture_height)
         .gamma(self.gamma)
         .samples(self.samples)
         .threads(self.threads)
         .parallel(self.parallel)
-        .draw(&path, target, |u, v| -> Vec3 {
-            let ray = self.camera.ray(u, v);
+        .draw(&path, target, |i, j| -> Vec3 {
+
+            let ray = self.camera.ray(i, j);
             Self::ray_color(&ray, &self.world, self.depth)
         })
     }

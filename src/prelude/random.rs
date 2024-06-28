@@ -6,6 +6,12 @@ use {
     std::ops::Range,
 };
 
+
+fn gen<R: Rng>(mut rng: R) -> f64 {
+    rng.gen()
+}
+
+
 #[must_use]
 fn normal<R: Rng>(mut rng: R) -> f64 {
     rng.gen_range(0.0..=1.0)
@@ -32,7 +38,14 @@ fn shuffle<T, R: Rng, S: AsMut<[T]>>(mut rng: R, values: &mut S) {
 pub struct Random();
 
 impl Random {
-    // Return random number in range [0, 1]
+
+
+    // Returns a random number in range [0, 1)
+    pub fn gen() -> f64 {
+        gen(thread_rng())
+    }
+
+    // Returns a random number in range [0, 1]
     #[must_use]
     pub fn normal() -> f64 {
         normal(thread_rng())

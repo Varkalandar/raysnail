@@ -155,6 +155,10 @@ pub struct Painter {
     gamma: bool,
     threads: usize,
     parallel: bool,
+
+    sqrt_spp: usize,         // Square root of number of samples per pixel
+    recip_sqrt_spp: f64,   // 1 / sqrt_spp
+
 }
 
 struct PainterOutputContext<'c> {
@@ -170,9 +174,13 @@ impl Painter {
             width,
             height,
             gamma: true,
-            samples: 50,
+            samples: 25,
             threads: 0,
             parallel: true,
+
+            sqrt_spp: 5,
+            recip_sqrt_spp: 0.2, // 1.0/5.0,
+        
         }
     }
 
@@ -183,8 +191,14 @@ impl Painter {
     }
 
     #[must_use]
-    pub const fn samples(mut self, samples: usize) -> Self {
-        self.samples = samples;
+    pub fn samples(mut self, samples_requested: usize) -> Self {
+
+        let sqrt_spp = (samples_requested as f64).sqrt().floor() as usize;
+
+        self.recip_sqrt_spp = 1.0 / sqrt_spp as f64;
+        self.sqrt_spp = sqrt_spp;
+        self.samples = sqrt_spp * sqrt_spp;
+
         self
     }
 
@@ -201,7 +215,10 @@ impl Painter {
     }
 
     #[allow(clippy::cast_precision_loss)] // because row and column is small enough in practice
-    fn calculate_uv(&self, row: usize, column: usize) -> (f64, f64) {
+    fn calculate_uv(&self, x: f64, y: f64) -> [f64; 2]  {
+
+        // before stratification
+        /*
         if self.samples == 1 {
             let u = (column as f64) / self.width as f64;
             let v = ((self.height - 1 - row) as f64) / self.height as f64;
@@ -211,7 +228,25 @@ impl Painter {
             let v = ((self.height - 1 - row) as f64 + Random::normal()) / self.height as f64;
             (u, v)
         }
+        */
+
+
+        let u = x / self.width as f64;
+        let v = ((self.height - 1) as f64 - y) / self.height as f64;
+        [u, v]
     }
+
+
+    fn sample_square_stratified(&self, s_i: usize, s_j: usize) -> [f64; 2] {
+        // Returns the vector to a random point in the square sub-pixel specified by grid
+        // indices s_i and s_j, for an idealized unit square pixel [-.5,-.5] to [+.5,+.5].
+
+        let px = ((s_i as f64 + Random::gen()) * self.recip_sqrt_spp) - 0.5;
+        let py = ((s_j as f64 + Random::gen()) * self.recip_sqrt_spp) - 0.5;
+
+        [px, py]
+    }
+
 
     fn create_output_file(
         &self, path: Option<&Path>,
@@ -244,15 +279,24 @@ impl Painter {
     where
         F: Fn(f64, f64) -> Vec3 + Send + Sync,
     {
-        let color: Vec3 = (0..self.samples)
-            .map(|_| {
-                let (u, v) = self.calculate_uv(row, column);
-                uv_color(u, v)
-            })
-            .sum();
-        let color = color.into_color(self.samples, self.gamma);
-        let color = color.i();
-        (color.r, color.g, color.b)
+        // Stratification, randomized subpixels
+        let mut color_vec = Vec3::new(0.0, 0.0, 0.0);
+        for s_j in 0 .. self.sqrt_spp {
+            for s_i in 0 .. self.sqrt_spp {
+                let offset = self.sample_square_stratified(s_i, s_j);
+                
+                let x = column as f64 + offset[0];
+                let y = row as f64 + offset[1];
+
+                let uv = self.calculate_uv(x, y);
+                color_vec = color_vec + uv_color(uv[0], uv[1])
+            }
+        }
+
+        let color = color_vec.into_color(self.samples, self.gamma);
+        let int_color = color.i();
+
+        (int_color.r, int_color.g, int_color.b)
     }
 
     fn parallel_render_row<F>(
