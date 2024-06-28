@@ -5,15 +5,26 @@ mod common;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
+use sdl2::pixels::Color as SDLColor;
 use sdl2::video::Window;
 use sdl2::render::WindowCanvas;
 use sdl2::rect::Point;
 
 use std::time::Duration;
 
+use remda::prelude::Ray;
+use remda::prelude::Color;
+use remda::prelude::Vec3;
+
 use remda::painter::PainterTarget;
 use remda::painter::PainterCommand;
+use remda::hittable::AARectMetrics;
+use remda::material::DiffuseLight;
+use remda::hittable::AARect;
+use remda::hittable::transform::ByXAxis;
+use remda::hittable::transform::ByYAxis;
+use remda::hittable::transform::AARotation;
+use remda::hittable::Sphere;
 
 use rayon::spawn;
 use std::sync::mpsc::channel;
@@ -30,13 +41,13 @@ impl Renderer {
 
     pub fn new(window: Window ) -> Result<Renderer, String> {
         let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
-        canvas.set_draw_color(Color::RGB(128, 128, 128));
+        canvas.set_draw_color(SDLColor::RGB(128, 128, 128));
         canvas.clear();
         Ok(Renderer { canvas })
     }
 
     pub fn setpix(&mut self, x: i32, y: i32, color:[u8; 4]) {
-        self.canvas.set_draw_color(Color::RGB(color[0], color[1], color[2]));
+        self.canvas.set_draw_color(SDLColor::RGB(color[0], color[1], color[2]));
         let _ = self.canvas.draw_point(Point::new(x, y));
     }
 
@@ -144,13 +155,40 @@ fn render(target: &mut dyn PainterTarget) {
 
     // Change `7` to another number to generate different scene
     // Or use `None` to use random seed
-    let (camera, world) = common::ray_tracing_in_one_weekend::final_scene(Some(7));
+    let (camera, mut world) = common::ray_tracing_in_one_weekend::final_scene(Some(7));
+
+/*
+    let square = AARect::new_xy(
+        AARectMetrics::new(200.0, (100.0, 200.0), (100.0, 200.0)),
+        DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(2.0)
+    );
+*/
+
+
+    let rs = 
+        Sphere::new(Vec3::new(0.0, 200.0, 0.0), 
+            30.0, 
+            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(1.8)
+    );
+
+
+    let rs = AARotation::<ByXAxis, _>::new(rs, 25.0);
+    let rs = AARotation::<ByYAxis, _>::new(rs, -60.0);
+
+    world.add(rs);
+
+
+    fn background(ray: &Ray) -> Color {
+        let unit = ray.direction.unit();
+        let t = 0.5 * (unit.y + 1.0);
+        Color::new(0.7, 0.8, 0.9).gradient(&Color::new(0.3, 0.45, 0.7), t)
+    }
 
     camera
         .take_photo(world)
+        .background(background)
         .height(600)
-        // .samples(128)
         .samples(128)
-        .shot(Some("rtow_13_1.ppm"), target)
+        .shot_to_target(Some("rtow_13_1.ppm"), target)
         .unwrap();
 }

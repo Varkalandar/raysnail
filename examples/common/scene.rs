@@ -14,14 +14,14 @@ use {
     std::sync::Arc,
 };
 
-fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, need_speed: bool) {
+fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, bounce_height: f64, need_speed: bool) {
     let small_ball_radius = 0.2;
     let mut avoid = Point3::new(0.0, 0.2, 0.0);
     for a in -11..11 {
         for b in -11..11 {
             let center = Point3::new(
                 0.9_f64.mul_add(rng.normal(), f64::from(a)),
-                0.2,
+                0.2 + rng.normal() * bounce_height,
                 0.9_f64.mul_add(rng.normal(), f64::from(b)),
             );
 
@@ -109,7 +109,7 @@ pub fn balls_scene(seed: Option<u64>, need_speed: bool, checker: bool) -> Hittab
         SeedRandom::random()
     };
 
-    add_small_balls(&mut list, &mut rng, need_speed);
+    add_small_balls(&mut list, &mut rng, 0.9, need_speed);
     add_big_balls(&mut list);
 
     list
