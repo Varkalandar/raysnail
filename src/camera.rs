@@ -4,7 +4,7 @@ use {
             collection::{HittableList, World},
             Hittable,
         },
-        painter::{Painter, PainterTarget},
+        painter::{Painter, PainterTarget, PassivePainterTarget},
         prelude::*,
     },
     std::path::Path,
@@ -162,7 +162,7 @@ impl<'c> TakePhotoSettings<'c> {
     /// # Errors
     /// When open or save to file failed
     #[allow(clippy::needless_pass_by_value)] // Directly used public API, add & will make it harder to use
-    pub fn shot<P: AsRef<Path>>(&self, path: Option<P>, target: &mut dyn PainterTarget) -> std::io::Result<()> {
+    pub fn shot_to_target<P: AsRef<Path>>(&self, path: Option<P>, target: &mut dyn PainterTarget) -> std::io::Result<()> {
         // because picture height/width is always positive and small enough in practice
         #[allow(
             clippy::cast_sign_loss,
@@ -182,7 +182,14 @@ impl<'c> TakePhotoSettings<'c> {
             Self::ray_color(&ray, &self.world, self.depth)
         })
     }
+
+
+    pub fn shot<P: AsRef<Path>>(&self, path: Option<P>) -> std::io::Result<()> {
+        let mut target = PassivePainterTarget {};
+        self.shot_to_target(path, &mut target)
+    }
 }
+
 
 #[derive(Debug)]
 pub struct CameraBuilder {

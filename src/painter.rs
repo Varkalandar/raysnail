@@ -28,6 +28,15 @@ pub trait PainterTarget : Send {
 
 
 #[derive(Debug)]
+pub struct PassivePainterTarget {
+}
+
+
+impl PainterTarget for PassivePainterTarget {
+}
+
+
+#[derive(Debug)]
 pub struct PPMImage {
     width: usize,
     height: usize,
