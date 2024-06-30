@@ -75,7 +75,7 @@ impl Dielectric {
 }
 
 impl Material for Dielectric {
-    fn scatter(&self, ray: &Ray, hit: HitRecord<'_>) -> Option<ScatterRecord> {
+    fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
         let refract = self
             .refract(ray, &hit)
             .unwrap_or_else(|| reflect(ray, &hit));

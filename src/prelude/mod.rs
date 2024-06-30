@@ -3,6 +3,8 @@ mod color;
 mod random;
 mod ray;
 mod vec3;
+mod onb;
+mod pdf;
 
 use std::ops::{Bound, RangeBounds};
 
@@ -11,6 +13,8 @@ pub use {
     color::Color,
     random::{Random, SeedRandom},
     ray::Ray,
+    onb::ONB,
+    pdf::{PDF, CosinePdf},
     std::f64::consts::PI,
     vec3::{Point3, Vec3},
 };

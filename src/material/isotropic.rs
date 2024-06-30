@@ -1,7 +1,8 @@
 use crate::{
-    material::{Material, ScatterRecord},
+    material::{Material, ScatterRecord, HitRecord},
     prelude::*,
 };
+
 
 #[derive(Debug, Clone)]
 pub struct Isotropic {
@@ -16,13 +17,15 @@ impl Isotropic {
 }
 
 impl Material for Isotropic {
-    fn scatter(
-        &self, ray: &Ray, hit: crate::hittable::HitRecord<'_>,
-    ) -> Option<super::ScatterRecord> {
-        let scattered_ray = Ray::new(hit.point, Vec3::random_in_unit_sphere(), ray.departure_time);
+    fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
+        let scattered_ray = Ray::new(hit.point.clone(), Vec3::random_in_unit_sphere(), ray.departure_time);
         Some(ScatterRecord {
             ray: scattered_ray,
             color: self.color.clone(),
         })
+    }
+
+    fn scattering_pdf(&self, ray: &Ray, rec: &HitRecord<'_>, scattered: &Ray) -> f64 {
+        1.0 / (4.0 * PI)
     }
 }

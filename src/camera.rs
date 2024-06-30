@@ -153,6 +153,8 @@ impl<'c> TakePhotoSettings<'c> {
     }
 
     fn ray_color(ray: &Ray, world: &World, depth: usize) -> Vec3 {
+        
+        // If we've exceeded the ray bounce limit, no more light is gathered.
         if depth == 0 {
             return Vec3::default();
         }
@@ -162,13 +164,26 @@ impl<'c> TakePhotoSettings<'c> {
             let emitted = material
                 .emitted(hit.u, hit.v, &hit.point)
                 .unwrap_or_default();
-            if let Some(scattered) = material.scatter(ray, hit) {
-                return emitted
-                    + scattered.color * Self::ray_color(&scattered.ray, world, depth - 1);
+
+            if let Some(unused_scattered) = material.scatter(ray, &hit) {
+
+                let surface_pdf = CosinePdf::new(&hit.normal);
+                let scattered = Ray::new(hit.point.clone(), surface_pdf.generate(), ray.departure_time);
+                let pdf_val = surface_pdf.value(&scattered.direction);
+
+                let scattering_pdf = material.scattering_pdf(ray, &hit, &scattered) + 0.000001;
+
+                let color_from_scatter =
+                    (unused_scattered.color * scattering_pdf * Self::ray_color(&scattered, world, depth - 1))
+                     / pdf_val;
+
+                return emitted + color_from_scatter;
             }
+            
             return emitted;
         }
 
+        // If the ray hits nothing, return the background color.
         world.background(ray).into()
     }
 

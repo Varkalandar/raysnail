@@ -89,6 +89,21 @@ impl Vec3 {
         Self::new(r * a.cos(), r * a.sin(), z)
     }
 
+
+    pub fn random_cosine_direction() -> Self {
+        let r1 = Random::gen();
+        let r2 = Random::gen();
+        let q2 = r2.sqrt();
+
+        let phi = 2.0 * PI * r1;
+        let x = phi.cos() * q2;
+        let y = phi.sin() * q2;
+        let z = (1.0 - r2).sqrt();
+    
+        Vec3::new(x, y, z)
+    }
+    
+
     #[must_use]
     pub fn random_unit_dir(dir: &Self) -> Self {
         let u = Self::random_unit();
@@ -108,6 +123,7 @@ impl Vec3 {
             }
         }
     }
+
 
     #[must_use]
     pub fn length_squared(&self) -> f64 {
