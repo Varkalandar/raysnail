@@ -66,18 +66,20 @@ fn add_big_balls(world: &mut HittableList) {
         1.0,
         Dielectric::new(Color::new(1.0, 1.0, 1.0), 1.5).reflect_curve(Glass {}),
     ));
-
+    
     world.add(Sphere::new(
         Point3::new(-4.0, 1.0, 0.0),
         1.0,
         Lambertian::new(Color::new(0.4, 0.2, 0.1)),
     ));
 
+    
     world.add(Sphere::new(
         Point3::new(4.0, 1.0, 0.0),
         1.0,
         Metal::new(Color::new(0.7, 0.6, 0.5)),
     ));
+    
 }
 
 #[must_use]

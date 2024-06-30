@@ -22,9 +22,9 @@ pub struct CosinePdf {
 
 impl CosinePdf {
     
-    pub fn new(w: &Vec3) -> Self { 
+    pub fn new(n: &Vec3) -> Self { 
         CosinePdf {
-            uvw: ONB::build_from_w(w),
+            uvw: ONB::build_from(n),
         } 
     }
 }
@@ -40,7 +40,7 @@ impl PDF for CosinePdf {
     }
   
     fn generate(&self) -> Vec3 {
-        self.uvw.vec_local(&Vec3::random_cosine_direction())
+        self.uvw.local(&Vec3::random_cosine_direction())
     }
 }
 

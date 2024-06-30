@@ -1,6 +1,5 @@
 use crate::{
-    hittable::HitRecord,
-    material::{Material, ScatterRecord},
+    material::Material,
     prelude::*,
     texture::Texture,
 };
@@ -26,9 +25,6 @@ impl<T> DiffuseLight<T> {
 }
 
 impl<T: Texture> Material for DiffuseLight<T> {
-    fn scatter(&self, _ray: &Ray, _hit: &HitRecord<'_>) -> Option<ScatterRecord> {
-        None
-    }
 
     fn emitted(&self, u: f64, v: f64, point: &Point3) -> Option<Vec3> {
         Some(<Color as Into<Vec3>>::into(self.texture.color(u, v, point)) * self.multiplier)

@@ -61,6 +61,7 @@ impl HittableList {
     }    
 }
 
+
 impl Hittable for HittableList {
     fn hit(&self, r: &Ray, unit_limit: Range<f64>) -> Option<HitRecord<'_>> {
         self.objects

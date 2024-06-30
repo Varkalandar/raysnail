@@ -8,23 +8,25 @@ pub struct ONB {
 // orthonormal base
 impl ONB {
 
-    pub fn local(&self, a: f64, b: f64, c: f64) -> Vec3 {
-        &self.axis[0] * a + &self.axis[1] * b + &self.axis[2] * c
+    pub fn local(&self, a: &Vec3) -> Vec3 {
+        self.axis[0].clone() * a.x + self.axis[1].clone() * a.y + self.axis[2].clone() * a.z
     }
   
-    pub fn vec_local(&self, a: &Vec3) -> Vec3 {
-        self.local(a.x, a.y, a.z)
-    }
-  
-    pub fn build_from_w(w: &Vec3) -> ONB {
-        let unit_w = w.unit();
+    pub fn build_from(n: &Vec3) -> ONB {
+        let w = n.unit();
+        let up = Vec3::new(0.0, 1.0, 0.0);
 
-        let a = if unit_w.x.abs() > 0.9 {Vec3::new(0.0, 1.0, 0.0)} else {Vec3::new(1.0, 0.0, 0.0)};
-        let v = unit_w.cross(&a).unit();        
-        let u = unit_w.cross(&v);
+        let uc = up.cross(&w);        
+        let u = if uc.length_squared() < 0.00000001 {
+                Vec3::new(1.0, 0.0, 0.0).cross(&w).unit()
+            } else{
+                uc.unit()
+            };
+
+        let v = w.cross(&u);
 
         ONB {
-            axis: [u, v, unit_w],
+            axis: [u, v, w],
         }
     }
 }

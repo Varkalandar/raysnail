@@ -35,6 +35,7 @@ impl<T: Texture> Material for Metal<T> {
     fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
         let color = self.texture.color(hit.u, hit.v, &hit.point);
         let reflected = self.reflect(ray, &hit);
+        
         if reflected.direction.dot(&hit.normal) > 0.0 {
             Some(ScatterRecord {
                 color,

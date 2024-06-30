@@ -173,22 +173,28 @@ impl<'c> TakePhotoSettings<'c> {
                 }
 
                 let light_pdf = HittablePdf::new(&world.lights, &hit.point);
-                let p = MixturePdf::new(&light_pdf, srec.pdf.as_ref());                
+                let mixture = MixturePdf::new(&light_pdf, srec.pdf.as_ref());                
 
-                let scattered = Ray::new(hit.point.clone(), p.generate(), ray.departure_time);
-                let pdf_val = p.value(&scattered.direction) + 0.000001;
+                // let scattered = Ray::new(hit.point.clone(), mixture.generate(), ray.departure_time);
+                let scattered = Ray::new(hit.point.clone(), srec.pdf.generate(), ray.departure_time);
 
-                let scattering_pdf = material.scattering_pdf(ray, &hit, &scattered) + 0.000001;
+                let pdf_val = mixture.value(&scattered.direction);
+                let scattering_pdf = material.scattering_pdf(ray, &hit, &scattered);
 
+                // println!("Mixed PDF value={}, scattering PDF={}", pdf_val, scattering_pdf);
+
+                let pdf_multiplicator = scattering_pdf / pdf_val;
+                
                 let sample_color = Self::ray_color(&scattered, world, depth-1);
 
-                // let f = srec_color.f();
-                // let scatter_color = Vec3::new(f.r, f.g, f.b);
+                if pdf_multiplicator == pdf_multiplicator { 
+                    let color_from_scatter =
+                        (srec.color * sample_color) * pdf_multiplicator;
+                
+                    return emitted + color_from_scatter;
+                }
 
-                let color_from_scatter =
-                    (srec.color * scattering_pdf * sample_color) / pdf_val;
-
-                return emitted + color_from_scatter;
+                return emitted + srec.color * sample_color;
             }
             
             return emitted;

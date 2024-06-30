@@ -164,26 +164,34 @@ fn render(target: &mut dyn PainterTarget) {
         DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(2.0)
     );
 */
+    let rs = 
+    Sphere::new(Vec3::new(0.0, 200.0, 0.0), 
+        30.0, 
+        DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(4.0)
+    );
+    let rs = AARotation::<ByXAxis, _>::new(rs, 25.0);
+    let rs = AARotation::<ByYAxis, _>::new(rs, -60.0);
+    world.add(rs);
 
+    let mut lights = HittableList::default();
 
     let rs = 
         Sphere::new(Vec3::new(0.0, 200.0, 0.0), 
             30.0, 
-            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(80.0)
+            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(4.0)
     );
-
-
     let rs = AARotation::<ByXAxis, _>::new(rs, 25.0);
     let rs = AARotation::<ByYAxis, _>::new(rs, -60.0);
 
-    let mut lights = HittableList::default();
     lights.add(rs);
 
 
     fn background(ray: &Ray) -> Color {
         let unit = ray.direction.unit();
         let t = 0.5 * (unit.y + 1.0);
-        Color::new(0.7, 0.8, 0.9).gradient(&Color::new(0.3, 0.45, 0.7), t)
+        Color::new(0.7, 0.82, 0.95).gradient(&Color::new(0.3, 0.47, 0.7), t)
+ 
+        // Color::new(0.0, 0.0, 0.0)
     }
 
     camera
@@ -191,6 +199,8 @@ fn render(target: &mut dyn PainterTarget) {
         .background(background)
         .height(600)
         .samples(128)
+        // .samples(8)
+        // .depth(40)
         .shot_to_target(Some("rtow_13_1.ppm"), target)
         .unwrap();
 }

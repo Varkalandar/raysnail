@@ -5,7 +5,7 @@ use {
 
 #[must_use]
 fn final_world(seed: Option<u64>) -> HittableList {
-    scene::balls_scene(seed, false, false)
+    scene::balls_scene(seed, false, true)
 }
 
 #[must_use]

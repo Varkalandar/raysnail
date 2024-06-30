@@ -153,10 +153,11 @@ impl<M: Material> Hittable for Sphere<M> {
             let y = phi.sin() * (1.0 - z * z).sqrt();
             Vec3::new(x, y, z)
         }
+        
         let direction = self.center.clone() - origin;
         let distance_2 = direction.length_squared();
-        let uvw = ONB::build_from_w(&direction);
-        uvw.vec_local(&random_to_sphere(self.radius, distance_2))
+        let uvw = ONB::build_from(&direction);
+        uvw.local(&random_to_sphere(self.radius, distance_2))
     }
 
 }

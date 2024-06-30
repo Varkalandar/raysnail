@@ -46,9 +46,7 @@ pub trait Material: Send + Sync {
     }
 
     fn scattering_pdf(&self, ray: &Ray, rec: &HitRecord<'_>, scattered: &Ray) -> f64 {
-        let v = scattered.direction.unit();        
-        let cos_theta = rec.normal.dot(&v);        
-        if cos_theta < 0.0 {0.0} else {cos_theta / PI}
+        0.0
     }    
 }
 
