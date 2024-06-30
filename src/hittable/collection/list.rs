@@ -43,6 +43,22 @@ impl HittableList {
     pub fn into_objects(self) -> Vec<Box<dyn Hittable>> {
         self.objects
     }
+
+    pub fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
+        let weight = 1.0 / self.objects.len() as f64;
+        let mut sum = 0.0;
+
+        for object in &self.objects {
+            sum += weight * object.pdf_value(origin, direction);
+        }
+
+        sum
+    }
+
+    pub fn random(&self, origin: &Point3) -> Vec3 {
+        let size = self.objects.len();
+        return self.objects[Random::range(0 .. size)].random(origin);
+    }    
 }
 
 impl Hittable for HittableList {
@@ -66,5 +82,5 @@ impl Hittable for HittableList {
         }
 
         result
-    }
+    }    
 }

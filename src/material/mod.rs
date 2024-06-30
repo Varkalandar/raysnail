@@ -3,6 +3,9 @@ use {
     std::sync::Arc,
 };
 
+use std::fmt::Debug;
+use std::fmt::Formatter;
+
 pub(crate) mod dielectric;
 pub(crate) mod isotropic;
 pub(crate) mod lambertian;
@@ -17,14 +20,25 @@ pub use {
     metal::Metal,
 };
 
-#[derive(Debug)]
+
 pub struct ScatterRecord {
     pub color: Color,
-    pub ray: Ray,
+    pub ray: Option<Ray>,
+
+    pub pdf: Box::<dyn PDF>,
+    pub skip_pdf: bool,
+}
+
+impl Debug for ScatterRecord {
+    fn fmt(&self, _: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        Ok(())
+    }
 }
 
 pub trait Material: Send + Sync {
-    fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord>;
+    fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
+        None
+    }
 
     #[allow(unused_variables)]
     fn emitted(&self, u: f64, v: f64, point: &Point3) -> Option<Vec3> {

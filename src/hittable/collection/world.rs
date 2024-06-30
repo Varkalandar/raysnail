@@ -21,6 +21,7 @@ pub fn default_background(ray: &Ray) -> Color {
 
 pub struct World {
     bvh: BVH,
+    pub lights: HittableList,
     bg_func: Box<dyn Fn(&Ray) -> Color + Send + Sync>,
 }
 
@@ -32,9 +33,10 @@ impl Debug for World {
 
 impl World {
     #[must_use]
-    pub fn new(list: HittableList, time_range: Range<f64>) -> Self {
+    pub fn new(list: HittableList, lights: HittableList, time_range: Range<f64>) -> Self {
         Self {
             bvh: BVH::new(list, time_range),
+            lights,
             bg_func: Box::new(default_background),
         }
     }

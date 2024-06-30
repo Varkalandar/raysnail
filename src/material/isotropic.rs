@@ -17,11 +17,22 @@ impl Isotropic {
 }
 
 impl Material for Isotropic {
+/*
     fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
         let scattered_ray = Ray::new(hit.point.clone(), Vec3::random_in_unit_sphere(), ray.departure_time);
         Some(ScatterRecord {
             ray: scattered_ray,
             color: self.color.clone(),
+        })
+    }
+*/
+
+    fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
+        Some(ScatterRecord {
+            color: self.color.clone(),
+            ray: None,
+            pdf: Box::new(SpherePdf::new()), 
+            skip_pdf: false,            
         })
     }
 

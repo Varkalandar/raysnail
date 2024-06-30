@@ -77,8 +77,8 @@ impl Camera {
 
 
     #[must_use]
-    pub fn take_photo(&self, world: HittableList) -> TakePhotoSettings<'_> {
-        let world = World::new(world, 0.0..self.shutter_speed);
+    pub fn take_photo(&self, world: HittableList, lights: HittableList) -> TakePhotoSettings<'_> {
+        let world = World::new(world, lights, 0.0..self.shutter_speed);
         TakePhotoSettings::new(self, world)
     }
 }
@@ -165,17 +165,28 @@ impl<'c> TakePhotoSettings<'c> {
                 .emitted(hit.u, hit.v, &hit.point)
                 .unwrap_or_default();
 
-            if let Some(unused_scattered) = material.scatter(ray, &hit) {
+            if let Some(srec) = material.scatter(ray, &hit) {
 
-                let surface_pdf = CosinePdf::new(&hit.normal);
-                let scattered = Ray::new(hit.point.clone(), surface_pdf.generate(), ray.departure_time);
-                let pdf_val = surface_pdf.value(&scattered.direction);
+                if srec.skip_pdf {
+                    // If the material skips the pdf it must provide a ray in the record
+                    return srec.color * Self::ray_color(&srec.ray.unwrap(), world, depth-1);
+                }
+
+                let light_pdf = HittablePdf::new(&world.lights, &hit.point);
+                let p = MixturePdf::new(&light_pdf, srec.pdf.as_ref());                
+
+                let scattered = Ray::new(hit.point.clone(), p.generate(), ray.departure_time);
+                let pdf_val = p.value(&scattered.direction) + 0.000001;
 
                 let scattering_pdf = material.scattering_pdf(ray, &hit, &scattered) + 0.000001;
 
+                let sample_color = Self::ray_color(&scattered, world, depth-1);
+
+                // let f = srec_color.f();
+                // let scatter_color = Vec3::new(f.r, f.g, f.b);
+
                 let color_from_scatter =
-                    (unused_scattered.color * scattering_pdf * Self::ray_color(&scattered, world, depth - 1))
-                     / pdf_val;
+                    (srec.color * scattering_pdf * sample_color) / pdf_val;
 
                 return emitted + color_from_scatter;
             }

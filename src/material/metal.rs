@@ -38,7 +38,9 @@ impl<T: Texture> Material for Metal<T> {
         if reflected.direction.dot(&hit.normal) > 0.0 {
             Some(ScatterRecord {
                 color,
-                ray: reflected,
+                ray: Some(reflected),
+                pdf: Box::new(CosinePdf::new(&hit.normal)), 
+                skip_pdf: true,            
             })
         } else {
             None

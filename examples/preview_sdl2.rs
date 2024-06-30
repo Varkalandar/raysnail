@@ -25,6 +25,7 @@ use remda::hittable::transform::ByXAxis;
 use remda::hittable::transform::ByYAxis;
 use remda::hittable::transform::AARotation;
 use remda::hittable::Sphere;
+use remda::hittable::collection::HittableList;
 
 use rayon::spawn;
 use std::sync::mpsc::channel;
@@ -168,14 +169,15 @@ fn render(target: &mut dyn PainterTarget) {
     let rs = 
         Sphere::new(Vec3::new(0.0, 200.0, 0.0), 
             30.0, 
-            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(1.8)
+            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(80.0)
     );
 
 
     let rs = AARotation::<ByXAxis, _>::new(rs, 25.0);
     let rs = AARotation::<ByYAxis, _>::new(rs, -60.0);
 
-    world.add(rs);
+    let mut lights = HittableList::default();
+    lights.add(rs);
 
 
     fn background(ray: &Ray) -> Color {
@@ -185,7 +187,7 @@ fn render(target: &mut dyn PainterTarget) {
     }
 
     camera
-        .take_photo(world)
+        .take_photo(world, lights)
         .background(background)
         .height(600)
         .samples(128)

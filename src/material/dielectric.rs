@@ -81,7 +81,9 @@ impl Material for Dielectric {
             .unwrap_or_else(|| reflect(ray, &hit));
         Some(ScatterRecord {
             color: self.color.clone(),
-            ray: refract,
+            ray: Some(refract),
+            pdf: Box::new(CosinePdf::new(&hit.normal)), 
+            skip_pdf: true,            
         })
     }
 }

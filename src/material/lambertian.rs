@@ -21,6 +21,8 @@ impl<T: Texture> Lambertian<T> {
 }
 
 impl<T: Texture> Material for Lambertian<T> {
+
+    /*
     fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
 
         let uvw = ONB::build_from_w(&hit.normal);
@@ -36,4 +38,24 @@ impl<T: Texture> Material for Lambertian<T> {
             ray: scattered,
         })
     }
+    */
+
+
+    fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
+
+        let color = self.texture.color(hit.u, hit.v, &hit.point);
+
+        Some(ScatterRecord {
+            color,
+            ray: None,
+            pdf: Box::new(CosinePdf::new(&hit.normal)), 
+            skip_pdf: false,            
+        })
+    }
+    
+    fn scattering_pdf(&self, ray: &Ray, rec: &HitRecord<'_>, scattered: &Ray) -> f64 {
+        let v = scattered.direction.unit();        
+        let cos_theta = rec.normal.dot(&v);        
+        if cos_theta < 0.0 {0.0} else {cos_theta / PI}
+    }        
 }

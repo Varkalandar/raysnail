@@ -131,4 +131,32 @@ impl<M: Material> Hittable for Sphere<M> {
             },
         )
     }
+
+
+    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
+        if let Some(_hit) = self.hit(&Ray::new(origin.clone(), direction.clone(), 0.0), 0.001..f64::INFINITY) {
+            let cos_theta_max =
+                (1.0 - self.radius * self.radius / (self.center.clone() - origin).length_squared()).sqrt();
+            let solid_angle = 2.0 * PI * (1.0 - cos_theta_max);
+            return 1.0 / solid_angle;
+        }
+        0.0
+    }
+
+    fn random(&self, origin: &Point3) -> Vec3 {
+        fn random_to_sphere(radius: f64, distance_2: f64) -> Vec3 {
+            let r1 = Random::gen();
+            let r2 = Random::gen();
+            let z = 1.0 + r2 * ((1.0 - radius * radius / distance_2).sqrt() - 1.0);
+            let phi = 2.0 * PI * r1;
+            let x = phi.cos() * (1.0 - z * z).sqrt();
+            let y = phi.sin() * (1.0 - z * z).sqrt();
+            Vec3::new(x, y, z)
+        }
+        let direction = self.center.clone() - origin;
+        let distance_2 = direction.length_squared();
+        let uvw = ONB::build_from_w(&direction);
+        uvw.vec_local(&random_to_sphere(self.radius, distance_2))
+    }
+
 }

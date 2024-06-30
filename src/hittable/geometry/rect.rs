@@ -121,4 +121,26 @@ impl<M: Material> Hittable for AARect<M> {
 
         Some(AABB::new(p0, p1))
     }
+
+    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
+        let hit_opt = self.hit(&Ray::new(origin.clone(), direction.clone(), 0.0), 0.001..f64::INFINITY);
+        
+        if hit_opt.is_none() {
+            return 0.0;
+        }
+
+        let hit = hit_opt.unwrap();
+
+        let distance_squared = hit.unit * hit.unit * direction.length_squared();
+
+        // let cosine = fabs(dot(direction, hit.normal) / direction.length());
+        let cosine = (direction.dot(&hit.normal) / direction.length()).abs();
+
+        return distance_squared / (cosine * self.metrics.a_len * self.metrics.b_len);
+    }
+
+    fn random(&self, origin: &Point3) -> Vec3 {
+        Vec3::random_unit()
+    }
+
 }

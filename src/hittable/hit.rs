@@ -67,6 +67,15 @@ pub trait Hittable: Send + Sync {
             std::any::type_name::<Self>()
         )
     }
+
     fn hit(&self, ray: &Ray, unit_limit: Range<f64>) -> Option<HitRecord<'_>>;
     fn bbox(&self, time_limit: Range<f64>) -> Option<AABB>;
+
+    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
+        0.0
+    }
+
+    fn random(&self, origin: &Point3) -> Vec3 {
+        Vec3::new(1.0, 0.0, 0.0)
+    }
 }
