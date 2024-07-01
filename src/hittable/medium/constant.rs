@@ -26,10 +26,10 @@ impl<T> ConstantMedium<T> {
 
 impl<T: Hittable> Hittable for ConstantMedium<T> {
     fn hit(
-        &self, ray: &Ray, unit_limit: std::ops::Range<f64>,
+        &self, ray: &Ray, unit_limit: &std::ops::Range<f64>,
     ) -> Option<crate::hittable::HitRecord<'_>> {
-        let mut rec1 = self.boundary.hit(ray, f64::NEG_INFINITY..f64::INFINITY)?;
-        let mut rec2 = self.boundary.hit(ray, rec1.unit + 0.0001..f64::INFINITY)?;
+        let mut rec1 = self.boundary.hit(ray, &(f64::NEG_INFINITY..f64::INFINITY))?;
+        let mut rec2 = self.boundary.hit(ray, &(rec1.unit + 0.0001..f64::INFINITY))?;
         if rec1.unit < unit_limit.start {
             rec1.unit = unit_limit.start;
         }
@@ -66,5 +66,13 @@ impl<T: Hittable> Hittable for ConstantMedium<T> {
 
     fn bbox(&self, time_limit: std::ops::Range<f64>) -> Option<AABB> {
         self.boundary.bbox(time_limit)
+    }
+
+    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
+        0.0
+    }
+
+    fn random(&self, origin: &Point3) -> Vec3 {
+        Vec3::new(1.0, 0.0, 0.0)
     }
 }

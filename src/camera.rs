@@ -77,10 +77,17 @@ impl Camera {
 
 
     #[must_use]
-    pub fn take_photo(&self, world: HittableList, lights: HittableList) -> TakePhotoSettings<'_> {
+    pub fn take_photo(&self, world: HittableList) -> TakePhotoSettings<'_> {
+        let world = World::new(world, HittableList::default(), 0.0..self.shutter_speed);
+        TakePhotoSettings::new(self, world)
+    }
+
+
+    pub fn take_photo_with_lights(&self, world: HittableList, lights: HittableList) -> TakePhotoSettings<'_> {
         let world = World::new(world, lights, 0.0..self.shutter_speed);
         TakePhotoSettings::new(self, world)
     }
+
 }
 
 
@@ -159,7 +166,7 @@ impl<'c> TakePhotoSettings<'c> {
             return Vec3::default();
         }
 
-        if let Some(hit) = world.hit(ray, 0.001..f64::INFINITY) {
+        if let Some(hit) = world.hit(ray, &(0.001..f64::INFINITY)) {
             let material = hit.material;
             let emitted = material
                 .emitted(hit.u, hit.v, &hit.point)
@@ -175,25 +182,25 @@ impl<'c> TakePhotoSettings<'c> {
                 let light_pdf = HittablePdf::new(&world.lights, &hit.point);
                 let mixture = MixturePdf::new(&light_pdf, srec.pdf.as_ref());                
 
-                // let scattered = Ray::new(hit.point.clone(), mixture.generate(), ray.departure_time);
-                let scattered = Ray::new(hit.point.clone(), srec.pdf.generate(), ray.departure_time);
+                let scatter_direction = mixture.generate();
+
+                // println!("dir = {:?}", scatter_direction);
+
+                let scattered = Ray::new(hit.point.clone(), scatter_direction, ray.departure_time);
                 let pdf_val = mixture.value(&scattered.direction);
+                let scattering_pdf_val = material.scattering_pdf(ray, &hit, &scattered);
 
-                let scattering_pdf = material.scattering_pdf(ray, &hit, &scattered);
-
-                // println!("Mixed PDF value={}, scattering PDF={}", pdf_val, scattering_pdf);
-
-                let pdf_multiplicator = scattering_pdf / pdf_val;
+                let pdf_multiplicator = scattering_pdf_val / pdf_val;
                 
                 let sample_color = Self::ray_color(&scattered, world, depth-1);
 
-                if pdf_multiplicator == pdf_multiplicator { 
+                if pdf_multiplicator == pdf_multiplicator && pdf_multiplicator <= 2.0 { 
                     let color_from_scatter =
                         (srec.color * sample_color) * pdf_multiplicator;
                 
                     return emitted + color_from_scatter;
                 }
-
+                
                 return emitted + srec.color * sample_color;
             }
             
@@ -222,7 +229,7 @@ impl<'c> TakePhotoSettings<'c> {
         .samples(self.samples)
         .threads(self.threads)
         .parallel(self.parallel)
-        .draw(&path, target, |i, j| -> Vec3 {
+        .draw(&path, target, |i: f64, j: f64| -> Vec3 {
 
             let ray = self.camera.ray(i, j);
             Self::ray_color(&ray, &self.world, self.depth)

@@ -103,11 +103,19 @@ impl<M: Material + 'static> Carton<M> {
 }
 
 impl<M: Material> Hittable for Carton<M> {
-    fn hit(&self, ray: &Ray, unit_limit: Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
         self.faces.hit(ray, unit_limit)
     }
 
     fn bbox(&self, time_limit: Range<f64>) -> Option<AABB> {
         self.faces.bbox(time_limit)
+    }
+
+    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
+        0.0
+    }
+
+    fn random(&self, origin: &Point3) -> Vec3 {
+        Vec3::new(1.0, 0.0, 0.0)
     }
 }

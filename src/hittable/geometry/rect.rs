@@ -87,7 +87,7 @@ impl<M: Material> Hittable for AARect<M> {
         )
     }
 
-    fn hit(&self, ray: &Ray, unit_limit: Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
         let unit = (self.metrics.k - ray.origin[self.axis.2]) / ray.direction[self.axis.2];
         if !unit_limit.contains(&unit) {
             return None;
@@ -123,7 +123,7 @@ impl<M: Material> Hittable for AARect<M> {
     }
 
     fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
-        let hit_opt = self.hit(&Ray::new(origin.clone(), direction.clone(), 0.0), 0.001..f64::INFINITY);
+        let hit_opt = self.hit(&Ray::new(origin.clone(), direction.clone(), 0.0), &(0.001..f64::INFINITY));
         
         if hit_opt.is_none() {
             return 0.0;

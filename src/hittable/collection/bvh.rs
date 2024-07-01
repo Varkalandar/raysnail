@@ -105,22 +105,22 @@ impl BVH {
 
 /// Bounding Volume Hierarchies
 impl Hittable for BVH {
-    fn hit(&self, ray: &Ray, unit_limit: Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
         let bbox = self.bbox.as_ref()?;
-        if !bbox.hit(ray, unit_limit.clone()) {
+        if !bbox.hit(ray, unit_limit) {
             return None;
         }
 
         let hit_left = self
             .left
             .as_ref()
-            .and_then(|left| left.hit(ray, unit_limit.clone()));
+            .and_then(|left| left.hit(ray, unit_limit));
         let hit_right = self.right.as_ref().and_then(|right| {
             let right_limit = unit_limit.start
                 ..hit_left
                     .as_ref()
                     .map_or(unit_limit.end, |record| record.unit);
-            right.hit(ray, right_limit)
+            right.hit(ray, &right_limit)
         });
 
         // Right has small t then left if it return `Some`, so right appear first
@@ -129,5 +129,13 @@ impl Hittable for BVH {
 
     fn bbox(&self, _time_limit: Range<f64>) -> Option<AABB> {
         self.bbox.clone()
+    }
+
+    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
+        0.0
+    }
+
+    fn random(&self, origin: &Point3) -> Vec3 {
+        Vec3::new(1.0, 0.0, 0.0)
     }
 }

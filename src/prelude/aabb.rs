@@ -27,7 +27,7 @@ impl AABB {
     }
 
     #[must_use]
-    pub fn hit(&self, ray: &Ray, unit_limit: Range<f64>) -> bool {
+    pub fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> bool {
         let mut t_min = unit_limit.start;
         let mut t_max = unit_limit.end;
         for i in 0..3 {

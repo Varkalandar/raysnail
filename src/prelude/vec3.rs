@@ -10,6 +10,30 @@ use {
     },
 };
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::SystemTime;
+
+    #[test]
+    fn test_vector_index_timing() {
+        
+        let v = Vec3::new(1.0, 2.0, 3.0);
+        let t0 = SystemTime::now();
+
+        for i in 0 .. 10000000 {
+            let _t = v[i & 1];
+        }
+
+        let t1 = SystemTime::now();
+        let difference = t1.duration_since(t0).unwrap();
+        println!("Duration: {}", difference.as_secs_f64());
+        assert_eq!(difference.as_secs_f64(), 0.0);
+    }
+}
+
+
+
 #[derive(Default, Clone, Debug, PartialOrd, PartialEq)]
 pub struct Vec3 {
     pub x: f64,

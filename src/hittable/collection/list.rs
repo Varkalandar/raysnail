@@ -63,10 +63,10 @@ impl HittableList {
 
 
 impl Hittable for HittableList {
-    fn hit(&self, r: &Ray, unit_limit: Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, r: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
         self.objects
             .iter()
-            .filter_map(|object| object.hit(r, unit_limit.clone()))
+            .filter_map(|object| object.hit(r, unit_limit))
             .min_by(|r1, r2| r1.unit.partial_cmp(&r2.unit).unwrap())
     }
 
@@ -83,5 +83,13 @@ impl Hittable for HittableList {
         }
 
         result
+    }
+    
+    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
+        0.0
+    }
+
+    fn random(&self, origin: &Point3) -> Vec3 {
+        Vec3::new(1.0, 0.0, 0.0)
     }    
 }

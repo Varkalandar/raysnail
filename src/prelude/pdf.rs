@@ -92,6 +92,7 @@ impl PDF for HittablePdf<'_> {
   
     fn generate(&self) -> Vec3 {
         self.objects.random(&self.origin)
+        // Vec3::new(0.0, 1.0, 0.0)    
     }
 }
 
@@ -124,6 +125,7 @@ impl PDF for MixturePdf<'_> {
     }
   
     fn generate(&self) -> Vec3 {
+
         if Random::gen() < 0.5 {
             return self.p0.generate();
         }

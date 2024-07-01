@@ -230,9 +230,9 @@ impl Painter {
         }
         */
 
-
+        let h = self.height as f64;
         let u = x / self.width as f64;
-        let v = ((self.height - 1) as f64 - y) / self.height as f64;
+        let v = (h - 1.0 - y) / h;
         [u, v]
     }
 
@@ -280,15 +280,15 @@ impl Painter {
         F: Fn(f64, f64) -> Vec3 + Send + Sync,
     {
         // Stratification, randomized subpixels
+     
+        let x = column as f64;
+        let y = row as f64;
+     
         let mut color_vec = Vec3::new(0.0, 0.0, 0.0);
         for s_j in 0 .. self.sqrt_spp {
             for s_i in 0 .. self.sqrt_spp {
                 let offset = self.sample_square_stratified(s_i, s_j);
-                
-                let x = column as f64 + offset[0];
-                let y = row as f64 + offset[1];
-
-                let uv = self.calculate_uv(x, y);
+                let uv = self.calculate_uv(x + offset[0], y + offset[1]);
                 color_vec = color_vec + uv_color(uv[0], uv[1])
             }
         }

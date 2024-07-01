@@ -71,6 +71,10 @@ impl PainterTarget for PixelQueue {
         for pixel in pixels {
             let pix = [pixel.0, pixel.1, pixel.2, 255];
             let status = self.sender.send(pix);
+
+            if status.is_err() {
+                // println!("PainterTarget could not send pixels to receiver");
+            }
         }
 
         let status = self.command_receiver.try_recv();
@@ -168,24 +172,27 @@ fn render(target: &mut dyn PainterTarget) {
         DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(2.0)
     );
 */
+
+
     let rs = 
-    Sphere::new(Vec3::new(0.0, 200.0, 0.0), 
+    Sphere::new(Vec3::new(-200.0, 200.0, -20.0), 
         30.0, 
-        DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(20.0)
+        DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(50.0)
     );
-    let rs = AARotation::<ByXAxis, _>::new(rs, 25.0);
-    let rs = AARotation::<ByYAxis, _>::new(rs, -60.0);
+//    let rs = AARotation::<ByXAxis, _>::new(rs, 25.0);
+//    let rs = AARotation::<ByYAxis, _>::new(rs, -60.0);
     world.add(rs);
+
 
     let mut lights = HittableList::default();
 
     let rs = 
-        Sphere::new(Vec3::new(0.0, 200.0, 0.0), 
+        Sphere::new(Vec3::new(-200.0, 200.0, -20.0), 
             30.0, 
-            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(20.0)
+            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(50.0)
     );
-    let rs = AARotation::<ByXAxis, _>::new(rs, 25.0);
-    let rs = AARotation::<ByYAxis, _>::new(rs, -60.0);
+ //   let rs = AARotation::<ByXAxis, _>::new(rs, 25.0);
+//    let rs = AARotation::<ByYAxis, _>::new(rs, -60.0);
 
     lights.add(rs);
 
@@ -202,8 +209,8 @@ fn render(target: &mut dyn PainterTarget) {
         .take_photo_with_lights(world, lights)
         .background(background)
         .height(600)
-        .samples(256)
-        // .samples(8)
+        // .samples(300)
+        .samples(101)
         // .depth(40)
         .shot_to_target(Some("rtow_13_1.ppm"), target)
         .unwrap();

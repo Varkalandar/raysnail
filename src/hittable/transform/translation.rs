@@ -16,7 +16,7 @@ impl<T> Translation<T> {
 }
 
 impl<T: Hittable> Hittable for Translation<T> {
-    fn hit(&self, ray: &Ray, unit_limit: std::ops::Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &std::ops::Range<f64>) -> Option<HitRecord<'_>> {
         let moved_ray = Ray::new(
             &ray.origin - &self.movement,
             ray.direction.clone(),
@@ -33,4 +33,13 @@ impl<T: Hittable> Hittable for Translation<T> {
             .bbox(time_limit)
             .map(|bbox| AABB::new(bbox.min() + &self.movement, bbox.max() + &self.movement))
     }
+
+    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
+        self.object.pdf_value(origin, direction)
+    }
+
+    fn random(&self, origin: &Point3) -> Vec3 {
+        self.object.random(origin)
+    }
+
 }

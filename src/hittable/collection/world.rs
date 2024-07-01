@@ -56,11 +56,19 @@ impl World {
 }
 
 impl Hittable for World {
-    fn hit(&self, ray: &Ray, unit_limit: Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
         self.bvh.hit(ray, unit_limit)
     }
 
     fn bbox(&self, time_limit: Range<f64>) -> Option<AABB> {
         self.bvh.bbox(time_limit)
+    }
+
+    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
+        0.0
+    }
+
+    fn random(&self, origin: &Point3) -> Vec3 {
+        Vec3::new(1.0, 0.0, 0.0)
     }
 }
