@@ -199,10 +199,10 @@ fn render(target: &mut dyn PainterTarget) {
     }
 
     camera
-        .take_photo(world, lights)
+        .take_photo_with_lights(world, lights)
         .background(background)
         .height(600)
-        .samples(128)
+        .samples(256)
         // .samples(8)
         // .depth(40)
         .shot_to_target(Some("rtow_13_1.ppm"), target)
