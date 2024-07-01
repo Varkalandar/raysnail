@@ -134,15 +134,19 @@ fn boot_sdl(receiver: Receiver<[u8; 4]>, command_sender: Sender<PainterCommand>)
             }
         }
 
-        let data = receiver.recv().unwrap();
-        renderer.setpix(x, y, data);
-        x += 1;
+        let data = receiver.recv();
 
-        if x >= 1067 {
-            x = 0;
-            y += 1;
-            renderer.present();
+        if data.is_ok() {
+            renderer.setpix(x, y, data.unwrap());
+            x += 1;
+
+            if x >= 1067 {
+                x = 0;
+                y += 1;
+                renderer.present();
+            }
         }
+
         // ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
     }
 
@@ -167,7 +171,7 @@ fn render(target: &mut dyn PainterTarget) {
     let rs = 
     Sphere::new(Vec3::new(0.0, 200.0, 0.0), 
         30.0, 
-        DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(4.0)
+        DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(20.0)
     );
     let rs = AARotation::<ByXAxis, _>::new(rs, 25.0);
     let rs = AARotation::<ByYAxis, _>::new(rs, -60.0);
@@ -178,7 +182,7 @@ fn render(target: &mut dyn PainterTarget) {
     let rs = 
         Sphere::new(Vec3::new(0.0, 200.0, 0.0), 
             30.0, 
-            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(4.0)
+            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(20.0)
     );
     let rs = AARotation::<ByXAxis, _>::new(rs, 25.0);
     let rs = AARotation::<ByYAxis, _>::new(rs, -60.0);
@@ -189,7 +193,7 @@ fn render(target: &mut dyn PainterTarget) {
     fn background(ray: &Ray) -> Color {
         let unit = ray.direction.unit();
         let t = 0.5 * (unit.y + 1.0);
-        Color::new(0.7, 0.82, 0.95).gradient(&Color::new(0.3, 0.47, 0.7), t)
+        Color::new(0.68, 0.80, 0.95).gradient(&Color::new(0.28, 0.45, 0.7), t)
  
         // Color::new(0.0, 0.0, 0.0)
     }

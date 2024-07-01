@@ -92,7 +92,8 @@ pub fn balls_scene(seed: Option<u64>, need_speed: bool, checker: bool) -> Hittab
             1000.0,
             Lambertian::new(Checker::new(
                 Color::new(0.2, 0.3, 0.1),
-                Color::new(0.9, 0.9, 0.9),
+                // Color::new(0.9, 0.9, 0.9),
+                Color::new(0.2, 0.1, 0.0),
             )),
         ));
     } else {

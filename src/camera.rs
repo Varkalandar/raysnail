@@ -177,8 +177,8 @@ impl<'c> TakePhotoSettings<'c> {
 
                 // let scattered = Ray::new(hit.point.clone(), mixture.generate(), ray.departure_time);
                 let scattered = Ray::new(hit.point.clone(), srec.pdf.generate(), ray.departure_time);
-
                 let pdf_val = mixture.value(&scattered.direction);
+
                 let scattering_pdf = material.scattering_pdf(ray, &hit, &scattered);
 
                 // println!("Mixed PDF value={}, scattering PDF={}", pdf_val, scattering_pdf);
