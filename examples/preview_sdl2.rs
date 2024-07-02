@@ -23,9 +23,9 @@ use remda::hittable::Sphere;
 use remda::hittable::collection::HittableList;
 
 use rayon::spawn;
-use std::sync::mpsc::channel;
+use std::sync::mpsc::sync_channel;
 use std::sync::mpsc::Receiver;
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::SyncSender;
 
 
 pub struct Renderer { 
@@ -44,7 +44,11 @@ impl Renderer {
 
     pub fn setpix(&mut self, x: i32, y: i32, color:[u8; 4]) {
         self.canvas.set_draw_color(SDLColor::RGB(color[0], color[1], color[2]));
-        let _ = self.canvas.draw_point(Point::new(x, y));
+        let result = self.canvas.draw_point(Point::new(x, y));
+
+        if result.is_err() {
+            println!("Error: {:?}", result.err().unwrap());
+        }
     }
 
     pub fn present(&mut self) {
@@ -54,21 +58,23 @@ impl Renderer {
 
 
 struct PixelQueue {
-    sender: Sender<[u8; 4]>,
+    sender: SyncSender<[u8; 4]>,
     command_receiver: Receiver<PainterCommand>,
 }
 
 
 impl PainterTarget for PixelQueue {
-    fn register_pixels(&mut self, pixels: &Vec<(u8, u8, u8)>) -> PainterCommand {
+    fn register_pixels(&mut self, pixels: &Vec<[u8; 4]>) -> PainterCommand {
         println!("Got {} pixels", pixels.len());
 
         for pixel in pixels {
-            let pix = [pixel.0, pixel.1, pixel.2, 255];
-            let status = self.sender.send(pix);
+            // let pix = [pixel.0, pixel.1, pixel.2, 255];
+            let status = self.sender.send(*pixel);
 
             if status.is_err() {
-                // println!("PainterTarget could not send pixels to receiver");
+                // let error = status.err().unwrap();
+                // println!("PainterTarget could not send pixels: {:?}", error.to_string());
+                break;
             }
         }
 
@@ -87,8 +93,8 @@ impl PainterTarget for PixelQueue {
 
 pub fn main() -> Result<(), String> {
 
-    let (sender, receiver) = channel::<[u8; 4]>();
-    let (command_sender, command_receiver) = channel::<PainterCommand>();
+    let (sender, receiver) = sync_channel::<[u8; 4]>(1 << 16);
+    let (command_sender, command_receiver) = sync_channel::<PainterCommand>(256);
 
     let mut queue = PixelQueue {sender, command_receiver};
 
@@ -100,7 +106,7 @@ pub fn main() -> Result<(), String> {
 }
 
 
-fn boot_sdl(receiver: Receiver<[u8; 4]>, command_sender: Sender<PainterCommand>) {
+fn boot_sdl(receiver: Receiver<[u8; 4]>, command_sender: SyncSender<PainterCommand>) {
     common::init_log("info");
 
     let sdl_context = sdl2::init().unwrap();
@@ -144,6 +150,10 @@ fn boot_sdl(receiver: Receiver<[u8; 4]>, command_sender: Sender<PainterCommand>)
                 y += 1;
                 renderer.present();
             }
+        } 
+        else {
+            let error = data.err().unwrap();
+            println!("Receiving window could not read pixels: {:?}", error.to_string());        
         }
 
         // ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
@@ -163,10 +173,10 @@ fn render(target: &mut dyn PainterTarget) {
 
 
     let rs = 
-    Sphere::new(Vec3::new(-200.0, 200.0, -20.0), 
-        12.0, 
-        DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(200.0)
-    );
+        Sphere::new(Vec3::new(50.0, 200.0, 200.0), 
+            12.0, 
+            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(200.0)
+        );
 
     world.add(rs);
 
@@ -174,10 +184,10 @@ fn render(target: &mut dyn PainterTarget) {
     let mut lights = HittableList::default();
 
     let rs = 
-        Sphere::new(Vec3::new(-200.0, 200.0, -20.0), 
+        Sphere::new(Vec3::new(50.0, 200.0, 200.0), 
             12.0, 
             DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(200.0)
-    );
+        );
 
     lights.add(rs);
 
@@ -194,9 +204,9 @@ fn render(target: &mut dyn PainterTarget) {
         .take_photo_with_lights(world, lights)
         .background(background)
         .height(600)
-        //.samples(26)
+        // .samples(26)
         .samples(257)
-        // .depth(40)
+        .depth(40)
         .shot_to_target(Some("rtow_13_1.ppm"), target)
         .unwrap();
 }
