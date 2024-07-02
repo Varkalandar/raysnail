@@ -32,7 +32,9 @@ impl<T: Texture> Material for DiffuseLight<T> {
         Some(<Color as Into<Vec3>>::into(self.texture.color(u, v, point)) * self.multiplier)
     }
 
+    /*
     fn scattering_pdf(&self, ray: &Ray, rec: &HitRecord<'_>, scattered: &Ray) -> f64 {
         1.0 / (4.0 * PI)
-    }    
+    }
+    */       
 }

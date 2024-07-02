@@ -179,8 +179,7 @@ impl Painter {
             parallel: true,
 
             sqrt_spp: 5,
-            recip_sqrt_spp: 0.2, // 1.0/5.0,
-        
+            recip_sqrt_spp: 0.2, // 1.0/5.0,        
         }
     }
 
@@ -285,11 +284,30 @@ impl Painter {
         let y = row as f64;
      
         let mut color_vec = Vec3::new(0.0, 0.0, 0.0);
+        let mut last_color = Vec3::new(0.0, 0.0, 0.0);
+        
         for s_j in 0 .. self.sqrt_spp {
             for s_i in 0 .. self.sqrt_spp {
                 let offset = self.sample_square_stratified(s_i, s_j);
                 let uv = self.calculate_uv(x + offset[0], y + offset[1]);
-                color_vec = color_vec + uv_color(uv[0], uv[1])
+                let mut color = uv_color(uv[0], uv[1]);
+                let diff = (&color - &last_color).length_squared();
+
+                if diff > 10.0 {
+                    let limit = diff.sqrt() as usize;
+                    let mut counter = 1;
+                    
+                    println!("Oversamplig pixel {} times due to big color diff", limit);
+                    while counter < limit {
+                        color = color + uv_color(uv[0], uv[1]);
+                        counter += 1;
+                    }
+                    
+                    color = color * (1.0 / limit as f64);
+                }
+
+                color_vec = color_vec + &color;
+                last_color = color;
             }
         }
 

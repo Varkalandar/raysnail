@@ -18,12 +18,7 @@ use remda::prelude::Vec3;
 
 use remda::painter::PainterTarget;
 use remda::painter::PainterCommand;
-use remda::hittable::AARectMetrics;
 use remda::material::DiffuseLight;
-use remda::hittable::AARect;
-use remda::hittable::transform::ByXAxis;
-use remda::hittable::transform::ByYAxis;
-use remda::hittable::transform::AARotation;
 use remda::hittable::Sphere;
 use remda::hittable::collection::HittableList;
 
@@ -166,21 +161,13 @@ fn render(target: &mut dyn PainterTarget) {
     // Or use `None` to use random seed
     let (camera, mut world) = common::ray_tracing_in_one_weekend::final_scene(Some(7));
 
-/*
-    let square = AARect::new_xy(
-        AARectMetrics::new(200.0, (100.0, 200.0), (100.0, 200.0)),
-        DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(2.0)
-    );
-*/
-
 
     let rs = 
     Sphere::new(Vec3::new(-200.0, 200.0, -20.0), 
-        30.0, 
-        DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(50.0)
+        12.0, 
+        DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(200.0)
     );
-//    let rs = AARotation::<ByXAxis, _>::new(rs, 25.0);
-//    let rs = AARotation::<ByYAxis, _>::new(rs, -60.0);
+
     world.add(rs);
 
 
@@ -188,11 +175,9 @@ fn render(target: &mut dyn PainterTarget) {
 
     let rs = 
         Sphere::new(Vec3::new(-200.0, 200.0, -20.0), 
-            30.0, 
-            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(50.0)
+            12.0, 
+            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(200.0)
     );
- //   let rs = AARotation::<ByXAxis, _>::new(rs, 25.0);
-//    let rs = AARotation::<ByYAxis, _>::new(rs, -60.0);
 
     lights.add(rs);
 
@@ -209,8 +194,8 @@ fn render(target: &mut dyn PainterTarget) {
         .take_photo_with_lights(world, lights)
         .background(background)
         .height(600)
-        // .samples(300)
-        .samples(101)
+        //.samples(26)
+        .samples(257)
         // .depth(40)
         .shot_to_target(Some("rtow_13_1.ppm"), target)
         .unwrap();

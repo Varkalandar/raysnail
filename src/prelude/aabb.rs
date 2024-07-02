@@ -46,6 +46,23 @@ impl AABB {
         }
         true
     }
+
+    /*
+    pub fn longest_axis() usize {
+        // Returns the index of the longest axis of the bounding box.
+
+        let x_size = max.x - min.x;
+        let y_size = max.y - min.y;
+        let z_size = max.z - min.z;
+
+        if x_size > y_size {
+            if x_size > z_size {0} else {2}
+        }
+        else {
+            if y_size > z_size {1} else {2}
+        }
+    }
+    */
 }
 
 impl BitOr<Self> for &AABB {

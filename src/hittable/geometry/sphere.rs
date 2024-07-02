@@ -145,8 +145,24 @@ impl<M: Material> Hittable for Sphere<M> {
 
 
     fn random(&self, origin: &Point3) -> Vec3 {
+        /*
         let r = Vec3::random_unit() * (self.radius * 0.99);
         
         (r + &self.center) - origin
+        */
+
+        let direction = &self.center - origin;
+        let uvw = ONB::build_from(&direction);
+
+        loop {
+            let u = &uvw.axis[0] * Random::gen();
+            let v = &uvw.axis[1] * Random::gen();
+
+            let uv = u + &v;
+
+            if uv.length_squared() < 1.0 {
+                return (uv + &self.center) - origin
+            }
+        }
     }
 }

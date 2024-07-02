@@ -124,7 +124,8 @@ pub fn balls_scene_camera(need_shutter_speed: bool) -> Camera {
         .look_from(Point3::new(13.0, 2.0, 3.0))
         .look_at(Point3::new(0.0, 0.0, 0.0))
         .fov(20.0)
-        .aperture(0.1)
+        // .aperture(0.1)
+        .aperture(0.02)
         .focus(10.0);
 
     if need_shutter_speed {

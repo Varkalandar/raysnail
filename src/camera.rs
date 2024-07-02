@@ -187,21 +187,23 @@ impl<'c> TakePhotoSettings<'c> {
                 // println!("dir = {:?}", scatter_direction);
 
                 let scattered = Ray::new(hit.point.clone(), scatter_direction, ray.departure_time);
-                let pdf_val = mixture.value(&scattered.direction);
-                let scattering_pdf_val = material.scattering_pdf(ray, &hit, &scattered);
 
-                let pdf_multiplicator = scattering_pdf_val / pdf_val;
-                
+                let mut pdf_multiplicator = 200.0;
+
+                // clean NaNs and extreme cases
+                while pdf_multiplicator > 199.0 || pdf_multiplicator != pdf_multiplicator {
+                    let pdf_val = mixture.value(&scattered.direction);
+                    let scattering_pdf_val = material.scattering_pdf(ray, &hit, &scattered);
+                    pdf_multiplicator = scattering_pdf_val / pdf_val;
+
+                    // println!("pdf_val={} scattering_pdf_val={} multi={}", pdf_val, scattering_pdf_val, pdf_multiplicator);
+                }
+
                 let sample_color = Self::ray_color(&scattered, world, depth-1);
-
-                if pdf_multiplicator == pdf_multiplicator && pdf_multiplicator <= 2.0 { 
-                    let color_from_scatter =
+                let color_from_scatter =
                         (srec.color * sample_color) * pdf_multiplicator;
                 
-                    return emitted + color_from_scatter;
-                }
-                
-                return emitted + srec.color * sample_color;
+                return emitted + color_from_scatter;
             }
             
             return emitted;
