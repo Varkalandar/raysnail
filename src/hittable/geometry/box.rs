@@ -8,14 +8,14 @@ use {
 };
 
 #[derive(Debug)]
-pub struct Carton<M> {
+pub struct Box<M> {
     point_min: Point3,
     point_max: Point3,
     material: Arc<M>,
     faces: HittableList,
 }
 
-impl<M: Material + 'static> Clone for Carton<M> {
+impl<M: Material + 'static> Clone for Box<M> {
     fn clone(&self) -> Self {
         Self::new_inner(
             self.point_min.clone(),
@@ -25,7 +25,7 @@ impl<M: Material + 'static> Clone for Carton<M> {
     }
 }
 
-impl<M: Material + 'static> Carton<M> {
+impl<M: Material + 'static> Box<M> {
     #[allow(clippy::needless_pass_by_value)] // for api consistency
     pub fn new(p0: Point3, p1: Point3, material: M) -> Self {
         let point_min = Point3::new_min(&p0, &p1);
@@ -102,7 +102,16 @@ impl<M: Material + 'static> Carton<M> {
     }
 }
 
-impl<M: Material> Hittable for Carton<M> {
+impl<M: Material> Hittable for Box<M> {
+
+    fn normal(&self, point: &Point3) -> crate::prelude::Vec3 {
+        Vec3::new(0.0, 1.0, 0.0)
+    }
+
+    fn material(&self) -> &dyn Material {
+        &self.material
+    }
+
     fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
         self.faces.hit(ray, unit_limit)
     }
@@ -112,7 +121,7 @@ impl<M: Material> Hittable for Carton<M> {
     }
 
     fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
-        0.0
+        0.5
     }
 
     fn random(&self, origin: &Point3) -> Vec3 {

@@ -5,7 +5,7 @@ use {
             collection::{HittableList, BVH},
             medium::ConstantMedium,
             transform::{AARotation, ByYAxis, Translation},
-            AARect, AARectMetrics, Carton, Sphere,
+            AARect, AARectMetrics, Box, Sphere,
         },
         material::{Dielectric, DiffuseLight, Glass, Lambertian, Metal},
         prelude::*,
@@ -13,6 +13,8 @@ use {
     },
     std::sync::Arc,
 };
+
+use remda::material::Material;
 
 fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, bounce_height: f64, need_speed: bool) {
     let small_ball_radius = 0.2;
@@ -60,6 +62,61 @@ fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, bounce_height
     }
 }
 
+fn add_small_boxes(world: &mut HittableList, rng: &mut SeedRandom, bounce_height: f64) {
+    let size = Vec3::new(0.2, 0.2, 0.2);
+    let mut avoid = Point3::new(0.0, 0.2, 0.0);
+    for a in -11..11 {
+        for b in -11..11 {
+            let center = Point3::new(
+                0.9_f64.mul_add(rng.normal(), f64::from(a)),
+                0.2 + rng.normal() * bounce_height,
+                0.9_f64.mul_add(rng.normal(), f64::from(b)),
+            );
+
+            avoid.x = center.x;
+
+            if !((0.0..0.9).contains(&center.x.abs()) || (3.1..4.9).contains(&center.x.abs()))
+                || (&center - &avoid).length() >= 0.9
+            {
+                let mat = rng.normal();
+                if mat < 0.8 {
+                    let color = Color::new(rng.normal(), rng.normal(), rng.normal());
+                    let material = Lambertian::new(color);
+                    world.add(
+                        AARotation::<ByYAxis, _>::new(
+                            Box::new(&center-&size, &center+&size,
+                                material),
+                            rng.normal() * 180.0)
+                        );
+                } else if mat < 0.95 {
+                    let color = Color::new(
+                        rng.range(0.5..1.0),
+                        rng.range(0.5..1.0),
+                        rng.range(0.5..1.0),
+                    );
+                    let fuzz = rng.range(0.0..0.5);
+                    let material = Metal::new(color).fuzz(fuzz);
+                    world.add(
+                        AARotation::<ByYAxis, _>::new(
+                            Box::new(&center-&size, &center+&size,
+                                material),
+                            rng.normal() * 180.0)
+                        );
+                } else {
+                    let material = Dielectric::new(Color::new(1.0, 1.0, 1.0), 1.5).reflect_curve(Glass {});
+                    world.add(
+                        AARotation::<ByYAxis, _>::new(
+                            Box::new(&center-&size, &center+&size,
+                                material),
+                            rng.normal() * 180.0)
+                        );
+                };
+            }
+        }
+    }
+}
+
+
 fn add_big_balls(world: &mut HittableList) {
     world.add(Sphere::new(
         Point3::new(0.0, 1.0, 0.0),
@@ -91,9 +148,8 @@ pub fn balls_scene(seed: Option<u64>, need_speed: bool, checker: bool) -> Hittab
             Point3::new(0.0, -1000.0, 0.0),
             1000.0,
             Lambertian::new(Checker::new(
-                Color::new(0.2, 0.3, 0.1),
-                // Color::new(0.9, 0.9, 0.9),
-                Color::new(0.2, 0.1, 0.0),
+                Color::new(0.3, 0.3, 0.3),
+                Color::new(0.1, 0.1, 0.1),
             )),
         ));
     } else {
@@ -112,7 +168,8 @@ pub fn balls_scene(seed: Option<u64>, need_speed: bool, checker: bool) -> Hittab
         SeedRandom::random()
     };
 
-    add_small_balls(&mut list, &mut rng, 0.9, need_speed);
+    // add_small_balls(&mut list, &mut rng, 0.9, need_speed);
+    add_small_boxes(&mut list, &mut rng, 0.9);
     add_big_balls(&mut list);
 
     list
@@ -185,7 +242,7 @@ pub fn cornell_box_scene(
         if carton_rotation {
             let box1 = Translation::new(
                 AARotation::<ByYAxis, _>::new(
-                    Carton::new(
+                    Box::new(
                         Point3::new(0.0, 0.0, 0.0),
                         Point3::new(165.0, 165.0, 165.0),
                         white.clone(),
@@ -196,7 +253,7 @@ pub fn cornell_box_scene(
             );
             let box2 = Translation::new(
                 AARotation::<ByYAxis, _>::new(
-                    Carton::new(
+                    Box::new(
                         Point3::new(0.0, 0.0, 0.0),
                         Point3::new(165.0, 330.0, 165.0),
                         white,
@@ -213,12 +270,12 @@ pub fn cornell_box_scene(
                 objects.add(box1).add(box2);
             }
         } else {
-            let box1 = Carton::new(
+            let box1 = Box::new(
                 Point3::new(130.0, 0.0, 65.0),
                 Point3::new(295.0, 165.0, 230.0),
                 white.clone(),
             );
-            let box2 = Carton::new(
+            let box2 = Box::new(
                 Point3::new(265.0, 0.0, 295.0),
                 Point3::new(430.0, 330.0, 460.0),
                 white,
@@ -259,7 +316,7 @@ pub fn all_feature_scene(seed: Option<u64>) -> (Camera, HittableList) {
             let x1 = x0 + w;
             let y1 = rng.range(1.0..100.0);
             let z1 = z0 + w;
-            boxes1.add(Carton::new(
+            boxes1.add(Box::new(
                 Point3::new(x0, y0, z0),
                 Point3::new(x1, y1, z1),
                 Arc::clone(&ground),

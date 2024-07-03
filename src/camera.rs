@@ -184,7 +184,7 @@ impl<'c> TakePhotoSettings<'c> {
 
                 let scatter_direction = mixture.generate();
 
-                // println!("dir = {:?}", scatter_direction);
+                // println!("hit normal={:?} scatter dir={:?}", hit.normal, scatter_direction);
 
                 let scattered = Ray::new(hit.point.clone(), scatter_direction, ray.departure_time);
 

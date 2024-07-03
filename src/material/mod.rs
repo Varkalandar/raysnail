@@ -47,7 +47,7 @@ pub trait Material: Send + Sync {
 
     fn scattering_pdf(&self, ray: &Ray, rec: &HitRecord<'_>, scattered: &Ray) -> f64 {
         0.0
-    }    
+    }
 }
 
 impl<M: Material> Material for Arc<M> {
@@ -57,6 +57,10 @@ impl<M: Material> Material for Arc<M> {
 
     fn emitted(&self, u: f64, v: f64, point: &Point3) -> Option<Vec3> {
         self.as_ref().emitted(u, v, point)
+    }
+
+    fn scattering_pdf(&self, ray: &Ray, hit: &HitRecord<'_>, scattered: &Ray) -> f64 {
+        self.as_ref().scattering_pdf(ray, hit, scattered)
     }
 }
 

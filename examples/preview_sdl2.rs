@@ -9,6 +9,13 @@ use sdl2::pixels::Color as SDLColor;
 use sdl2::video::Window;
 use sdl2::render::WindowCanvas;
 use sdl2::rect::Point;
+use sdl2::render::TextureAccess;
+use sdl2::pixels::PixelFormatEnum;
+use sdl2::render::Texture;
+use sdl2::rect::Rect;
+use sdl2::render::TextureCreator;
+use sdl2::surface::SurfaceContext;
+use sdl2::video::WindowContext;
 
 use std::time::Duration;
 
@@ -19,7 +26,9 @@ use remda::prelude::Vec3;
 use remda::painter::PainterTarget;
 use remda::painter::PainterCommand;
 use remda::material::DiffuseLight;
+use remda::material::Lambertian;
 use remda::hittable::Sphere;
+use remda::hittable::Box;
 use remda::hittable::collection::HittableList;
 
 use rayon::spawn;
@@ -29,30 +38,47 @@ use std::sync::mpsc::SyncSender;
 
 
 pub struct Renderer { 
-    canvas: WindowCanvas 
+    canvas: WindowCanvas, 
 }
 
 
 impl Renderer {
 
-    pub fn new(window: Window ) -> Result<Renderer, String> {
-        let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
+    pub fn new(window: Window, width: u32) -> Renderer {
+        let mut canvas = window.into_canvas().build().map_err(|e| e.to_string()).unwrap();
         canvas.set_draw_color(SDLColor::RGB(128, 128, 128));
         canvas.clear();
-        Ok(Renderer { canvas })
+
+        Renderer { 
+            canvas,
+        }
     }
 
-    pub fn setpix(&mut self, x: i32, y: i32, color:[u8; 4]) {
-        self.canvas.set_draw_color(SDLColor::RGB(color[0], color[1], color[2]));
-        let result = self.canvas.draw_point(Point::new(x, y));
+    pub fn flush_line(&mut self, _x: u32, y: u32, colors: &Vec<[u8; 4]>, line: &mut Texture) {
 
-        if result.is_err() {
-            println!("Error: {:?}", result.err().unwrap());
+        // self.canvas.set_draw_color(SDLColor::RGB(128, 128, 128));
+        // self.canvas.clear();
+
+        let width = colors.len() as u32;
+
+        let mut x = 0;
+
+        for color in colors {                 
+            let r = Rect::new(x, 0, 1, 1);
+            let c: [u8; 3] = [color[0], color[1], color[2]];
+            line.update(Some(r), &c, 3).unwrap();
+
+            x += 1;
         }
+
+        let s = Rect::new(0, 0, width, 1);
+        let d = Rect::new(0, y as i32, width, 1);    
+        self.canvas.copy(&line, Some(s), Some(d)).unwrap();
     }
 
     pub fn present(&mut self) {
         self.canvas.present();
+        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
     }
 }
 
@@ -70,6 +96,12 @@ impl PainterTarget for PixelQueue {
         for pixel in pixels {
             // let pix = [pixel.0, pixel.1, pixel.2, 255];
             let status = self.sender.send(*pixel);
+/*
+            if pixel[0] != 0xf1 {
+                println!("registered a bugged pixel: {:?}", pixel);
+                panic!();
+            } 
+*/            
 
             if status.is_err() {
                 // let error = status.err().unwrap();
@@ -112,8 +144,10 @@ fn boot_sdl(receiver: Receiver<[u8; 4]>, command_sender: SyncSender<PainterComma
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
+    let width = 1067;
+
     let window = video_subsystem
-        .window("rust-sdl2 demo: Video", 1067, 600)
+        .window("rust-sdl2 demo: Video", width, 600)
         .position_centered()
         .opengl()
         .build()
@@ -121,9 +155,21 @@ fn boot_sdl(receiver: Receiver<[u8; 4]>, command_sender: SyncSender<PainterComma
 
     // let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
 
-    let mut renderer = Renderer::new(window).unwrap();
+    let mut renderer = Renderer::new(window, width);
     let mut x = 0;
     let mut y = 0;
+    let mut pixels: Vec<[u8; 4]> = Vec::new();
+
+
+    let creator = 
+        renderer.canvas.texture_creator();
+    let mut line =
+        creator 
+        .create_texture(PixelFormatEnum::RGB24, TextureAccess::Static, width, 1).unwrap();
+        // .create_texture(None, TextureAccess::Static, width, 1).unwrap();
+
+    println!("Color mod={:?}", line.color_mod());
+    println!("query={:?}", line.query());
 
     let mut event_pump = sdl_context.event_pump().unwrap();
 
@@ -142,21 +188,21 @@ fn boot_sdl(receiver: Receiver<[u8; 4]>, command_sender: SyncSender<PainterComma
         let data = receiver.recv();
 
         if data.is_ok() {
-            renderer.setpix(x, y, data.unwrap());
+            pixels.push(data.unwrap());
             x += 1;
 
-            if x >= 1067 {
+            if x >= width {
+                renderer.flush_line(0, y, &pixels, &mut line);
                 x = 0;
                 y += 1;
                 renderer.present();
+                pixels.clear();
             }
         } 
         else {
             let error = data.err().unwrap();
             println!("Receiving window could not read pixels: {:?}", error.to_string());        
         }
-
-        // ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
     }
 
     let status = command_sender.send(PainterCommand::Quit);
@@ -170,17 +216,7 @@ fn render(target: &mut dyn PainterTarget) {
     // Change `7` to another number to generate different scene
     // Or use `None` to use random seed
     let (camera, mut world) = common::ray_tracing_in_one_weekend::final_scene(Some(7));
-
-
-    let rs = 
-        Sphere::new(Vec3::new(50.0, 200.0, 200.0), 
-            12.0, 
-            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(200.0)
-        );
-
-    world.add(rs);
-
-
+    // let mut world = HittableList::default();
     let mut lights = HittableList::default();
 
     let rs = 
@@ -189,15 +225,21 @@ fn render(target: &mut dyn PainterTarget) {
             DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(200.0)
         );
 
-    lights.add(rs);
+    lights.add(rs.clone());
+    world.add(rs);
 
+    /*
+    let color = Color::new(0.7, 1.0, 0.3);
+    let material = Lambertian::new(color);
+    world.add(Box::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 1.0, 1.0), material));
+    */
 
     fn background(ray: &Ray) -> Color {
         let unit = ray.direction.unit();
         let t = 0.5 * (unit.y + 1.0);
         Color::new(0.68, 0.80, 0.95).gradient(&Color::new(0.28, 0.45, 0.7), t)
  
-        // Color::new(0.0, 0.0, 0.0)
+        // Color::new(0.9, 0.9, 0.9)
     }
 
     camera

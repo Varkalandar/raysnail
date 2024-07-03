@@ -64,10 +64,37 @@ impl HittableList {
 
 impl Hittable for HittableList {
     fn hit(&self, r: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
-        self.objects
-            .iter()
-            .filter_map(|object| object.hit(r, unit_limit))
-            .min_by(|r1, r2| r1.unit.partial_cmp(&r2.unit).unwrap())
+
+        let mut best_hit = None;
+        let mut best_unit = 0.0;
+
+        for object in &self.objects {
+            let hit_opt = object.hit(r, unit_limit);
+
+            if hit_opt.is_some() {
+                let hit = hit_opt.unwrap();
+
+                if best_hit.is_none() {
+                    best_unit = hit.unit;
+                    best_hit = Some(hit);
+                }
+                else {
+                    if hit.unit < best_unit {
+                        best_unit = hit.unit;
+                        best_hit = Some(hit);
+                    }
+                }
+            }        
+        }
+
+        if best_hit.is_some() {
+            let best = best_hit.unwrap();
+            // println!("{}", best.material.name());
+
+            return Some(best)
+        }
+
+        None
     }
 
     fn bbox(&self, time_limit: Range<f64>) -> Option<AABB> {

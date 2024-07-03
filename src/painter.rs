@@ -284,7 +284,7 @@ impl Painter {
         let y = row as f64;
      
         let mut color_vec = Vec3::new(0.0, 0.0, 0.0);
-        let mut last_color = Vec3::new(0.0, 0.0, 0.0);
+        let mut last_color = Vec3::new(2.0, 2.0, 2.0);
         
         for s_j in 0 .. self.sqrt_spp {
             for s_i in 0 .. self.sqrt_spp {
@@ -366,6 +366,10 @@ impl Painter {
         context: &mut PainterOutputContext<'_>, pixels: Vec<[u8; 4]>,
     ) -> std::io::Result<()> {
 
+        for pixel in &pixels {
+            writeln!(context.file, "{} {} {}", pixel[0], pixel[1], pixel[2])?;
+        }
+
         if let Some(target) = &mut context.target {
             let command = target.register_pixels(&pixels);
 
@@ -374,9 +378,6 @@ impl Painter {
             }
         }
 
-        for pixel in pixels {
-            writeln!(context.file, "{} {} {}", pixel[0], pixel[1], pixel[2])?;
-        }
 
         context.file.flush()
     }

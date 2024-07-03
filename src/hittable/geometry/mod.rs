@@ -1,9 +1,9 @@
-pub(crate) mod carton;
+pub(crate) mod r#box;
 pub(crate) mod rect;
 pub(crate) mod sphere;
 
 pub use {
-    carton::Carton,
+    r#box::Box,
     rect::{AARect, AARectMetrics},
     sphere::Sphere,
 };

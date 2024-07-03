@@ -6,6 +6,6 @@ pub mod medium;
 pub mod transform;
 
 pub use {
-    geometry::{AARect, AARectMetrics, Carton, Sphere},
+    geometry::{AARect, AARectMetrics, Box, Sphere},
     hit::{HitRecord, Hittable},
 };
