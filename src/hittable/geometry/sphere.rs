@@ -138,12 +138,21 @@ impl<M: Material> Hittable for Sphere<M> {
             let cos_theta_max =
                 (1.0 - self.radius * self.radius / (self.center.clone() - origin).length_squared()).sqrt();
             let solid_angle = 2.0 * PI * (1.0 - cos_theta_max);
+
+            if solid_angle == 0.0 {
+                return f64::MAX;
+            }
+
             return 1.0 / solid_angle;
         }
         0.0
     }
 
 
+    /**
+     * This is only called if the object is a light source. It is used to generate
+     * an extra ray towards the light source.
+     */
     fn random(&self, origin: &Point3) -> Vec3 {
         /*
         let r = Vec3::random_unit() * (self.radius * 0.99);
