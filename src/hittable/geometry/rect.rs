@@ -124,14 +124,13 @@ impl<M: Material> Hittable for AARect<M> {
 
     fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
 
-        /*
         if let Some(hit) = self.hit(&Ray::new(origin.clone(), direction.clone(), 0.0), &(0.001..f64::INFINITY)) {
 
             let distance_squared = hit.unit * hit.unit * direction.length_squared();    
             let cosine = direction.dot(&hit.normal).abs() / direction.length();
             
             if cosine == 0.0 {
-                return f64::MAX;
+                return 1e10;
             }
 
             let area = self.metrics.a_len * self.metrics.b_len;
@@ -139,9 +138,6 @@ impl<M: Material> Hittable for AARect<M> {
         }
 
         0.0
-        */
-
-        0.5
     }
 
     fn random(&self, origin: &Point3) -> Vec3 {

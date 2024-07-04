@@ -56,17 +56,13 @@ impl Renderer {
 
     pub fn flush_line(&mut self, _x: u32, y: u32, colors: &Vec<[u8; 4]>, line: &mut Texture) {
 
-        // self.canvas.set_draw_color(SDLColor::RGB(128, 128, 128));
-        // self.canvas.clear();
-
         let width = colors.len() as u32;
-
         let mut x = 0;
 
         for color in colors {                 
             let r = Rect::new(x, 0, 1, 1);
-            let c: [u8; 3] = [color[0], color[1], color[2]];
-            line.update(Some(r), &c, 3).unwrap();
+            // let c: [u8; 3] = [color[0], color[1], color[2]];
+            line.update(Some(r), color, 3).unwrap();
 
             x += 1;
         }
@@ -96,12 +92,6 @@ impl PainterTarget for PixelQueue {
         for pixel in pixels {
             // let pix = [pixel.0, pixel.1, pixel.2, 255];
             let status = self.sender.send(*pixel);
-/*
-            if pixel[0] != 0xf1 {
-                println!("registered a bugged pixel: {:?}", pixel);
-                panic!();
-            } 
-*/            
 
             if status.is_err() {
                 // let error = status.err().unwrap();

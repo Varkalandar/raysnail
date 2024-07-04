@@ -284,7 +284,7 @@ impl Painter {
         let y = row as f64;
      
         let mut color_vec = Vec3::new(0.0, 0.0, 0.0);
-        let mut last_color = Vec3::new(2.0, 2.0, 2.0);
+        let mut last_color = Vec3::new(0.5, 0.5, 0.5);
         
         for s_j in 0 .. self.sqrt_spp {
             for s_i in 0 .. self.sqrt_spp {

@@ -140,7 +140,7 @@ impl<M: Material> Hittable for Sphere<M> {
             let solid_angle = 2.0 * PI * (1.0 - cos_theta_max);
 
             if solid_angle == 0.0 {
-                return f64::MAX;
+                return 1e10;
             }
 
             return 1.0 / solid_angle;

@@ -15,6 +15,7 @@ use {
 };
 
 use remda::material::Material;
+use remda::hittable::transform::ByXAxis;
 
 fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, bounce_height: f64, need_speed: bool) {
     let small_ball_radius = 0.2;
@@ -62,14 +63,32 @@ fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, bounce_height
     }
 }
 
+fn add_box<M: Material + 'static>(world: &mut HittableList, material: M, center: &Vec3, bounce_height: f64, rng: &mut SeedRandom) {
+    // let size = Vec3::random_range(0.1 .. 0.16);
+    let size = Vec3::new(0.12, 0.12, 0.12);
+
+    let height = 0.2 + rng.normal() * bounce_height;
+
+    let o = 
+        AARotation::<ByXAxis, _>::new(Box::new(-size.clone(), size, material),
+                                      rng.normal() * 180.0);
+
+    let o = 
+        AARotation::<ByYAxis, _>::new(o, rng.normal() * 180.0);
+
+    let o = 
+        Translation::new(o, Vec3::new(center.x, height, center.z));
+
+    world.add(o);
+}
+
 fn add_small_boxes(world: &mut HittableList, rng: &mut SeedRandom, bounce_height: f64) {
-    let size = Vec3::new(0.2, 0.2, 0.2);
-    let mut avoid = Point3::new(0.0, 0.2, 0.0);
+    let mut avoid = Vec3::new(0.0, 0.2, 0.0);
     for a in -11..11 {
         for b in -11..11 {
-            let center = Point3::new(
+            let center = Vec3::new(
                 0.9_f64.mul_add(rng.normal(), f64::from(a)),
-                0.2 + rng.normal() * bounce_height,
+                0.0,
                 0.9_f64.mul_add(rng.normal(), f64::from(b)),
             );
 
@@ -82,12 +101,7 @@ fn add_small_boxes(world: &mut HittableList, rng: &mut SeedRandom, bounce_height
                 if mat < 0.8 {
                     let color = Color::new(rng.normal(), rng.normal(), rng.normal());
                     let material = Lambertian::new(color);
-                    world.add(
-                        AARotation::<ByYAxis, _>::new(
-                            Box::new(&center-&size, &center+&size,
-                                material),
-                            rng.normal() * 180.0)
-                        );
+                    add_box(world, material, &center, bounce_height, rng);
                 } else if mat < 0.95 {
                     let color = Color::new(
                         rng.range(0.5..1.0),
@@ -96,20 +110,10 @@ fn add_small_boxes(world: &mut HittableList, rng: &mut SeedRandom, bounce_height
                     );
                     let fuzz = rng.range(0.0..0.5);
                     let material = Metal::new(color).fuzz(fuzz);
-                    world.add(
-                        AARotation::<ByYAxis, _>::new(
-                            Box::new(&center-&size, &center+&size,
-                                material),
-                            rng.normal() * 180.0)
-                        );
+                    add_box(world, material, &center, bounce_height, rng);
                 } else {
                     let material = Dielectric::new(Color::new(1.0, 1.0, 1.0), 1.5).reflect_curve(Glass {});
-                    world.add(
-                        AARotation::<ByYAxis, _>::new(
-                            Box::new(&center-&size, &center+&size,
-                                material),
-                            rng.normal() * 180.0)
-                        );
+                    add_box(world, material, &center, bounce_height, rng);
                 };
             }
         }
