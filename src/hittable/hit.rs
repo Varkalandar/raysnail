@@ -26,13 +26,15 @@ impl Debug for HitRecord<'_> {
 }
 
 impl<'m> HitRecord<'m> {
-    pub fn new<G: Hittable>(r: &Ray, object: &'m G, unit: f64) -> Self {
-        let point = r.position_after(unit);
-        let mut normal = object.normal(&point);
-        let outside = r.direction.dot(&normal) < 0.0;
+    pub fn new<G: Hittable>(ray: &Ray, object: &'m G, unit: f64) -> Self {
+        let point = ray.position_after(unit);
+
+        let mut normal = object.normal(ray, &point);
+        let outside = ray.direction.dot(&normal) < 0.0;
         if !outside {
             normal.reverse();
         }
+
         let material = object.material();
         let (u, v) = object.uv(&point);
         Self {
@@ -49,7 +51,7 @@ impl<'m> HitRecord<'m> {
 
 #[allow(unused_variables)]
 pub trait Hittable: Send + Sync {
-    fn normal(&self, point: &Point3) -> Vec3 {
+    fn normal(&self, _ray: &Ray, _point: &Point3) -> Vec3 {
         unimplemented!(
             "{}'s normal function should not be called directly",
             std::any::type_name::<Self>()

@@ -44,6 +44,52 @@ impl PDF for CosinePdf {
     }
 }
 
+/*
+struct BlinnPhong {
+    uvw: ONB,
+}
+
+impl BlinnPhong {
+    pub fn new(n: &Vec3) -> Self { 
+        CosinePdf {
+            uvw: ONB::build_from(n),
+        } 
+    }
+}
+
+impl PDF for BlinnPhong {
+    fn value(&self, direction: &Vec3) -> f64 {
+        let random_normal =
+            ((pdf.r_in_direction * (-1.0)).unit() + direction.unit()).unit();
+            let cosine = direction.unit().dot(self.onb_normal.w);
+        
+            let cosine_specular = fmax(random_normal.dot(self.onb_normal.w), 0.0);
+
+        let normal_pdf =
+            (pdf.exponent + 1.0) / (2.0 * PI) * cosine_specular.powf(pdf.exponent);
+
+        (cosine / PI).max(0.0)*(1.0-pdf.k_specular) + normal_pdf / (4.0 * Vector3::dot(pdf.r_in_direction.norm() * (-1.0), random_normal))*pdf.k_specular
+    }
+
+
+    fn generate(&self) -> Vec3 {
+        /*
+        loop {
+            let direction = pdf
+                .onb_reflected
+                .local(Vector3::random_cosine_direction_exponent(pdf.exponent, rng));
+            if Vector3::dot(direction, pdf.onb_normal.w) < 0.0 {
+                continue;
+            }
+            return direction;
+        }} else{
+            pdf.onb_normal.local(Vector3::random_cosine_direction(rng))
+        }
+        */
+        self.uvw.local(Vector3::random_cosine_direction(rng))
+    }
+}
+*/
 
 #[derive(Debug)]
 pub struct SpherePdf {

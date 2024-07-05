@@ -104,7 +104,7 @@ impl<M: Material + 'static> Box<M> {
 
 impl<M: Material> Hittable for Box<M> {
 
-    fn normal(&self, point: &Point3) -> crate::prelude::Vec3 {
+    fn normal(&self, _ray: &Ray, point: &Point3) -> crate::prelude::Vec3 {
         Vec3::new(0.0, 1.0, 0.0)
     }
 

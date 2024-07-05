@@ -4,8 +4,6 @@ use crate::{
     texture::Texture,
 };
 
-use crate::material::HitRecord;
-
 #[derive(Debug, Clone)]
 pub struct DiffuseLight<T> {
     texture: T,

@@ -176,7 +176,13 @@ impl<'c> TakePhotoSettings<'c> {
 
                 if srec.skip_pdf {
                     // If the material skips the pdf it must provide a ray in the record
-                    return srec.color * Self::ray_color(&srec.ray.unwrap(), world, depth-1);
+                    if srec.ray.is_some() {
+                        return emitted + srec.color * Self::ray_color(&srec.ray.unwrap(), world, depth-1);
+                    }
+                    else {
+                        // dead end material, doesn't scatter light
+                        return emitted + srec.color * Vec3::new(1.0, 1.0, 1.0);
+                    }
                 }
 
                 let light_pdf = HittablePdf::new(&world.lights, &hit.point);

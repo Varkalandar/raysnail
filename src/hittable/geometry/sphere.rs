@@ -50,7 +50,7 @@ impl<M> Sphere<M> {
 }
 
 impl<M: Material> Hittable for Sphere<M> {
-    fn normal(&self, point: &Point3) -> crate::prelude::Vec3 {
+    fn normal(&self, _ray: &Ray, point: &Point3) -> crate::prelude::Vec3 {
         (point - &self.center) / self.radius
     }
 
