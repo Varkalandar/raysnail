@@ -129,6 +129,21 @@ impl Vec3 {
     }
     
 
+    #[inline(always)]
+    pub fn random_cosine_direction_exponent(exponent: f64) -> Self {
+        let r1 = Random::gen();
+        let r2 = Random::gen().powf(1.0 / (exponent + 1.0));
+        let sin_theta = (1.0 - r2 * r2).sqrt();
+
+        let phi = 2.0 * PI * r1;
+        let x = phi.cos() * sin_theta;
+        let y = phi.sin() * sin_theta;
+        let z = r2;
+
+        Vec3::new(x, y, z)
+    }
+
+
     #[must_use]
     pub fn random_unit_dir(dir: &Self) -> Self {
         let u = Self::random_unit();
@@ -168,6 +183,11 @@ impl Vec3 {
         self.x = -self.x;
         self.y = -self.y;
         self.z = -self.z;
+    }
+
+    #[inline(always)]
+    pub fn reflect(&self, n: &Self) -> Self {
+        self - (n * (2.0 * self.dot(n)))
     }
 
     #[must_use]

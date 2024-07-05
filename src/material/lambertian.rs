@@ -22,7 +22,7 @@ impl<T: Texture> Lambertian<T> {
 
 impl<T: Texture> Material for Lambertian<T> {
 
-    fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
+    fn scatter(&self, _ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
 
         let color = self.texture.color(hit.u, hit.v, &hit.point);
 
@@ -34,7 +34,7 @@ impl<T: Texture> Material for Lambertian<T> {
         })
     }
     
-    fn scattering_pdf(&self, ray: &Ray, rec: &HitRecord<'_>, scattered: &Ray) -> f64 {
+    fn scattering_pdf(&self, _ray: &Ray, rec: &HitRecord<'_>, scattered: &Ray) -> f64 {
         let cos_theta = rec.normal.dot(&scattered.direction.unit());        
         
         // println!("cos_theta={}",cos_theta);

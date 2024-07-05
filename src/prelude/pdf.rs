@@ -44,52 +44,65 @@ impl PDF for CosinePdf {
     }
 }
 
-/*
-struct BlinnPhong {
-    uvw: ONB,
+#[derive(Debug)]
+pub struct BlinnPhongPdf {
+    r_in_direction: Vec3,
+    onb_normal: ONB,
+    onb_reflected: ONB,
+    k_specular: f64,
+    exponent: f64,
 }
 
-impl BlinnPhong {
-    pub fn new(n: &Vec3) -> Self { 
-        CosinePdf {
-            uvw: ONB::build_from(n),
-        } 
+impl BlinnPhongPdf {
+    pub fn new(r_in_direction: Vec3, normal: Vec3, k_specular:f64, exponent: f64) -> Self {
+        let reflected = r_in_direction.unit().reflect(&normal.unit());
+        let onb_reflected = ONB::build_from(&reflected);
+        let onb_normal = ONB::build_from(&normal);
+        Self {
+            r_in_direction,
+            onb_normal,
+            onb_reflected,
+            k_specular,
+            exponent,
+        }
     }
 }
 
-impl PDF for BlinnPhong {
+impl PDF for BlinnPhongPdf {
+
     fn value(&self, direction: &Vec3) -> f64 {
         let random_normal =
-            ((pdf.r_in_direction * (-1.0)).unit() + direction.unit()).unit();
-            let cosine = direction.unit().dot(self.onb_normal.w);
+            (-&self.r_in_direction.unit() + direction.unit()).unit();
         
-            let cosine_specular = fmax(random_normal.dot(self.onb_normal.w), 0.0);
+        let cosine = direction.unit().dot(&self.onb_normal.axis[2]);
+        
+        let cosine_specular = random_normal.dot(&self.onb_normal.axis[2]).max(0.0);
 
         let normal_pdf =
-            (pdf.exponent + 1.0) / (2.0 * PI) * cosine_specular.powf(pdf.exponent);
+            (self.exponent + 1.0) / (2.0 * PI) * cosine_specular.powf(self.exponent);
 
-        (cosine / PI).max(0.0)*(1.0-pdf.k_specular) + normal_pdf / (4.0 * Vector3::dot(pdf.r_in_direction.norm() * (-1.0), random_normal))*pdf.k_specular
+        (cosine / PI).max(0.0)*(1.0 - self.k_specular) + normal_pdf 
+            / (4.0 * (self.r_in_direction.unit() * -1.0).dot(&random_normal)) * self.k_specular
     }
 
 
     fn generate(&self) -> Vec3 {
-        /*
-        loop {
-            let direction = pdf
-                .onb_reflected
-                .local(Vector3::random_cosine_direction_exponent(pdf.exponent, rng));
-            if Vector3::dot(direction, pdf.onb_normal.w) < 0.0 {
-                continue;
+        if Random::gen() < self.k_specular {
+            for _i in 0 .. 100 {
+                
+                let direction =
+                    self
+                    .onb_reflected
+                    .local(&Vec3::random_cosine_direction_exponent(self.exponent));
+                if direction.dot(&self.onb_normal.axis[2]) > 0.0 {
+                    return direction;
+                }
             }
-            return direction;
-        }} else{
-            pdf.onb_normal.local(Vector3::random_cosine_direction(rng))
         }
-        */
-        self.uvw.local(Vector3::random_cosine_direction(rng))
+        self.onb_normal.local(&Vec3::random_cosine_direction())
     }
 }
-*/
+
 
 #[derive(Debug)]
 pub struct SpherePdf {
@@ -104,7 +117,7 @@ impl SpherePdf {
 
 impl PDF for SpherePdf {
 
-    fn value(&self, direction: &Vec3) -> f64 {
+    fn value(&self, _direction: &Vec3) -> f64 {
         1.0 / (4.0 * PI)
     }
   

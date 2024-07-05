@@ -11,6 +11,7 @@ pub(crate) mod isotropic;
 pub(crate) mod lambertian;
 pub(crate) mod light;
 pub(crate) mod metal;
+pub(crate) mod blinn_phong;
 
 pub use {
     dielectric::{Dielectric, Glass},
@@ -18,6 +19,7 @@ pub use {
     lambertian::Lambertian,
     light::DiffuseLight,
     metal::Metal,
+    blinn_phong::BlinnPhong,
 };
 
 
@@ -36,16 +38,16 @@ impl Debug for ScatterRecord {
 }
 
 pub trait Material: Send + Sync {
-    fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
+
+    fn scatter(&self, _ray: &Ray, _hit: &HitRecord<'_>) -> Option<ScatterRecord> {
         None
     }
 
-    #[allow(unused_variables)]
-    fn emitted(&self, u: f64, v: f64, point: &Point3) -> Option<Vec3> {
+    fn emitted(&self, _u: f64, _v: f64, _point: &Point3) -> Option<Vec3> {
         None
     }
 
-    fn scattering_pdf(&self, ray: &Ray, rec: &HitRecord<'_>, scattered: &Ray) -> f64 {
+    fn scattering_pdf(&self, _ray: &Ray, _hit: &HitRecord<'_>, _scattered: &Ray) -> f64 {
         0.0
     }
 }

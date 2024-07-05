@@ -6,7 +6,6 @@ use crate::prelude::Point3;
 use crate::prelude::Color;
 use crate::prelude::AABB;
 use crate::prelude::Ray;
-use crate::prelude::ONB;
 use crate::hittable::HitRecord;
 use crate::hittable::Hittable;
 use crate::hittable::Sphere;
@@ -67,10 +66,8 @@ impl<M> RayMarcher<M> {
 }
 
 
-
-
 impl<M: Material> Hittable for RayMarcher<M> {
-    fn normal(&self, ray: &Ray, pos: &Point3) -> crate::prelude::Vec3 {
+    fn normal(&self, pos: &Point3) -> crate::prelude::Vec3 {
      
         let d = 0.01;
         let xdir = Vec3::new(d, 0.0, 0.0);
@@ -114,7 +111,7 @@ impl<M: Material> Hittable for RayMarcher<M> {
         let mut est_distance = 0.0;
         let limit = 1000;
 
-        while steps < limit && est_distance < best_distance + 10.0 {
+        while steps < limit && est_distance < best_distance + 1.0 {
             
             steps += 1;
 
@@ -141,7 +138,7 @@ impl<M: Material> Hittable for RayMarcher<M> {
             }
 
             // forward 
-            current += &direction * est_distance * 0.01;
+            current += &direction * est_distance * 0.05;
         }
 
         // println!("Marcher quit after {} steps", limit);
@@ -192,37 +189,6 @@ impl<M: Material> Hittable for RayMarcher<M> {
     fn random(&self, _origin: &Point3) -> Vec3 {
         Vec3::random_unit()
     }
-}
-
-
-
-
-
-pub fn is_inside_bugged(p: &Vec3, iterations: i32) -> bool {
-
-    let n: f64 = 8.0;
-    let mut v = p.clone();
-    let mut i = 0;
-    let mut last_len = 1.0;
-    let lower_threshhold = 0.00001;
-
-    while i < iterations && last_len < 1e8 && last_len >= lower_threshhold {
-        
-        let r: f64 = v.length();
-        let phi: f64 = v.y.atan2(v.x);
-        let theta: f64 = (v.x * v.x + v.y * v.y).sqrt().atan2(v.z);     /* (z/r).acos() */
-
-        v = Vec3::new((n*theta).sin() * (n*phi).cos(),
-                      (n*theta).sin() * (n*phi).sin(),
-                      (n*theta).cos()) * r.powf(n); 
-
-        last_len = v.length_squared();
-        i += 1;    
-    }
-
-    // println!("Last value: {:?}", v);
-
-    last_len < lower_threshhold
 }
 
 

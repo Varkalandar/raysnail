@@ -104,7 +104,7 @@ impl<M: Material + 'static> Box<M> {
 
 impl<M: Material> Hittable for Box<M> {
 
-    fn normal(&self, _ray: &Ray, point: &Point3) -> crate::prelude::Vec3 {
+    fn normal(&self, _point: &Point3) -> crate::prelude::Vec3 {
         Vec3::new(0.0, 1.0, 0.0)
     }
 
@@ -120,11 +120,11 @@ impl<M: Material> Hittable for Box<M> {
         self.faces.bbox(time_limit)
     }
 
-    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
+    fn pdf_value(&self, _origin: &Point3, _direction: &Vec3) -> f64 {
         0.5
     }
 
-    fn random(&self, origin: &Point3) -> Vec3 {
+    fn random(&self, _origin: &Point3) -> Vec3 {
         Vec3::new(1.0, 0.0, 0.0)
     }
 }

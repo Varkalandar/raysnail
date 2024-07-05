@@ -27,12 +27,12 @@ use remda::camera::CameraBuilder;
 
 use remda::painter::PainterTarget;
 use remda::painter::PainterCommand;
-use remda::material::DiffuseLight;
-use remda::material::Lambertian;
+use remda::material::*;
 use remda::hittable::Sphere;
 use remda::hittable::Box;
 use remda::hittable::geometry::RayMarcher;
 use remda::hittable::collection::HittableList;
+use remda::texture::Checker;
 
 use rayon::spawn;
 use std::sync::mpsc::sync_channel;
@@ -214,7 +214,7 @@ fn render(target: &mut dyn PainterTarget) {
         .look_from(Point3::new(13.0, 2.0, 3.0) * 0.5)
         .look_at(Point3::new(0.0, 0.0, 0.0))
         .fov(15.0)
-        .aperture(0.02)
+        .aperture(0.01)
         .focus(10.0);
 
     let camera = builder.build();    
@@ -231,26 +231,44 @@ fn render(target: &mut dyn PainterTarget) {
     lights.add(rs.clone());
     world.add(rs);
 
-    
-    let color = Color::new(0.6, 0.7, 0.2);
+
+    world.add(Sphere::new(
+        Point3::new(0.0, 0.0, 0.0),
+        1.0,
+        BlinnPhong::new(0.5, 4.0, Color::new(0.99, 0.69, 0.2)),
+    ));
+   
+/*
+    let color = Color::new(0.99, 0.69, 0.2);
     let material = Lambertian::new(color);
     world.add(RayMarcher::new(material));
-    
+*/    
+
+    world.add(Sphere::new(
+        Point3::new(0.0, -1001.0, 0.0),
+        1000.0,
+        Lambertian::new(Checker::new(
+            Color::new(0.3, 0.3, 0.3),
+            Color::new(0.1, 0.1, 0.1),
+        ))
+    ));
+
 
     fn background(ray: &Ray) -> Color {
         let unit = ray.direction.unit();
         let t = 0.5 * (unit.y + 1.0);
-        Color::new(0.68, 0.80, 0.95).gradient(&Color::new(0.2, 0.4, 0.7), t)
+        // Color::new(0.68, 0.80, 0.95).gradient(&Color::new(0.2, 0.4, 0.7), t)
  
         // Color::new(0.9, 0.9, 0.9)
+        Color::new(0.1, 0.12, 0.3)
     }
 
     camera
         .take_photo_with_lights(world, lights)
         .background(background)
         .height(600)
-        .samples(26)
-        // .samples(257)
+        .samples(10)
+        //.samples(257)
         .depth(8)
         .shot_to_target(Some("rtow_13_1.ppm"), target)
         .unwrap();
