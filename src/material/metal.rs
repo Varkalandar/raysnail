@@ -5,36 +5,79 @@ use crate::{
     texture::Texture,
 };
 
+
+fn reflect(ray: &Ray, hit: &HitRecord<'_>) -> Ray {
+    let dir = ray.direction.unit();
+    let mut reflected_dir = &dir - 2.0 * dir.dot(&hit.normal) * &hit.normal;
+    Ray::new(hit.point.clone(), reflected_dir, ray.departure_time)
+}
+
+
+#[derive(Debug)]
+pub struct DiffuseMetal<T: Texture> {
+    texture: T,
+    exponent: f64, 
+}
+
+impl<T: Texture> DiffuseMetal<T> {
+    
+    /**
+     * Smaller exponent values are more diffuse. Can go up to several hundred
+     */
+    #[must_use]
+    pub fn new(exponent: f64, texture: T) -> Self {
+        Self {
+            exponent,
+            texture
+        }
+    }
+}
+
+
+impl<T: Texture> Material for DiffuseMetal<T> {
+    fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
+        let color = self.texture.color(hit.u, hit.v, &hit.point);
+        let reflected = reflect(ray, &hit);
+        
+        if reflected.direction.dot(&hit.normal) > 0.0 {
+            Some(ScatterRecord {
+                color,
+                ray: Some(reflected),
+                pdf: Box::new(ReflectionPdf::new(ray.direction.clone(), hit.normal.clone(), self.exponent)),
+                skip_pdf: false,            
+            })
+        } else {
+            None
+        }
+    }
+
+    fn scattering_pdf(&self, _ray: &Ray, rec: &HitRecord<'_>, scattered: &Ray) -> f64 {
+        let cos_theta = rec.normal.dot(&scattered.direction.unit());
+
+        // println!("cos_theta={}",cos_theta);
+
+        if cos_theta <= 0.0 {0.0} else {cos_theta / PI}
+    }        
+}
+
+
 #[derive(Debug)]
 pub struct Metal<T: Texture> {
     texture: T,
-    fuzz: f64,
 }
 
 impl<T: Texture> Metal<T> {
     #[must_use]
     pub fn new(texture: T) -> Self {
-        Self { texture, fuzz: 0.0 }
+        Self { texture }
     }
 
-    #[must_use]
-    pub fn fuzz(mut self, fuzz: f64) -> Self {
-        self.fuzz = clamp(fuzz.abs(), 0.0..=1.0);
-        self
-    }
-
-    fn reflect(&self, ray: &Ray, hit: &HitRecord<'_>) -> Ray {
-        let dir = ray.direction.unit();
-        let mut reflected_dir = &dir - 2.0 * dir.dot(&hit.normal) * &hit.normal;
-        reflected_dir += self.fuzz * Vec3::random_in_unit_sphere();
-        Ray::new(hit.point.clone(), reflected_dir, ray.departure_time)
-    }
 }
 
 impl<T: Texture> Material for Metal<T> {
     fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
         let color = self.texture.color(hit.u, hit.v, &hit.point);
-        let reflected = self.reflect(ray, &hit);
+        let reflected = reflect(ray, &hit);
         
         if reflected.direction.dot(&hit.normal) > 0.0 {
             Some(ScatterRecord {

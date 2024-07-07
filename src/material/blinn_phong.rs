@@ -46,7 +46,7 @@ impl<T: Texture> Material for BlinnPhong<T> {
         let cos_theta = half.dot(&hit.normal).max(0.0);
         let specular = cos_theta.powf(self.exponent);
 
-        ((((1.0 - self.k_specular) * cos_theta).max(0.0) / PI  
-            + (self.k_specular * specular).max(0.0)) / PI) * PI
+        ((((1.0 - self.k_specular) * cos_theta).max(0.0)  
+            + (self.k_specular * specular).max(0.0))) * 0.30
     }
 }

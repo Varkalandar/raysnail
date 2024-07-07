@@ -44,6 +44,59 @@ impl PDF for CosinePdf {
     }
 }
 
+
+#[derive(Debug)]
+pub struct ReflectionPdf {
+    onb_normal: ONB,
+    onb_reflected: ONB,
+    exponent: f64,
+}
+
+impl ReflectionPdf {
+    
+    pub fn new(r_in_direction: Vec3, normal: Vec3, exponent: f64) -> Self {
+        let reflected = r_in_direction.unit().reflect(&normal.unit());
+        let onb_reflected = ONB::build_from(&reflected);
+        let onb_normal = ONB::build_from(&normal);
+
+        Self {
+            onb_normal,
+            onb_reflected,
+            exponent,
+        }
+    }
+}
+
+
+impl PDF for ReflectionPdf {
+
+    fn value(&self, direction: &Vec3) -> f64 {
+        let cosine_theta = direction.unit().dot(&self.onb_reflected.axis[2]);
+        let v = cosine_theta / PI;
+
+        if v < 0.0 { 0.0 } else { v }
+    }
+  
+    fn generate(&self) -> Vec3 {
+
+        /*
+        self.onb_reflected.axis[2].clone()
+        */
+        
+        loop {
+            let direction =
+            self
+            .onb_reflected
+            .local(&Vec3::random_cosine_direction_exponent(self.exponent));
+
+            if direction.dot(&self.onb_normal.axis[2]) > 0.0 {
+                return direction;
+            }
+        }
+    }
+}
+
+
 #[derive(Debug)]
 pub struct BlinnPhongPdf {
     r_in_direction: Vec3,
@@ -85,10 +138,18 @@ impl PDF for BlinnPhongPdf {
             / (4.0 * (self.r_in_direction.unit() * -1.0).dot(&random_normal)) * self.k_specular
     }
 
+/*
+    fn value(&self, direction: &Vec3) -> f64 {
+        let cosine_theta = direction.unit().dot(&self.onb_normal.axis[2]);
+        let v = cosine_theta / PI;
+
+        if v < 0.0 { 0.0 } else { v }
+    }
+*/
 
     fn generate(&self) -> Vec3 {
         if Random::gen() < self.k_specular {
-            for _i in 0 .. 100 {
+            loop {
                 
                 let direction =
                     self

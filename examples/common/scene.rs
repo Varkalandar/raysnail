@@ -48,8 +48,9 @@ fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, bounce_height
                         rng.range(0.5..1.0),
                         rng.range(0.5..1.0),
                     );
-                    let fuzz = rng.range(0.0..0.5);
-                    let material = Metal::new(color).fuzz(fuzz);
+                    // let fuzz = rng.range(0.0..0.5);
+                    // let material = Metal::new(color).fuzz(fuzz);
+                    let material = Metal::new(color);
                     world.add(Sphere::new(center, small_ball_radius, material));
                 } else {
                     world.add(Sphere::new(
@@ -108,8 +109,9 @@ fn add_small_boxes(world: &mut HittableList, rng: &mut SeedRandom, bounce_height
                         rng.range(0.5..1.0),
                         rng.range(0.5..1.0),
                     );
-                    let fuzz = rng.range(0.0..0.5);
-                    let material = Metal::new(color).fuzz(fuzz);
+                    // let fuzz = rng.range(0.0..0.5);
+                    // let material = Metal::new(color).fuzz(fuzz);
+                    let material = Metal::new(color);
                     add_box(world, material, &center, bounce_height, rng);
                 } else {
                     let material = Dielectric::new(Color::new(1.0, 1.0, 1.0), 1.5).reflect_curve(Glass {});
@@ -355,7 +357,7 @@ pub fn all_feature_scene(seed: Option<u64>) -> (Camera, HittableList) {
     let metal_sphere = Sphere::new(
         Point3::new(0.0, 150.0, 145.0),
         50.0,
-        Metal::new(Color::new(0.8, 0.8, 0.9)).fuzz(1.0),
+        Metal::new(Color::new(0.8, 0.8, 0.9)), // .fuzz(1.0),
     );
     objects.add(metal_sphere);
 

@@ -18,7 +18,7 @@ pub use {
     isotropic::Isotropic,
     lambertian::Lambertian,
     light::DiffuseLight,
-    metal::Metal,
+    metal::{Metal, DiffuseMetal},
     blinn_phong::BlinnPhong,
 };
 

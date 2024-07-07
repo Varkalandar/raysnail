@@ -142,29 +142,10 @@ impl<M: Material> Hittable for RayMarcher<M> {
         }
 
         // println!("Marcher quit after {} steps", limit);
-
-/*
-        let hit_opt = self.sphere.hit(ray, unit_limit);
-
-        if hit_opt.is_some() {
-            let hit = hit_opt.unwrap();
-
-            let surface_opt = self.search_surface(&hit.point, &direction);
-
-            if surface_opt.is_some() {
-                let p = surface_opt.unwrap();
-                let length = (&p - &ray.origin).length();
-
-                println!("diff =  {:?}", 
-                    (&ray.origin + (&ray.direction * (length/ray_direction_length))) - &p );
-
-                return Some(HitRecord::new(ray, self, length / ray_direction_length));
-            }
-        }
-*/
         None
     }
 
+    
     fn bbox(&self, _time_limit: Range<f64>) -> Option<AABB> {
         let center = Vec3::new(0.0, 0.0, 0.0);
         let radius = 1.3;
@@ -177,8 +158,29 @@ impl<M: Material> Hittable for RayMarcher<M> {
     }
 
 
-    fn pdf_value(&self, _origin: &Point3, _direction: &Vec3) -> f64 {
-        0.5
+    /**
+     * This is only called if the object is a light source. It is used to check the probability of a
+     * particular direction to be scattered from this object.
+     */
+     fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
+
+        // this is for a sphere actually, maybe it's good enough as approximation?
+        let radius = 1.2;
+
+        if let Some(_hit) = self.hit(&Ray::new(origin.clone(), direction.clone(), 0.0), &(0.001..f64::INFINITY)) {
+    
+            let cos_theta_max =
+                (1.0 - radius * radius / (-origin).length_squared()).sqrt();
+            let solid_angle = 2.0 * PI * (1.0 - cos_theta_max);
+
+            if solid_angle == 0.0 {
+                return 1e10;
+            }
+
+            return 1.0 / solid_angle;
+        }
+
+        0.0
     }
 
 
