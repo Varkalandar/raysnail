@@ -217,6 +217,68 @@ impl<'c> TakePhotoSettings<'c> {
         world.background(ray).into()
     }
 
+/*
+    fn ray_color(ray: &Ray, world: &World, depth: usize) -> Vec3 {
+        
+        // If we've exceeded the ray bounce limit, no more light is gathered.
+        if depth == 0 {
+            return Vec3::default();
+        }
+
+        if let Some(hit) = world.hit(ray, &(0.001..f64::INFINITY)) {
+            let material = hit.material;
+            let mut emitted = material
+                .emitted(hit.u, hit.v, &hit.point)
+                .unwrap_or_default();
+
+            if let Some(srec) = material.scatter(ray, &hit) {
+
+                // let light = &world.lights.into_objects()[0];
+                let r = world.lights.random(&hit.point);
+
+                let mut sunlight = Vec3::default();
+
+                if let Some(sunhit) = world.hit(&Ray::new(hit.point.clone(), r.clone(), 0.0), &(0.001..f64::INFINITY)) {
+                    let m = sunhit.material;
+
+                    sunlight = m.emitted(hit.u, hit.v, &hit.point).unwrap_or_default();
+
+                    let amount = hit.normal.dot(&r.unit()).max(0.0) * 0.004;
+                    
+                    sunlight *= amount;
+                }
+
+                emitted = (emitted + sunlight) * 0.5;
+
+
+                if srec.skip_pdf {
+                    // If the material skips the pdf it must provide a ray in the record
+                    if srec.ray.is_some() {
+                        return emitted + srec.color * Self::ray_color(&srec.ray.unwrap(), world, depth-1);
+                    }
+                    else {
+                        // dead end material, doesn't scatter light
+                        return emitted + srec.color * Vec3::new(1.0, 1.0, 1.0);
+                    }
+                }
+
+                let scatter_direction = srec.pdf.generate();
+                let scattered = Ray::new(hit.point.clone(), scatter_direction, ray.departure_time);
+
+                let sample_color = Self::ray_color(&scattered, world, depth-1);
+                let color_from_scatter = (srec.color * sample_color);
+                
+                return emitted + color_from_scatter;
+            }
+            
+            return emitted;
+        }
+
+        // If the ray hits nothing, return the background color.
+        world.background(ray).into()
+    }
+*/
+
     /// # Errors
     /// When open or save to file failed
     #[allow(clippy::needless_pass_by_value)] // Directly used public API, add & will make it harder to use

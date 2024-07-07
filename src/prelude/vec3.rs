@@ -45,12 +45,13 @@ pub type Point3 = Vec3;
 
 impl Vec3 {
     #[must_use]
-    #[inline]
+    #[inline(always)]
     pub const fn new(x: f64, y: f64, z: f64) -> Self {
         Self { x, y, z }
     }
 
     #[must_use]
+    #[inline]
     pub fn new_min(a: &Self, b: &Self) -> Self {
         Self {
             x: a.x.min(b.x),
@@ -60,6 +61,7 @@ impl Vec3 {
     }
 
     #[must_use]
+    #[inline]
     pub fn new_max(a: &Self, b: &Self) -> Self {
         Self {
             x: a.x.max(b.x),
@@ -107,6 +109,7 @@ impl Vec3 {
     }
 
     #[must_use]
+    #[inline]
     pub fn random_unit() -> Self {
         let a: f64 = Random::range(0.0..(2.0 * PI));
         let z: f64 = Random::range(-1.0..1.0);
@@ -115,6 +118,7 @@ impl Vec3 {
     }
 
 
+    #[inline(always)]
     pub fn random_cosine_direction() -> Self {
         let r1 = Random::gen();
         let r2 = Random::gen();
@@ -236,6 +240,7 @@ impl Display for Vec3 {
 
 impl Index<usize> for Vec3 {
     type Output = f64;
+    #[inline]
     fn index(&self, index: usize) -> &Self::Output {
         match index {
             0 => &self.x,
@@ -247,6 +252,7 @@ impl Index<usize> for Vec3 {
 }
 
 impl IndexMut<usize> for Vec3 {
+    #[inline]
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         match index {
             0 => &mut self.x,
@@ -371,6 +377,7 @@ impl Mul<&Self> for Vec3 {
 
 impl Mul<&Color> for &Vec3 {
     type Output = Vec3;
+    #[inline]
     fn mul(self, rhs: &Color) -> Self::Output {
         let rhs = rhs.f();
         Vec3::new(

@@ -236,17 +236,6 @@ impl Painter {
     }
 
 
-    fn sample_square_stratified(&self, s_i: usize, s_j: usize) -> [f64; 2] {
-        // Returns the vector to a random point in the square sub-pixel specified by grid
-        // indices s_i and s_j, for an idealized unit square pixel [-.5,-.5] to [+.5,+.5].
-
-        let px = ((s_i as f64 + Random::gen()) * self.recip_sqrt_spp) - 0.5;
-        let py = ((s_j as f64 + Random::gen()) * self.recip_sqrt_spp) - 0.5;
-
-        [px, py]
-    }
-
-
     fn create_output_file(
         &self, path: Option<&Path>,
     ) -> std::io::Result<BufWriter<Box<dyn Write>>> {
@@ -273,7 +262,7 @@ impl Painter {
         Ok(PainterOutputContext { file, cancel, target: Some(Box::new(target)) })
     }
 
-    // TODO: make it return RGBInt type
+
     fn render_pixel<F>(&self, row: usize, column: usize, uv_color: &F) -> [u8; 4]
     where
         F: Fn(f64, f64) -> Vec3 + Send + Sync,
@@ -284,12 +273,15 @@ impl Painter {
         let y = row as f64;
      
         let mut color_vec = Vec3::new(0.0, 0.0, 0.0);
-        let mut last_color = Vec3::new(0.5, 0.5, 0.5);
         
         for s_j in 0 .. self.sqrt_spp {
             for s_i in 0 .. self.sqrt_spp {
-                let offset = self.sample_square_stratified(s_i, s_j);
-                let uv = self.calculate_uv(x + offset[0], y + offset[1]);
+                let mut last_color = Vec3::new(0.5, 0.5, 0.5);
+
+                let xo = x + (s_i as f64 + Random::gen()) / self.sqrt_spp as f64;
+                let yo = y + (s_j as f64 + Random::gen()) / self.sqrt_spp as f64;
+                
+                let uv = self.calculate_uv(xo, yo);
                 let mut color = uv_color(uv[0], uv[1]);
                 let diff = (&color - &last_color).length_squared();
 
@@ -297,7 +289,7 @@ impl Painter {
                     let limit = diff.sqrt() as usize;
                     let mut counter = 1;
                     
-                    println!("Oversamplig pixel {} times due to big color diff", limit);
+                    println!("Oversampling pixel {} times due to big color diff", limit);
                     while counter < limit {
                         color = color + uv_color(uv[0], uv[1]);
                         counter += 1;

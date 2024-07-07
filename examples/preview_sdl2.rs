@@ -240,7 +240,7 @@ fn render(target: &mut dyn PainterTarget) {
     lights.add(rs.clone());
     world.add(rs);
 
-/*
+
     world.add(Sphere::new(
         Point3::new(0.0, 0.0, 0.0),
         1.0,
@@ -248,15 +248,15 @@ fn render(target: &mut dyn PainterTarget) {
         // Lambertian::new(Color::new(0.99, 0.69, 0.2)),
         // DiffuseMetal::new(200.0, Color::new(0.99, 0.69, 0.2)),
     ));
-*/
 
 
+/*
     let color = Color::new(0.99, 0.8, 0.2);
     // let material = Lambertian::new(color);
     let material = BlinnPhong::new(0.5, 4.0, color);
     // let material = Metal::new(color);
     world.add(RayMarcher::new(material));
-    
+*/    
 
     world.add(Sphere::new(
         Point3::new(0.0, -1001.0, 0.0),
