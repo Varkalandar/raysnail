@@ -1,4 +1,4 @@
-use remda::{
+use raysnail::{
     camera::CameraBuilder,
     hittable::{collection::HittableList, Sphere},
     material::{Lambertian, Metal},

@@ -1,5 +1,5 @@
 use {
-    remda::{
+    raysnail::{
         camera::{Camera, CameraBuilder},
         hittable::{
             collection::{HittableList, BVH},
@@ -14,8 +14,8 @@ use {
     std::sync::Arc,
 };
 
-use remda::material::Material;
-use remda::hittable::transform::ByXAxis;
+use raysnail::material::Material;
+use raysnail::hittable::transform::ByXAxis;
 
 fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, bounce_height: f64, need_speed: bool) {
     let small_ball_radius = 0.2;

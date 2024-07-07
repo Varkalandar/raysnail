@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 mod common;
 
-use remda::prelude::*;
+use raysnail::prelude::*;
 
 fn main() {
     let (camera, world) = common::ray_tracing_next_week::cornell_box_no_rotation();

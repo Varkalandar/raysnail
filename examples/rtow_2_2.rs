@@ -1,5 +1,5 @@
-use remda::{painter::Painter, prelude::*};
-use remda::painter::PassivePainterTarget;
+use raysnail::{painter::Painter, prelude::*};
+use raysnail::painter::PassivePainterTarget;
 
 fn main() {
     env_logger::init();

@@ -1,4 +1,4 @@
-use remda::prelude::*;
+use raysnail::prelude::*;
 
 fn main() {
     let mut runs: u64 = 0;

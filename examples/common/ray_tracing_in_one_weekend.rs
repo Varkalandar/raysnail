@@ -1,6 +1,6 @@
 use {
     super::scene,
-    remda::{camera::Camera, hittable::collection::HittableList},
+    raysnail::{camera::Camera, hittable::collection::HittableList},
 };
 
 #[must_use]

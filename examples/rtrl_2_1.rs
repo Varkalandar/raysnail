@@ -1,4 +1,4 @@
-use remda::prelude::*;
+use raysnail::prelude::*;
 
 const N: usize = 1000;
 

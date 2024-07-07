@@ -323,6 +323,8 @@ impl Painter {
     where
         F: Fn(f64, f64) -> Vec3 + Send + Sync,
     {
+        info!("Processing line: {}", row);
+
         (0..self.width)
             .map(|column| {
                 if cancel.load(Ordering::Relaxed) {
@@ -402,7 +404,7 @@ impl Painter {
             .inspect(|_| {
                 let count = finished_row.fetch_add(1, Ordering::Relaxed);                
                 if cancel.load(Ordering::Relaxed) == false {
-                    info!("Scan line remaining: {}", self.height - count - 1);
+                    // info!("Scan line remaining: {}", self.height - count - 1);
                 }
             })
             .seq_for_each_with(

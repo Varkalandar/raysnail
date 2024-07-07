@@ -1,16 +1,14 @@
 [package]
-name = "remda"
+name = "raysnail"
 version = "0.1.0"
-authors = ["7sDream <i@7sdre.am>"]
+authors = ["7sDream <i@7sdre.am>", "Varkalandar"]
 edition = "2018"
 description = "Yet another simple and pure software ray tracing renderer"
-homepage = "https://github.com/7sDream/remda"
-repository = "https://github.com/7sDream/remda"
 license-file = "COPYING"
 publish = false
 
 [lib]
-name = "remda"
+name = "raysnail"
 path = "src/lib.rs"
 
 [dependencies]

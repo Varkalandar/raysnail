@@ -19,20 +19,22 @@ use sdl2::video::WindowContext;
 
 use std::time::Duration;
 
-use remda::prelude::Ray;
-use remda::prelude::Color;
-use remda::prelude::Vec3;
-use remda::prelude::Point3;
-use remda::camera::CameraBuilder;
+use raysnail::prelude::Ray;
+use raysnail::prelude::Color;
+use raysnail::prelude::Vec3;
+use raysnail::prelude::Point3;
+use raysnail::camera::CameraBuilder;
 
-use remda::painter::PainterTarget;
-use remda::painter::PainterCommand;
-use remda::material::*;
-use remda::hittable::Sphere;
-use remda::hittable::Box;
-use remda::hittable::geometry::RayMarcher;
-use remda::hittable::collection::HittableList;
-use remda::texture::Checker;
+use raysnail::painter::PainterTarget;
+use raysnail::painter::PainterCommand;
+use raysnail::material::*;
+use raysnail::hittable::Sphere;
+use raysnail::hittable::Box;
+use raysnail::hittable::AARect;
+use raysnail::hittable::AARectMetrics;
+use raysnail::hittable::geometry::RayMarcher;
+use raysnail::hittable::collection::HittableList;
+use raysnail::texture::Checker;
 
 use rayon::spawn;
 use std::sync::mpsc::sync_channel;
@@ -57,27 +59,29 @@ impl Renderer {
         }
     }
 
-    pub fn flush_line(&mut self, _x: u32, y: u32, colors: &Vec<[u8; 4]>, line: &mut Texture) {
+    pub fn flush_line(&mut self, _x: u32, y: i32, colors: &Vec<[u8; 4]>, line: &mut Texture) {
 
-        let width = colors.len() as u32;
+        // let line_width = colors.len() as u32;
         let mut x = 0;
 
         for color in colors {                 
-            let r = Rect::new(x, 0, 1, 1);
+            let r = Rect::new(x, y, 1, 1);
             // let c: [u8; 3] = [color[0], color[1], color[2]];
             line.update(Some(r), color, 3).unwrap();
 
             x += 1;
         }
 
-        let s = Rect::new(0, 0, width, 1);
-        let d = Rect::new(0, y as i32, width, 1);    
+        let (width, height) = self.canvas.output_size().unwrap();
+
+        let s = Rect::new(0, 0, width, height);
+        let d = Rect::new(0, 0, width, height);    
         self.canvas.copy(&line, Some(s), Some(d)).unwrap();
     }
 
     pub fn present(&mut self) {
         self.canvas.present();
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
+        // ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
     }
 }
 
@@ -123,7 +127,7 @@ pub fn main() -> Result<(), String> {
 
     let mut queue = PixelQueue {sender, command_receiver};
 
-    spawn(|| boot_sdl(receiver, command_sender));
+    spawn(|| boot_sdl(1067, 600, receiver, command_sender));
 
     render(&mut queue);
 
@@ -131,16 +135,15 @@ pub fn main() -> Result<(), String> {
 }
 
 
-fn boot_sdl(receiver: Receiver<[u8; 4]>, command_sender: SyncSender<PainterCommand>) {
+fn boot_sdl(width: u32, height: u32, receiver: Receiver<[u8; 4]>, command_sender: SyncSender<PainterCommand>) {
     common::init_log("info");
 
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
-    let width = 1067;
 
     let window = video_subsystem
-        .window("rust-sdl2 demo: Video", width, 600)
+        .window("rust-sdl2 demo: Video", width, height)
         .position_centered()
         .opengl()
         .build()
@@ -158,7 +161,7 @@ fn boot_sdl(receiver: Receiver<[u8; 4]>, command_sender: SyncSender<PainterComma
         renderer.canvas.texture_creator();
     let mut line =
         creator 
-        .create_texture(PixelFormatEnum::RGB24, TextureAccess::Static, width, 1).unwrap();
+        .create_texture(PixelFormatEnum::RGB24, TextureAccess::Static, width, height).unwrap();
         // .create_texture(None, TextureAccess::Static, width, 1).unwrap();
 
     println!("Color mod={:?}", line.color_mod());
@@ -221,12 +224,18 @@ fn render(target: &mut dyn PainterTarget) {
     
     let mut world = HittableList::default();
     let mut lights = HittableList::default();
+/*
+    let rs = 
+        AARect::new_xz(AARectMetrics::new(200.0, (-15.0, 15.0), (-15.0, 15.0)),
+            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(200.0));
+*/
 
     let rs = 
         Sphere::new(Vec3::new(50.0, 200.0, 200.0), 
             12.0, 
             DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(200.0)
         );
+    
 
     lights.add(rs.clone());
     world.add(rs);
@@ -236,6 +245,7 @@ fn render(target: &mut dyn PainterTarget) {
         Point3::new(0.0, 0.0, 0.0),
         1.0,
         BlinnPhong::new(0.5, 4.0, Color::new(0.99, 0.69, 0.2)),
+        // Lambertian::new(Color::new(0.99, 0.69, 0.2)),
     ));
    
 /*

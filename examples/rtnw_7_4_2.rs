@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 mod common;
 
-use remda::{
+use raysnail::{
     camera::CameraBuilder,
     hittable::{collection::HittableList, AARect, AARectMetrics, Sphere},
     material::{DiffuseLight, Lambertian},

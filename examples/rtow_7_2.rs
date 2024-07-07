@@ -1,4 +1,4 @@
-use remda::{camera::CameraBuilder, hittable::collection::HittableList, prelude::*};
+use raysnail::{camera::CameraBuilder, hittable::collection::HittableList, prelude::*};
 
 fn hit_sphere(center: &Point3, radius: f64, ray: &Ray) -> Option<(f64, Vec3)> {
     let oc = &ray.origin - center;

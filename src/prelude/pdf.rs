@@ -17,14 +17,14 @@ pub trait PDF {
 
 #[derive(Debug)]
 pub struct CosinePdf {
-    uvw: ONB,
+    onb: ONB,
 }
 
 impl CosinePdf {
     
     pub fn new(n: &Vec3) -> Self { 
         CosinePdf {
-            uvw: ONB::build_from(n),
+            onb: ONB::build_from(n),
         } 
     }
 }
@@ -33,14 +33,14 @@ impl CosinePdf {
 impl PDF for CosinePdf {
 
     fn value(&self, direction: &Vec3) -> f64 {
-        let cosine_theta = direction.unit().dot(&self.uvw.axis[2]);
+        let cosine_theta = direction.unit().dot(&self.onb.axis[2]);
         let v = cosine_theta / PI;
 
         if v < 0.0 { 0.0 } else { v }
     }
   
     fn generate(&self) -> Vec3 {
-        self.uvw.local(&Vec3::random_cosine_direction())
+        self.onb.local(&Vec3::random_cosine_direction())
     }
 }
 

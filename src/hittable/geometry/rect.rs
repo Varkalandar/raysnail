@@ -141,6 +141,16 @@ impl<M: Material> Hittable for AARect<M> {
     }
 
     fn random(&self, origin: &Point3) -> Vec3 {
-        Vec3::random_unit()
+        // axis 2 is distance to the origin
+        // axis 0 and 1 are orthoginal 2d vectors to the fixed axis
+
+        // only need axis 2 == y axis at the moment
+
+        let mut root = Vec3::new(0.0, self.metrics.k, 0.0);
+
+        root.x = Random::range(self.metrics.a0 .. self.metrics.a1);
+        root.z = Random::range(self.metrics.b0 .. self.metrics.b1);
+
+        root
     }
 }

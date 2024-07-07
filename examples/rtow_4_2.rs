@@ -1,4 +1,4 @@
-use remda::{camera::CameraBuilder, hittable::collection::HittableList};
+use raysnail::{camera::CameraBuilder, hittable::collection::HittableList};
 
 fn main() {
     env_logger::init();

@@ -1,4 +1,4 @@
-use remda::{camera::CameraBuilder, hittable::collection::HittableList, prelude::*};
+use raysnail::{camera::CameraBuilder, hittable::collection::HittableList, prelude::*};
 
 fn hit_sphere(center: &Point3, radius: f64, ray: &Ray) -> bool {
     let oc = &ray.origin - center;
@@ -13,7 +13,7 @@ fn background(ray: &Ray) -> Color {
     if hit_sphere(&Point3::new(0.0, 0.0, -1.0), 0.5, ray) {
         return Color::new(1.0, 0.0, 0.0);
     }
-    remda::hittable::collection::world_default_background(ray)
+    raysnail::hittable::collection::world_default_background(ray)
 }
 
 fn main() {

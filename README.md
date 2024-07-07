@@ -1,6 +1,6 @@
-# Remda
+# Raysnail
 
-Learn [*Ray Tracing in One Weekend* series][book-series] using Rust.
+Based on learn [*Ray Tracing in One Weekend* series][book-series] using Rust, forked from the Remda project.
 
 Yet another naive and pure software ray tracing renderer.
 
@@ -52,7 +52,7 @@ Yet another naive and pure software ray tracing renderer.
 
 ## Run
 
-Remda is a library crate, but you can run built-in examples(from the book series) to try it.
+raysnail is a library crate, but you can run built-in examples(from the book series) to try it.
 
 Use `cargo run --example` to get examples list, then choose one to run.
 
