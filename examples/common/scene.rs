@@ -397,7 +397,7 @@ pub fn all_feature_scene(seed: Option<u64>) -> (Camera, HittableList) {
         Point3::new(220.0, 280.0, 300.0),
         80.0,
         Lambertian::new(
-            Perlin::new(256, true)
+            Perlin::new(256, true, &mut FastRng::new())
                 .scale(0.1)
                 .smooth(SmoothType::HermitianCubic),
         ),

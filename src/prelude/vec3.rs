@@ -1,5 +1,5 @@
 use {
-    crate::prelude::{clamp, Color, Random, PI},
+    crate::prelude::{clamp, Color, Random, FastRng, PI},
     std::{
         fmt::Display,
         iter::Sum,
@@ -9,29 +9,6 @@ use {
         },
     },
 };
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::time::SystemTime;
-
-    #[test]
-    fn test_vector_index_timing() {
-        
-        let v = Vec3::new(1.0, 2.0, 3.0);
-        let t0 = SystemTime::now();
-
-        for i in 0 .. 10000000 {
-            let _t = v[i & 1];
-        }
-
-        let t1 = SystemTime::now();
-        let difference = t1.duration_since(t0).unwrap();
-        println!("Duration: {}", difference.as_secs_f64());
-        assert_eq!(difference.as_secs_f64(), 0.0);
-    }
-}
-
 
 
 #[derive(Default, Clone, Debug, PartialOrd, PartialEq)]
@@ -110,18 +87,18 @@ impl Vec3 {
 
     #[must_use]
     #[inline]
-    pub fn random_unit() -> Self {
-        let a: f64 = Random::range(0.0..(2.0 * PI));
-        let z: f64 = Random::range(-1.0..1.0);
+    pub fn random_unit(rng: &mut FastRng) -> Self {
+        let a: f64 = rng.range(0.0, 2.0 * PI);
+        let z: f64 = rng.range(-1.0, 1.0);
         let r = (1.0 - z * z).sqrt();
         Self::new(r * a.cos(), r * a.sin(), z)
     }
 
 
     #[inline(always)]
-    pub fn random_cosine_direction() -> Self {
-        let r1 = Random::gen();
-        let r2 = Random::gen();
+    pub fn random_cosine_direction(rng: &mut FastRng) -> Self {
+        let r1 = rng.gen();
+        let r2 = rng.gen();
         let q2 = r2.sqrt();
 
         let phi = 2.0 * PI * r1;
@@ -134,9 +111,9 @@ impl Vec3 {
     
 
     #[inline(always)]
-    pub fn random_cosine_direction_exponent(exponent: f64) -> Self {
-        let r1 = Random::gen();
-        let r2 = Random::gen().powf(1.0 / (exponent + 1.0));
+    pub fn random_cosine_direction_exponent(exponent: f64, rng: &mut FastRng) -> Self {
+        let r1 = rng.gen();
+        let r2 = rng.gen().powf(1.0 / (exponent + 1.0));
         let sin_theta = (1.0 - r2 * r2).sqrt();
 
         let phi = 2.0 * PI * r1;
@@ -149,8 +126,8 @@ impl Vec3 {
 
 
     #[must_use]
-    pub fn random_unit_dir(dir: &Self) -> Self {
-        let u = Self::random_unit();
+    pub fn random_unit_dir(dir: &Self, rng: &mut FastRng) -> Self {
+        let u = Self::random_unit(rng);
         if u.dot(dir) > 0.0 {
             u
         } else {
@@ -159,9 +136,9 @@ impl Vec3 {
     }
 
     #[must_use]
-    pub fn random_unit_disk() -> Self {
+    pub fn random_unit_disk(rng: &mut FastRng) -> Self {
         loop {
-            let p = Self::new(Random::range(-1.0..1.0), Random::range(-1.0..1.0), 0.0);
+            let p = Self::new(rng.range(-1.0, 1.0), rng.range(-1.0, 1.0), 0.0);
             if p.length_squared() < 1.0 {
                 return p;
             }

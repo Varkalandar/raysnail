@@ -124,7 +124,7 @@ impl<M: Material> Hittable for Box<M> {
         0.5
     }
 
-    fn random(&self, _origin: &Point3) -> Vec3 {
+    fn random(&self, _origin: &Point3, _rng: &mut FastRng) -> Vec3 {
         Vec3::new(1.0, 0.0, 0.0)
     }
 }

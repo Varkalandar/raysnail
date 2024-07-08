@@ -10,6 +10,8 @@ use {
     std::path::Path,
 };
 
+use log::info;
+
 #[derive(Debug)]
 pub struct Camera {
     origin: Point3,
@@ -65,14 +67,14 @@ impl Camera {
 
 
     #[must_use]
-    pub fn ray(&self, u: f64, v: f64) -> Ray {
+    pub fn ray(&self, u: f64, v: f64, rng: &mut FastRng) -> Ray {
 
-        let rd = self.aperture / 2.0 * Vec3::random_unit_disk();
+        let rd = self.aperture / 2.0 * Vec3::random_unit_disk(rng);
         let offset = &self.horizontal_unit * rd.x + &self.vertical_unit * rd.y;
         let origin = &self.origin + offset;
         let direction = &self.lb + u * &self.horizontal_full + v * &self.vertical_full - &origin;
 
-        Ray::new(origin, direction, self.shutter_speed * Random::normal())        
+        Ray::new(origin, direction, self.shutter_speed * rng.gen())        
     }
 
 
@@ -159,8 +161,10 @@ impl<'c> TakePhotoSettings<'c> {
         self
     }
 
-    fn ray_color(ray: &Ray, world: &World, depth: usize) -> Vec3 {
+    fn ray_color(ray: &Ray, world: &World, depth: usize, rng: &mut FastRng) -> Vec3 {
         
+        // info!("ray_color depth={}", depth);
+
         // If we've exceeded the ray bounce limit, no more light is gathered.
         if depth == 0 {
             return Vec3::default();
@@ -177,7 +181,7 @@ impl<'c> TakePhotoSettings<'c> {
                 if srec.skip_pdf {
                     // If the material skips the pdf it must provide a ray in the record
                     if srec.ray.is_some() {
-                        return emitted + srec.color * Self::ray_color(&srec.ray.unwrap(), world, depth-1);
+                        return emitted + srec.color * Self::ray_color(&srec.ray.unwrap(), world, depth-1, rng);
                     }
                     else {
                         // dead end material, doesn't scatter light
@@ -188,7 +192,7 @@ impl<'c> TakePhotoSettings<'c> {
                 let light_pdf = HittablePdf::new(&world.lights, &hit.point);
                 let mixture = MixturePdf::new(&light_pdf, srec.pdf.as_ref());                
 
-                let scatter_direction = mixture.generate();
+                let scatter_direction = mixture.generate(rng);
 
                 // println!("hit normal={:?} scatter dir={:?}", hit.normal, scatter_direction);
 
@@ -204,7 +208,7 @@ impl<'c> TakePhotoSettings<'c> {
                 let scattering_pdf_val = material.scattering_pdf(ray, &hit, &scattered);
                 let pdf_multiplicator = scattering_pdf_val / pdf_val;
 
-                let sample_color = Self::ray_color(&scattered, world, depth-1);
+                let sample_color = Self::ray_color(&scattered, world, depth-1, rng);
                 let color_from_scatter = (srec.color * sample_color) * pdf_multiplicator;
                 
                 return emitted + color_from_scatter;
@@ -297,10 +301,13 @@ impl<'c> TakePhotoSettings<'c> {
         .samples(self.samples)
         .threads(self.threads)
         .parallel(self.parallel)
-        .draw(&path, target, |i: f64, j: f64| -> Vec3 {
+        .draw(&path, target, |i: f64, j: f64, rng: &mut FastRng| -> Vec3 {
 
-            let ray = self.camera.ray(i, j);
-            Self::ray_color(&ray, &self.world, self.depth)
+            // info!("uv_color 1 {}, {}", i, j);
+
+            let ray = self.camera.ray(i, j, rng);
+            // info!("uv_color 2 {}, {}", i, j);
+            Self::ray_color(&ray, &self.world, self.depth, rng)
         })
     }
 

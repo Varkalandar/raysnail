@@ -11,7 +11,7 @@ use std::ops::{Bound, RangeBounds};
 pub use {
     aabb::AABB,
     color::Color,
-    random::{Random, SeedRandom},
+    random::{Random, SeedRandom, FastRng},
     ray::Ray,
     onb::ONB,
     pdf::{PDF, CosinePdf, SpherePdf, HittablePdf, MixturePdf, BlinnPhongPdf, ReflectionPdf},

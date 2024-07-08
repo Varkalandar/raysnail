@@ -6,6 +6,7 @@ use crate::prelude::Point3;
 use crate::prelude::Color;
 use crate::prelude::AABB;
 use crate::prelude::Ray;
+use crate::prelude::FastRng;
 use crate::hittable::HitRecord;
 use crate::hittable::Hittable;
 use crate::hittable::Sphere;
@@ -188,8 +189,8 @@ impl<M: Material> Hittable for RayMarcher<M> {
      * This is only called if the object is a light source. It is used to generate
      * an extra ray towards the light source.
      */
-    fn random(&self, _origin: &Point3) -> Vec3 {
-        Vec3::random_unit()
+    fn random(&self, _origin: &Point3, rng: &mut FastRng) -> Vec3 {
+        Vec3::random_unit(rng)
     }
 }
 

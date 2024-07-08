@@ -6,6 +6,8 @@ use {
     std::ops::Range,
 };
 
+use rand_xorshift::XorShiftRng;
+
 
 fn gen<R: Rng>(mut rng: R) -> f64 {
     rng.gen()
@@ -100,4 +102,40 @@ impl SeedRandom {
     pub fn shuffle<T, S: AsMut<[T]>>(&mut self, values: &mut S) {
         shuffle(&mut self.0, values)
     }
+}
+
+
+#[derive(Debug)]
+pub struct FastRng {
+    rng: XorShiftRng,
+}
+
+
+impl FastRng {
+
+    pub fn new() -> FastRng {
+        FastRng {
+            rng: XorShiftRng::from_rng(thread_rng()).unwrap()
+        }
+    }
+
+
+    #[inline]
+    pub fn gen(&mut self) -> f64 {
+        self.rng.next_u64() as f64 / u64::MAX as f64
+    }
+
+    
+    /**
+     * Range exclusive end
+     */ 
+    #[inline]
+    pub fn range(&mut self, start: f64, end: f64) -> f64 {
+        start + self.gen() * (end - start)
+    }
+
+    pub fn irange(&mut self, start:usize, end: usize) -> usize {
+        start + (self.rng.next_u32() as usize % (end - start))
+    }
+
 }

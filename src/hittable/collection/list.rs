@@ -55,9 +55,9 @@ impl HittableList {
         sum
     }
 
-    pub fn random(&self, origin: &Point3) -> Vec3 {
+    pub fn random(&self, origin: &Point3, rng: &mut FastRng) -> Vec3 {
         let size = self.objects.len();
-        return self.objects[Random::range(0 .. size)].random(origin);
+        return self.objects[rng.irange(0, size)].random(origin, rng);
     }    
 }
 
@@ -116,7 +116,7 @@ impl Hittable for HittableList {
         0.0
     }
 
-    fn random(&self, origin: &Point3) -> Vec3 {
+    fn random(&self, origin: &Point3, _rng: &mut FastRng) -> Vec3 {
         Vec3::new(1.0, 0.0, 0.0)
     }    
 }

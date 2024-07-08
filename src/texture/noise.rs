@@ -40,13 +40,13 @@ impl Default for RandomValueType {
 
 impl Perlin {
     #[must_use]
-    pub fn new(point_count: usize, vector: bool) -> Self {
+    pub fn new(point_count: usize, vector: bool, rng: &mut FastRng) -> Self {
         let ran = (0..point_count)
             .map(|_| {
                 if vector {
-                    RandomValueType::Vector(Vec3::random_unit())
+                    RandomValueType::Vector(Vec3::random_unit(rng))
                 } else {
-                    RandomValueType::Float(Random::normal())
+                    RandomValueType::Float(rng.gen())
                 }
             })
             .collect();

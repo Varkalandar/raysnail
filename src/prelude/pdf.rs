@@ -3,6 +3,7 @@ use crate::prelude::ONB;
 use crate::prelude::PI;
 use crate::prelude::Random;
 use crate::prelude::Point3;
+use crate::prelude::FastRng;
 use crate::hittable::collection::HittableList;
 
 use std::fmt::Debug;
@@ -11,7 +12,7 @@ use std::fmt::Formatter;
 
 pub trait PDF {
     fn value(&self, direction: &Vec3) -> f64;
-    fn generate(&self) -> Vec3;
+    fn generate(&self, rng: &mut FastRng) -> Vec3;
 }
 
 
@@ -39,8 +40,8 @@ impl PDF for CosinePdf {
         if v < 0.0 { 0.0 } else { v }
     }
   
-    fn generate(&self) -> Vec3 {
-        self.onb.local(&Vec3::random_cosine_direction())
+    fn generate(&self, rng: &mut FastRng) -> Vec3 {
+        self.onb.local(&Vec3::random_cosine_direction(rng))
     }
 }
 
@@ -77,7 +78,7 @@ impl PDF for ReflectionPdf {
         if v < 0.0 { 0.0 } else { v }
     }
   
-    fn generate(&self) -> Vec3 {
+    fn generate(&self, rng: &mut FastRng) -> Vec3 {
 
         /*
         self.onb_reflected.axis[2].clone()
@@ -87,7 +88,7 @@ impl PDF for ReflectionPdf {
             let direction =
             self
             .onb_reflected
-            .local(&Vec3::random_cosine_direction_exponent(self.exponent));
+            .local(&Vec3::random_cosine_direction_exponent(self.exponent, rng));
 
             if direction.dot(&self.onb_normal.axis[2]) > 0.0 {
                 return direction;
@@ -147,32 +148,32 @@ impl PDF for BlinnPhongPdf {
     }
 */
 
-    fn generate(&self) -> Vec3 {
+    fn generate(&self, rng: &mut FastRng) -> Vec3 {
         if Random::gen() < self.k_specular {
             loop {
                 
                 let direction =
                     self
                     .onb_reflected
-                    .local(&Vec3::random_cosine_direction_exponent(self.exponent));
+                    .local(&Vec3::random_cosine_direction_exponent(self.exponent, rng));
                 if direction.dot(&self.onb_normal.axis[2]) > 0.0 {
                     return direction;
                 }
             }
         }
-        self.onb_normal.local(&Vec3::random_cosine_direction())
+        self.onb_normal.local(&Vec3::random_cosine_direction(rng))
     }
 }
 
 
 #[derive(Debug)]
 pub struct SpherePdf {
-
 }
 
 impl SpherePdf {
     pub fn new() -> SpherePdf {
-        SpherePdf {}
+        SpherePdf {
+        }
     }
 }
 
@@ -182,8 +183,8 @@ impl PDF for SpherePdf {
         1.0 / (4.0 * PI)
     }
   
-    fn generate(&self) -> Vec3 {
-        Vec3::random_unit()
+    fn generate(&self, rng: &mut FastRng) -> Vec3 {
+        Vec3::random_unit(rng)
     }
 }
 
@@ -210,8 +211,8 @@ impl PDF for HittablePdf<'_> {
         self.objects.pdf_value(&self.origin, direction)
     }
   
-    fn generate(&self) -> Vec3 {
-        self.objects.random(&self.origin)
+    fn generate(&self, rng: &mut FastRng) -> Vec3 {
+        self.objects.random(&self.origin, rng)
         // Vec3::new(0.0, 1.0, 0.0)    
     }
 }
@@ -244,13 +245,13 @@ impl PDF for MixturePdf<'_> {
         return 0.5 * self.p0.value(direction) + 0.5 * self.p1.value(direction);
     }
   
-    fn generate(&self) -> Vec3 {
+    fn generate(&self, rng: &mut FastRng) -> Vec3 {
 
-        if Random::gen() < 0.5 {
-            return self.p0.generate();
+        if rng.gen() < 0.5 {
+            return self.p0.generate(rng);
         }
         else {
-            return self.p1.generate();
+            return self.p1.generate(rng);
         }
     }  
 }

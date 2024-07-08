@@ -159,7 +159,7 @@ impl<M: Material> Hittable for Sphere<M> {
      * This is only called if the object is a light source. It is used to generate
      * an extra ray towards the light source.
      */
-    fn random(&self, origin: &Point3) -> Vec3 {
+    fn random(&self, origin: &Point3, rng: &mut FastRng) -> Vec3 {
         /*
         let r = Vec3::random_unit() * (self.radius * 0.99);
         
@@ -170,8 +170,8 @@ impl<M: Material> Hittable for Sphere<M> {
         let uvw = ONB::build_from(&direction);
 
         loop {
-            let u = &uvw.axis[0] * Random::gen();
-            let v = &uvw.axis[1] * Random::gen();
+            let u = &uvw.axis[0] * rng.gen();
+            let v = &uvw.axis[1] * rng.gen();
 
             let uv = u + &v;
 

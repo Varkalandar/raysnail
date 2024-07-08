@@ -38,8 +38,8 @@ impl<T: Hittable> Hittable for Translation<T> {
         self.object.pdf_value(origin, direction)
     }
 
-    fn random(&self, origin: &Point3) -> Vec3 {
-        self.object.random(origin)
+    fn random(&self, origin: &Point3, rng: &mut FastRng) -> Vec3 {
+        self.object.random(origin, rng)
     }
 
 }

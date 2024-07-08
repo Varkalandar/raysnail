@@ -157,9 +157,8 @@ pub struct Painter {
     parallel: bool,
 
     sqrt_spp: usize,         // Square root of number of samples per pixel
-    recip_sqrt_spp: f64,   // 1 / sqrt_spp
-
 }
+
 
 struct PainterOutputContext<'c> {
     file: BufWriter<Box<dyn Write>>,
@@ -167,9 +166,11 @@ struct PainterOutputContext<'c> {
     target: Option<Box<&'c mut dyn PainterTarget>>,
 }
 
+
 impl Painter {
     #[must_use]
     pub const fn new(width: usize, height: usize) -> Self {
+
         Self {
             width,
             height,
@@ -179,7 +180,6 @@ impl Painter {
             parallel: true,
 
             sqrt_spp: 5,
-            recip_sqrt_spp: 0.2, // 1.0/5.0,        
         }
     }
 
@@ -194,7 +194,6 @@ impl Painter {
 
         let sqrt_spp = (samples_requested as f64).sqrt().floor() as usize;
 
-        self.recip_sqrt_spp = 1.0 / sqrt_spp as f64;
         self.sqrt_spp = sqrt_spp;
         self.samples = sqrt_spp * sqrt_spp;
 
@@ -263,9 +262,9 @@ impl Painter {
     }
 
 
-    fn render_pixel<F>(&self, row: usize, column: usize, uv_color: &F) -> [u8; 4]
+    fn render_pixel<F>(&self, row: usize, column: usize, rng: &mut FastRng, uv_color: &F) -> [u8; 4]
     where
-        F: Fn(f64, f64) -> Vec3 + Send + Sync,
+        F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync,
     {
         // Stratification, randomized subpixels
      
@@ -274,15 +273,20 @@ impl Painter {
      
         let mut color_vec = Vec3::new(0.0, 0.0, 0.0);
         
+        // info!("Pixel {}, {}", column, row);
+
         for s_j in 0 .. self.sqrt_spp {
             for s_i in 0 .. self.sqrt_spp {
                 let mut last_color = Vec3::new(0.5, 0.5, 0.5);
 
-                let xo = x + (s_i as f64 + Random::gen()) / self.sqrt_spp as f64;
-                let yo = y + (s_j as f64 + Random::gen()) / self.sqrt_spp as f64;
+                let xo = x + (s_i as f64 + rng.gen()) / self.sqrt_spp as f64;
+                let yo = y + (s_j as f64 + rng.gen()) / self.sqrt_spp as f64;
                 
                 let uv = self.calculate_uv(xo, yo);
-                let mut color = uv_color(uv[0], uv[1]);
+                
+                // info!("Subpixel {}, {}", xo, yo);
+
+                let mut color = uv_color(uv[0], uv[1], rng);
                 let diff = (&color - &last_color).length_squared();
 
                 if diff > 10.0 {
@@ -291,7 +295,7 @@ impl Painter {
                     
                     println!("Oversampling pixel {} times due to big color diff", limit);
                     while counter < limit {
-                        color = color + uv_color(uv[0], uv[1]);
+                        color = color + uv_color(uv[0], uv[1], rng);
                         counter += 1;
                     }
                     
@@ -300,6 +304,7 @@ impl Painter {
 
                 color_vec = color_vec + &color;
                 last_color = color;
+                
             }
         }
 
@@ -313,20 +318,23 @@ impl Painter {
         &self, row: usize, uv_color: &F, cancel: &AtomicBool,
     ) -> Vec<[u8; 4]>
     where
-        F: Fn(f64, f64) -> Vec3 + Send + Sync,
+        F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync,
     {
         info!("Processing line: {}", row);
+
+        let mut rng = FastRng::new();
 
         (0..self.width)
             .map(|column| {
                 if cancel.load(Ordering::Relaxed) {
                     return [0, 0, 0, 255];
                 }
-                self.render_pixel(row, column, &uv_color)
+                self.render_pixel(row, column, &mut rng, &uv_color)
             })
             .collect::<Vec<_>>()
     }
 
+    /*
     fn seq_render_row<F>(&self, row: usize, uv_color: &F) -> Vec<[u8; 4]>
     where
         F: Fn(f64, f64) -> Vec3 + Send + Sync,
@@ -335,18 +343,20 @@ impl Painter {
             .map(|column| self.render_pixel(row, column, &uv_color))
             .collect::<Vec<_>>()
     }
+    */
 
     fn parallel_render_row_iter<'c, F>(
         &'c self, uv_color: F, cancel: &'c AtomicBool,
     ) -> impl IndexedParallelIterator<Item = Vec<[u8; 4]>> + 'c
     where
-        F: Fn(f64, f64) -> Vec3 + Send + Sync + 'c,
+        F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync + 'c,
     {
         (0..self.height)
             .into_par_iter()
             .map(move |row| self.parallel_render_row(row, &uv_color, cancel))
     }
 
+    /*
     fn seq_render_row_iter<'c, F>(
         &'c self, uv_color: F,
     ) -> impl Iterator<Item = Vec<[u8; 4]>> + 'c
@@ -355,6 +365,7 @@ impl Painter {
     {
         (0..self.height).map(move |row| self.seq_render_row(row, &uv_color))
     }
+    */
 
     fn real_row_pixels_to_file(
         context: &mut PainterOutputContext<'_>, pixels: Vec<[u8; 4]>,
@@ -387,10 +398,12 @@ impl Painter {
 
     fn parallel_render_and_output<F>(&self, uv_color: F, path: Option<&Path>, target: &mut dyn PainterTarget) -> std::io::Result<()>
     where
-        F: Fn(f64, f64) -> Vec3 + Send + Sync,
+        F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync,
     {
         let cancel = AtomicBool::new(false);
         let finished_row = AtomicUsize::new(0);
+
+        info!("Starting parallel render");
 
         self.parallel_render_row_iter(uv_color, &cancel)
             .inspect(|_| {
@@ -423,7 +436,7 @@ impl Painter {
     pub fn draw<P, F>(&self, path: &Option<P>, target: &mut dyn PainterTarget, uv_color: F) -> std::io::Result<()>
     where
         P: AsRef<Path>,
-        F: Fn(f64, f64) -> Vec3 + Send + Sync,
+        F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync,
     {
         let path = match path {
             Some(ref path) => Some(path.as_ref()),
@@ -437,12 +450,14 @@ impl Painter {
 
             pool.install(|| self.parallel_render_and_output(uv_color, path, target))
         } else {
+            /*
             let cancel = AtomicBool::new(false); // useless in parallel mode
             let mut context = self.create_output_context(path, target, &cancel)?;
             for (row, pixels) in self.seq_render_row_iter(uv_color).enumerate() {
                 info!("Scan line remaining: {}", self.height - row);
                 Self::row_pixels_to_file(&mut context, pixels)?;
             }
+                */
             Ok(())
         }
     }

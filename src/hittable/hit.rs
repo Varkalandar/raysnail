@@ -75,5 +75,9 @@ pub trait Hittable: Send + Sync {
 
     fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64;
 
-    fn random(&self, origin: &Point3) -> Vec3;
+    /**
+     * This is only called if the object is a light source. It is used to generate
+     * an extra ray towards the light source.
+     */
+     fn random(&self, origin: &Point3, rng: &mut FastRng) -> Vec3;
 }

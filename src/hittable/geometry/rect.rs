@@ -140,7 +140,7 @@ impl<M: Material> Hittable for AARect<M> {
         0.0
     }
 
-    fn random(&self, origin: &Point3) -> Vec3 {
+    fn random(&self, origin: &Point3, rng: &mut FastRng) -> Vec3 {
         // axis 2 is distance to the origin
         // axis 0 and 1 are orthoginal 2d vectors to the fixed axis
 
@@ -148,8 +148,8 @@ impl<M: Material> Hittable for AARect<M> {
 
         let mut root = Vec3::new(0.0, self.metrics.k, 0.0);
 
-        root.x = Random::range(self.metrics.a0 .. self.metrics.a1);
-        root.z = Random::range(self.metrics.b0 .. self.metrics.b1);
+        root.x = rng.range(self.metrics.a0, self.metrics.a1);
+        root.z = rng.range(self.metrics.b0, self.metrics.b1);
 
         root
     }
