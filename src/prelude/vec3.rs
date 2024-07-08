@@ -1,5 +1,5 @@
 use {
-    crate::prelude::{clamp, Color, Random, FastRng, PI},
+    crate::prelude::{clamp, Color, FastRng, PI},
     std::{
         fmt::Display,
         iter::Sum,
@@ -48,27 +48,27 @@ impl Vec3 {
     }
 
     #[must_use]
-    pub fn random_in_unit_box() -> Self {
+    pub fn random_in_unit_box(rng: &mut FastRng) -> Self {
         Self::new(
-            Random::range(-1.0..1.0),
-            Random::range(-1.0..1.0),
-            Random::range(-1.0..1.0),
+            rng.range(-1.0, 1.0),
+            rng.range(-1.0, 1.0),
+            rng.range(-1.0, 1.0),
         )
     }
 
     #[must_use]
-    pub fn random_range(r: Range<f64>) -> Self {
+    pub fn random_range(r: Range<f64>, rng: &mut FastRng) -> Self {
         Self::new(
-            Random::range(r.clone()),
-            Random::range(r.clone()),
-            Random::range(r),
+            rng.range(r.start, r.end),
+            rng.range(r.start, r.end),
+            rng.range(r.start, r.end),
         )
     }
 
     #[must_use]
-    pub fn random_in_unit_sphere() -> Self {
+    pub fn random_in_unit_sphere(rng: &mut FastRng) -> Self {
         loop {
-            let p = Self::random_in_unit_box();
+            let p = Self::random_in_unit_box(rng);
             if p.length_squared() < 1.0 {
                 return p;
             }
@@ -76,8 +76,9 @@ impl Vec3 {
     }
 
     #[must_use]
-    pub fn random_in_unit_hemisphere(dir: &Self) -> Self {
-        let u = Self::random_in_unit_sphere();
+    #[inline]
+    pub fn random_in_unit_hemisphere(dir: &Self, rng: &mut FastRng) -> Self {
+        let u = Self::random_in_unit_sphere(rng);
         if u.dot(dir) > 0.0 {
             u
         } else {
@@ -192,6 +193,15 @@ impl Vec3 {
         self / self.length()
     }
 
+    #[inline(always)]
+    pub fn mul_add(&self, a: f64, b: &Vec3) -> Self {
+        Vec3 {
+            x: self.x.mul_add(a, b.x),
+            y: self.y.mul_add(a, b.y),
+            z: self.z.mul_add(a, b.z),
+        }
+    }
+
     #[allow(clippy::cast_precision_loss)] // sample count is small enough in practice
     #[must_use]
     pub fn into_color(mut self, sample_count: usize, gamma: bool) -> Color {
@@ -252,7 +262,7 @@ impl Neg for Vec3 {
     type Output = Self;
     #[inline]
     fn neg(self) -> Self::Output {
-        (&self).neg()
+        Vec3::new(-self.x, -self.y, -self.z)
     }
 }
 

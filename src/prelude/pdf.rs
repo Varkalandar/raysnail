@@ -1,7 +1,7 @@
 use crate::prelude::Vec3;
 use crate::prelude::ONB;
 use crate::prelude::PI;
-use crate::prelude::Random;
+// use crate::prelude::Random;
 use crate::prelude::Point3;
 use crate::prelude::FastRng;
 use crate::hittable::collection::HittableList;
@@ -34,7 +34,10 @@ impl CosinePdf {
 impl PDF for CosinePdf {
 
     fn value(&self, direction: &Vec3) -> f64 {
-        let cosine_theta = direction.unit().dot(&self.onb.axis[2]);
+
+        assert!((direction.length_squared() - 1.0).abs() < 0.00001);
+
+        let cosine_theta = direction.dot(&self.onb.axis[2]);
         let v = cosine_theta / PI;
 
         if v < 0.0 { 0.0 } else { v }
@@ -56,7 +59,11 @@ pub struct ReflectionPdf {
 impl ReflectionPdf {
     
     pub fn new(r_in_direction: Vec3, normal: Vec3, exponent: f64) -> Self {
-        let reflected = r_in_direction.unit().reflect(&normal.unit());
+
+        assert!((r_in_direction.length_squared() - 1.0).abs() < 0.00001);
+        assert!((normal.length_squared() - 1.0).abs() < 0.00001);
+
+        let reflected = r_in_direction.reflect(&normal);
         let onb_reflected = ONB::build_from(&reflected);
         let onb_normal = ONB::build_from(&normal);
 
@@ -72,7 +79,10 @@ impl ReflectionPdf {
 impl PDF for ReflectionPdf {
 
     fn value(&self, direction: &Vec3) -> f64 {
-        let cosine_theta = direction.unit().dot(&self.onb_reflected.axis[2]);
+
+        assert!((direction.length_squared() - 1.0).abs() < 0.00001);
+
+        let cosine_theta = direction.dot(&self.onb_reflected.axis[2]);
         let v = cosine_theta / PI;
 
         if v < 0.0 { 0.0 } else { v }
@@ -109,7 +119,11 @@ pub struct BlinnPhongPdf {
 
 impl BlinnPhongPdf {
     pub fn new(r_in_direction: Vec3, normal: Vec3, k_specular:f64, exponent: f64) -> Self {
-        let reflected = r_in_direction.unit().reflect(&normal.unit());
+
+        assert!((r_in_direction.length_squared() - 1.0).abs() < 0.00001);
+        assert!((normal.length_squared() - 1.0).abs() < 0.00001);
+
+        let reflected = r_in_direction.reflect(&normal);
         let onb_reflected = ONB::build_from(&reflected);
         let onb_normal = ONB::build_from(&normal);
         Self {
@@ -125,10 +139,12 @@ impl BlinnPhongPdf {
 impl PDF for BlinnPhongPdf {
 
     fn value(&self, direction: &Vec3) -> f64 {
-        let random_normal =
-            (-&self.r_in_direction.unit() + direction.unit()).unit();
+
+        assert!((direction.length_squared() - 1.0).abs() < 0.00001);
+
+        let random_normal = (-&self.r_in_direction + direction).unit();
         
-        let cosine = direction.unit().dot(&self.onb_normal.axis[2]);
+        let cosine = direction.dot(&self.onb_normal.axis[2]);
         
         let cosine_specular = random_normal.dot(&self.onb_normal.axis[2]).max(0.0);
 
@@ -136,20 +152,12 @@ impl PDF for BlinnPhongPdf {
             (self.exponent + 1.0) / (2.0 * PI) * cosine_specular.powf(self.exponent);
 
         (cosine / PI).max(0.0)*(1.0 - self.k_specular) + normal_pdf 
-            / (4.0 * (self.r_in_direction.unit() * -1.0).dot(&random_normal)) * self.k_specular
+            / (4.0 * (&self.r_in_direction * -1.0).dot(&random_normal)) * self.k_specular
     }
 
-/*
-    fn value(&self, direction: &Vec3) -> f64 {
-        let cosine_theta = direction.unit().dot(&self.onb_normal.axis[2]);
-        let v = cosine_theta / PI;
-
-        if v < 0.0 { 0.0 } else { v }
-    }
-*/
 
     fn generate(&self, rng: &mut FastRng) -> Vec3 {
-        if Random::gen() < self.k_specular {
+        if rng.gen() < self.k_specular {
             loop {
                 
                 let direction =
@@ -212,8 +220,7 @@ impl PDF for HittablePdf<'_> {
     }
   
     fn generate(&self, rng: &mut FastRng) -> Vec3 {
-        self.objects.random(&self.origin, rng)
-        // Vec3::new(0.0, 1.0, 0.0)    
+        self.objects.random(&self.origin, rng).unit()
     }
 }
 

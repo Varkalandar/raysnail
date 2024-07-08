@@ -74,19 +74,19 @@ impl Camera {
         let origin = &self.origin + offset;
         let direction = &self.lb + u * &self.horizontal_full + v * &self.vertical_full - &origin;
 
-        Ray::new(origin, direction, self.shutter_speed * rng.gen())        
+        Ray::new(origin, direction.unit(), self.shutter_speed * rng.gen())        
     }
 
 
     #[must_use]
     pub fn take_photo(&self, world: HittableList) -> TakePhotoSettings<'_> {
-        let world = World::new(world, HittableList::default(), 0.0..self.shutter_speed);
+        let world = World::new(world, HittableList::default(), &(0.0..self.shutter_speed));
         TakePhotoSettings::new(self, world)
     }
 
 
     pub fn take_photo_with_lights(&self, world: HittableList, lights: HittableList) -> TakePhotoSettings<'_> {
-        let world = World::new(world, lights, 0.0..self.shutter_speed);
+        let world = World::new(world, lights, &(0.0..self.shutter_speed));
         TakePhotoSettings::new(self, world)
     }
 

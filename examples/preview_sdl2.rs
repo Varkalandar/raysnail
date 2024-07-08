@@ -129,7 +129,7 @@ pub fn main() -> Result<(), String> {
 
     spawn(|| boot_sdl(1067, 600, receiver, command_sender));
 
-    render(&mut queue);
+    render_ball_scene(&mut queue);
 
     Ok(())
 }
@@ -211,8 +211,9 @@ fn render(target: &mut dyn PainterTarget) {
 
     // Change `7` to another number to generate different scene
     // Or use `None` to use random seed
-    // let (camera, mut world) = common::ray_tracing_in_one_weekend::final_scene(Some(7));
+    let (camera, mut world) = common::ray_tracing_in_one_weekend::final_scene(Some(7));
     
+    /*
     let builder = CameraBuilder::default()
         .look_from(Point3::new(13.0, 2.0, 3.0) * 0.5)
         .look_at(Point3::new(0.0, 0.0, 0.0))
@@ -221,8 +222,9 @@ fn render(target: &mut dyn PainterTarget) {
         .focus(10.0);
 
     let camera = builder.build();    
-    
-    let mut world = HittableList::default();
+    */
+
+    // let mut world = HittableList::default();
     let mut lights = HittableList::default();
 /*
     let rs = 
@@ -240,7 +242,7 @@ fn render(target: &mut dyn PainterTarget) {
     lights.add(rs.clone());
     world.add(rs);
 
-
+/*
     world.add(Sphere::new(
         Point3::new(0.0, 0.0, 0.0),
         1.0,
@@ -248,7 +250,7 @@ fn render(target: &mut dyn PainterTarget) {
         // Lambertian::new(Color::new(0.99, 0.69, 0.2)),
         // DiffuseMetal::new(200.0, Color::new(0.99, 0.69, 0.2)),
     ));
-
+*/
 
 /*
     let color = Color::new(0.99, 0.8, 0.2);
@@ -258,6 +260,7 @@ fn render(target: &mut dyn PainterTarget) {
     world.add(RayMarcher::new(material));
 */    
 
+/*
     world.add(Sphere::new(
         Point3::new(0.0, -1001.0, 0.0),
         1000.0,
@@ -266,11 +269,13 @@ fn render(target: &mut dyn PainterTarget) {
             Color::new(0.1, 0.1, 0.1),
         ))
     ));
-
+*/
 
     fn background(ray: &Ray) -> Color {
-        let unit = ray.direction.unit();
-        let t = 0.5 * (unit.y + 1.0);
+
+        assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
+
+        let t = 0.5 * (ray.direction.y + 1.0);
         // Color::new(0.68, 0.80, 0.95).gradient(&Color::new(0.2, 0.4, 0.7), t)
  
         // Color::new(0.9, 0.9, 0.9)
@@ -280,6 +285,34 @@ fn render(target: &mut dyn PainterTarget) {
     camera
         .take_photo_with_lights(world, lights)
         .background(background)
+        .height(600)
+        .samples(50)
+        //.samples(257)
+        .depth(8)
+        .shot_to_target(Some("rtow_13_1.ppm"), target)
+        .unwrap();
+}
+
+
+fn render_ball_scene(target: &mut dyn PainterTarget) {
+
+    // Change `7` to another number to generate different scene
+    // Or use `None` to use random seed
+    let (camera, mut world) = common::ray_tracing_in_one_weekend::final_scene(Some(7));
+    
+    let mut lights = HittableList::default();
+
+    let rs = 
+        Sphere::new(Vec3::new(50.0, 200.0, 200.0), 
+            12.0, 
+            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(200.0)
+        );
+
+    lights.add(rs.clone());
+    world.add(rs);
+
+    camera
+        .take_photo_with_lights(world, lights)
         .height(600)
         .samples(122)
         //.samples(257)

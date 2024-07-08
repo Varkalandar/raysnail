@@ -66,7 +66,7 @@ impl Hittable for HittableList {
     fn hit(&self, r: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
 
         let mut best_hit = None;
-        let mut best_unit = 0.0;
+        let mut best_t = 0.0;
 
         for object in &self.objects {
             let hit_opt = object.hit(r, unit_limit);
@@ -75,12 +75,12 @@ impl Hittable for HittableList {
                 let hit = hit_opt.unwrap();
 
                 if best_hit.is_none() {
-                    best_unit = hit.unit;
+                    best_t = hit.t1;
                     best_hit = Some(hit);
                 }
                 else {
-                    if hit.unit < best_unit {
-                        best_unit = hit.unit;
+                    if hit.t1 < best_t {
+                        best_t = hit.t1;
                         best_hit = Some(hit);
                     }
                 }
@@ -97,7 +97,7 @@ impl Hittable for HittableList {
         None
     }
 
-    fn bbox(&self, time_limit: Range<f64>) -> Option<AABB> {
+    fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
         if self.objects.is_empty() {
             return None;
         }
@@ -105,7 +105,7 @@ impl Hittable for HittableList {
         let mut result: Option<AABB> = None;
 
         for object in &self.objects {
-            let bbox = object.bbox(time_limit.clone())?;
+            let bbox = object.bbox(time_limit)?;
             result = result.map(|last| last | &bbox).or(Some(bbox))
         }
 

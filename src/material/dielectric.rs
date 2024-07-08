@@ -49,8 +49,9 @@ impl Dielectric {
     }
 
     fn refract(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<Ray> {
-        let dir = ray.direction.unit();
-        let cos_theta = (-&dir).dot(&hit.normal);
+        assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
+
+        let cos_theta = (-&ray.direction).dot(&hit.normal);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
         let refractive = if hit.outside {
             self.enter_refractive
@@ -67,7 +68,7 @@ impl Dielectric {
         if Random::normal() < reflect_prob {
             return None;
         }
-        let r_parallel = refractive * (&dir + cos_theta * &hit.normal);
+        let r_parallel = refractive * (&ray.direction + cos_theta * &hit.normal);
         let r_perpendicular = -(1.0 - r_parallel.length_squared()).sqrt() * &hit.normal;
         let r = r_parallel + r_perpendicular;
         Some(Ray::new(hit.point.clone(), r, ray.departure_time))

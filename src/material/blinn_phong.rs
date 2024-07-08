@@ -39,14 +39,16 @@ impl<T: Texture> Material for BlinnPhong<T> {
     }
     
     fn scattering_pdf(&self, ray: &Ray, hit: &HitRecord<'_>, scattered: &Ray) -> f64 {
-        //let cosine = hit.normal.dot(&scattered.direction.unit());
-        
-        let half = (-&ray.direction.unit() + scattered.direction.unit()).unit();
+
+        assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
+        assert!((scattered.direction.length_squared() - 1.0).abs() < 0.00001);
+
+        let half = (-&ray.direction + &scattered.direction).unit();
         
         let cos_theta = half.dot(&hit.normal).max(0.0);
         let specular = cos_theta.powf(self.exponent);
 
         ((((1.0 - self.k_specular) * cos_theta).max(0.0)  
-            + (self.k_specular * specular).max(0.0))) * 0.30
+            + (self.k_specular * specular).max(0.0))) * 0.5 / PI
     }
 }

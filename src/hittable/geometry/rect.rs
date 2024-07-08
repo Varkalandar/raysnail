@@ -88,27 +88,27 @@ impl<M: Material> Hittable for AARect<M> {
     }
 
     fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
-        let unit = (self.metrics.k - ray.origin[self.axis.2]) / ray.direction[self.axis.2];
-        if !unit_limit.contains(&unit) {
+        let t1 = (self.metrics.k - ray.origin[self.axis.2]) / ray.direction[self.axis.2];
+        if !unit_limit.contains(&t1) {
             return None;
         }
 
-        let a = unit.mul_add(ray.direction[self.axis.0], ray.origin[self.axis.0]);
+        let a = t1.mul_add(ray.direction[self.axis.0], ray.origin[self.axis.0]);
 
         if a < self.metrics.a0 || a > self.metrics.a1 {
             return None;
         }
 
-        let b = unit.mul_add(ray.direction[self.axis.1], ray.origin[self.axis.1]);
+        let b = t1.mul_add(ray.direction[self.axis.1], ray.origin[self.axis.1]);
 
         if b < self.metrics.b0 || b > self.metrics.b1 {
             return None;
         }
 
-        Some(HitRecord::new(ray, self, unit))
+        Some(HitRecord::new(ray, self, t1, t1))
     }
 
-    fn bbox(&self, _time_limit: Range<f64>) -> Option<AABB> {
+    fn bbox(&self, _time_limit: &Range<f64>) -> Option<AABB> {
         let mut p0 = Point3::default();
         p0[self.axis.0] = self.metrics.a0;
         p0[self.axis.1] = self.metrics.b0;
@@ -126,7 +126,7 @@ impl<M: Material> Hittable for AARect<M> {
 
         if let Some(hit) = self.hit(&Ray::new(origin.clone(), direction.clone(), 0.0), &(0.001..f64::INFINITY)) {
 
-            let distance_squared = hit.unit * hit.unit * direction.length_squared();    
+            let distance_squared = hit.t1 * hit.t1 * direction.length_squared();    
             let cosine = direction.dot(&hit.normal).abs() / direction.length();
             
             if cosine == 0.0 {

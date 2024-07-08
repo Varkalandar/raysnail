@@ -33,7 +33,7 @@ impl Debug for World {
 
 impl World {
     #[must_use]
-    pub fn new(list: HittableList, lights: HittableList, time_range: Range<f64>) -> Self {
+    pub fn new(list: HittableList, lights: HittableList, time_range: &Range<f64>) -> Self {
         Self {
             bvh: BVH::new(list, time_range),
             lights,
@@ -60,7 +60,7 @@ impl Hittable for World {
         self.bvh.hit(ray, unit_limit)
     }
 
-    fn bbox(&self, time_limit: Range<f64>) -> Option<AABB> {
+    fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
         self.bvh.bbox(time_limit)
     }
 

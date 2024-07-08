@@ -5,10 +5,12 @@ use crate::{
     texture::Texture,
 };
 
-
+#[inline]
 fn reflect(ray: &Ray, hit: &HitRecord<'_>) -> Ray {
-    let dir = ray.direction.unit();
-    let mut reflected_dir = &dir - 2.0 * dir.dot(&hit.normal) * &hit.normal;
+
+    assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
+
+    let reflected_dir = &ray.direction - 2.0 * ray.direction.dot(&hit.normal) * &hit.normal;
     Ray::new(hit.point.clone(), reflected_dir, ray.departure_time)
 }
 
@@ -52,7 +54,10 @@ impl<T: Texture> Material for DiffuseMetal<T> {
     }
 
     fn scattering_pdf(&self, _ray: &Ray, rec: &HitRecord<'_>, scattered: &Ray) -> f64 {
-        let cos_theta = rec.normal.dot(&scattered.direction.unit());
+
+        assert!((scattered.direction.length_squared() - 1.0).abs() < 0.00001);
+
+        let cos_theta = rec.normal.dot(&scattered.direction);
 
         // println!("cos_theta={}",cos_theta);
 

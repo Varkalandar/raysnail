@@ -127,7 +127,8 @@ impl<M: Material> Hittable for RayMarcher<M> {
                     let p = check.unwrap();
                     let length = (p - &ray.origin).length();
                     if length > unit_limit.start {
-                        return Some(HitRecord::new(ray, self, length / ray_direction_length));
+                        let t1 = length / ray_direction_length;
+                        return Some(HitRecord::new(ray, self, t1, t1));
                     }
                 }
                 
@@ -147,7 +148,7 @@ impl<M: Material> Hittable for RayMarcher<M> {
     }
 
     
-    fn bbox(&self, _time_limit: Range<f64>) -> Option<AABB> {
+    fn bbox(&self, _time_limit: &Range<f64>) -> Option<AABB> {
         let center = Vec3::new(0.0, 0.0, 0.0);
         let radius = 1.3;
         Some(

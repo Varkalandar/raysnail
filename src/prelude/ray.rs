@@ -18,7 +18,16 @@ impl Ray {
     }
 
     #[must_use]
-    pub fn position_after(&self, unit: f64) -> Point3 {
-        &self.origin + &self.direction * unit
+    pub fn position_after(&self, t: f64) -> Vec3 {
+        // &self.origin + &self.direction * t
+
+        // self.direction.mul_add(t, &self.origin)
+
+        Vec3 {
+            x: self.direction.x.mul_add(t, self.origin.x),
+            y: self.direction.y.mul_add(t, self.origin.y),
+            z: self.direction.z.mul_add(t, self.origin.z),
+        }
+
     }
 }

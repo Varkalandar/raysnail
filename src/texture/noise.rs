@@ -51,11 +51,12 @@ impl Perlin {
             })
             .collect();
         let mut perm_x = (0..point_count).collect();
-        Random::shuffle(&mut perm_x);
+        rng.shuffle(&mut perm_x);
         let mut perm_y = (0..point_count).collect();
-        Random::shuffle(&mut perm_y);
+        rng.shuffle(&mut perm_y);
         let mut perm_z = (0..point_count).collect();
-        Random::shuffle(&mut perm_z);
+        rng.shuffle(&mut perm_z);
+        
         Self {
             texture_type: TextureType::Normal,
             smooth_type: SmoothType::HermitianCubic,

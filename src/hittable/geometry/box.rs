@@ -116,7 +116,7 @@ impl<M: Material> Hittable for Box<M> {
         self.faces.hit(ray, unit_limit)
     }
 
-    fn bbox(&self, time_limit: Range<f64>) -> Option<AABB> {
+    fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
         self.faces.bbox(time_limit)
     }
 

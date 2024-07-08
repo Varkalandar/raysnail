@@ -138,4 +138,8 @@ impl FastRng {
         start + (self.rng.next_u32() as usize % (end - start))
     }
 
+    pub fn shuffle<T, S: AsMut<[T]>>(&mut self, values: &mut S) {
+        let slice = values.as_mut();
+        slice.shuffle(&mut self.rng);
+    }
 }

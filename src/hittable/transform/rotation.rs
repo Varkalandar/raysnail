@@ -6,6 +6,8 @@ use {
     once_cell::sync::OnceCell,
     std::marker::PhantomData,
 };
+use std::ops::Range;
+
 
 pub trait RotationByAxis: Send + Sync {
     fn rotate(point: &Point3, radian: f64) -> Point3;
@@ -70,7 +72,7 @@ impl<Axis, T> AARotation<Axis, T> {
 }
 
 impl<Axis: RotationByAxis, T: Hittable> Hittable for AARotation<Axis, T> {
-    fn hit(&self, ray: &Ray, unit_limit: &std::ops::Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
         let rotated_origin = Axis::rotate(&ray.origin, -self.radian);
         let rotated_direction = Axis::rotate(&ray.direction, -self.radian);
         let rotated_ray = Ray::new(rotated_origin, rotated_direction, ray.departure_time);
@@ -82,7 +84,7 @@ impl<Axis: RotationByAxis, T: Hittable> Hittable for AARotation<Axis, T> {
     }
 
     #[allow(clippy::cast_precision_loss)] // 0, 1 is small enough
-    fn bbox(&self, time_limit: std::ops::Range<f64>) -> Option<AABB> {
+    fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
         self.bbox_cache
             .get_or_init(|| {
                 self.object.bbox(time_limit).map(|bbox| {

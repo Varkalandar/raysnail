@@ -67,7 +67,9 @@ impl<M: Material> Material for Arc<M> {
 }
 
 pub(crate) fn reflect(ray: &Ray, hit: &HitRecord<'_>) -> Ray {
-    let dir = ray.direction.unit();
-    let reflected_dir = &dir - 2.0 * dir.dot(&hit.normal) * &hit.normal;
+
+    assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
+
+    let reflected_dir = &ray.direction - 2.0 * ray.direction.dot(&hit.normal) * &hit.normal;
     Ray::new(hit.point.clone(), reflected_dir, ray.departure_time)
 }

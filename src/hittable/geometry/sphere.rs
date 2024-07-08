@@ -93,19 +93,19 @@ impl<M: Material> Hittable for Sphere<M> {
         let sqrt = delta.sqrt();
 
         let t1 = (-half_b - sqrt) / a;
+        let t2 = (-half_b + sqrt) / a;
         if unit_limit.contains(&t1) {
-            return Some(HitRecord::new(ray, self, t1));
+            return Some(HitRecord::new(ray, self, t1, t2));
         }
 
-        let t2 = (-half_b + sqrt) / a;
         if unit_limit.contains(&t2) {
-            return Some(HitRecord::new(ray, self, t2));
+            return Some(HitRecord::new(ray, self, t2, t2));
         }
 
         None
     }
 
-    fn bbox(&self, time_limit: Range<f64>) -> Option<AABB> {
+    fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
         Some(
             if self.speed.x == 0.0 && self.speed.y == 0.0 && self.speed.z == 0.0 {
                 AABB::new(
@@ -137,9 +137,8 @@ impl<M: Material> Hittable for Sphere<M> {
      * particular direction to be scattered from this object.
      */
     fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
-        if let Some(_hit) = self.hit(&Ray::new(origin.clone(), direction.clone(), 0.0), &(0.001..f64::INFINITY)) {
 
-        // if (origin - &self.center).unit().dot(direction) <= 0.0 {
+        if let Some(_hit) = self.hit(&Ray::new(origin.clone(), direction.clone(), 0.0), &(0.001..f64::INFINITY)) {
 
             let cos_theta_max =
                 (1.0 - self.radius * self.radius / (&self.center - origin).length_squared()).sqrt();
@@ -160,11 +159,6 @@ impl<M: Material> Hittable for Sphere<M> {
      * an extra ray towards the light source.
      */
     fn random(&self, origin: &Point3, rng: &mut FastRng) -> Vec3 {
-        /*
-        let r = Vec3::random_unit() * (self.radius * 0.99);
-        
-        (r + &self.center) - origin
-        */
 
         let direction = &self.center - origin;
         let uvw = ONB::build_from(&direction);

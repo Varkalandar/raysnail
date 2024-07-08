@@ -16,6 +16,8 @@ use {
 
 use raysnail::material::Material;
 use raysnail::hittable::transform::ByXAxis;
+use crate::BlinnPhong;
+use crate::DiffuseMetal;
 
 fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, bounce_height: f64, need_speed: bool) {
     let small_ball_radius = 0.2;
@@ -36,7 +38,8 @@ fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, bounce_height
                 let mat = rng.normal();
                 if mat < 0.8 {
                     let color = Color::new(rng.normal(), rng.normal(), rng.normal());
-                    let material = Lambertian::new(color);
+                    // let material = Lambertian::new(color);
+                    let material = BlinnPhong::new(0.2, 4.0, color);
                     let mut sphere = Sphere::new(center, small_ball_radius, material);
                     if need_speed {
                         sphere = sphere.with_speed(Vec3::new(0.0, Random::range(0.0..0.5), 0.0));
@@ -48,10 +51,15 @@ fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, bounce_height
                         rng.range(0.5..1.0),
                         rng.range(0.5..1.0),
                     );
-                    // let fuzz = rng.range(0.0..0.5);
-                    // let material = Metal::new(color).fuzz(fuzz);
-                    let material = Metal::new(color);
-                    world.add(Sphere::new(center, small_ball_radius, material));
+                    let fuzz = rng.range(0.0..0.5);
+                    if fuzz < 0.1 {
+                        let material = Metal::new(color);                        
+                        world.add(Sphere::new(center, small_ball_radius, material));
+                    } else {
+                        let material = DiffuseMetal::new(fuzz * 1000.0, color);                        
+                        world.add(Sphere::new(center, small_ball_radius, material));
+                    }
+
                 } else {
                     world.add(Sphere::new(
                         center,
@@ -133,7 +141,8 @@ fn add_big_balls(world: &mut HittableList) {
     world.add(Sphere::new(
         Point3::new(-4.0, 1.0, 0.0),
         1.0,
-        Lambertian::new(Color::new(0.4, 0.2, 0.1)),
+        // Lambertian::new(Color::new(0.4, 0.2, 0.1)),
+        BlinnPhong::new(0.2, 4.0, Color::new(0.99, 0.69, 0.2)),
     ));
 
     
@@ -174,8 +183,8 @@ pub fn balls_scene(seed: Option<u64>, need_speed: bool, checker: bool) -> Hittab
         SeedRandom::random()
     };
 
-    // add_small_balls(&mut list, &mut rng, 0.9, need_speed);
-    add_small_boxes(&mut list, &mut rng, 0.9);
+    add_small_balls(&mut list, &mut rng, 0.9, need_speed);
+    // add_small_boxes(&mut list, &mut rng, 0.9);
     add_big_balls(&mut list);
 
     list
@@ -331,7 +340,7 @@ pub fn all_feature_scene(seed: Option<u64>) -> (Camera, HittableList) {
     }
 
     let mut objects = HittableList::default();
-    objects.add(BVH::new(boxes1, time_limit.clone()));
+    objects.add(BVH::new(boxes1, &time_limit));
 
     let light = DiffuseLight::new(Color::new(1.0, 1.0, 1.0)).multiplier(7.0);
     objects.add(AARect::new_xz(
@@ -418,7 +427,7 @@ pub fn all_feature_scene(seed: Option<u64>) -> (Camera, HittableList) {
     }
 
     objects.add(Translation::new(
-        AARotation::<ByYAxis, _>::new(BVH::new(boxes2, time_limit), 15.0),
+        AARotation::<ByYAxis, _>::new(BVH::new(boxes2, &time_limit), 15.0),
         Vec3::new(-100.0, 270.0, 395.0),
     ));
 

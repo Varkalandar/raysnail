@@ -35,7 +35,10 @@ impl<T: Texture> Material for Lambertian<T> {
     }
     
     fn scattering_pdf(&self, _ray: &Ray, hit: &HitRecord<'_>, scattered: &Ray) -> f64 {
-        let cos_theta = hit.normal.dot(&scattered.direction.unit());        
+
+        assert!((scattered.direction.length_squared() - 1.0).abs() < 0.00001);
+        
+        let cos_theta = hit.normal.dot(&scattered.direction);        
         
         // println!("cos_theta={}",cos_theta);
 

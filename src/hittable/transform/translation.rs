@@ -3,6 +3,8 @@ use crate::{
     prelude::*,
 };
 
+use std::ops::Range;
+
 #[derive(Debug, Clone)]
 pub struct Translation<T> {
     object: T,
@@ -16,7 +18,7 @@ impl<T> Translation<T> {
 }
 
 impl<T: Hittable> Hittable for Translation<T> {
-    fn hit(&self, ray: &Ray, unit_limit: &std::ops::Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
         let moved_ray = Ray::new(
             &ray.origin - &self.movement,
             ray.direction.clone(),
@@ -28,7 +30,7 @@ impl<T: Hittable> Hittable for Translation<T> {
         })
     }
 
-    fn bbox(&self, time_limit: std::ops::Range<f64>) -> Option<AABB> {
+    fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
         self.object
             .bbox(time_limit)
             .map(|bbox| AABB::new(bbox.min() + &self.movement, bbox.max() + &self.movement))
