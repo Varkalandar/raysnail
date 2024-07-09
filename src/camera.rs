@@ -207,9 +207,10 @@ impl<'c> TakePhotoSettings<'c> {
                 let mixture = MixturePdf::new(&light_pdf, srec.pdf.as_ref());                
                 let mut pdf_val = mixture.value(&scattered.direction);
 */
-                let mut pdf_val = 
+                let mut pdf_val =
                     0.5 * srec.pdf.value(&scattered.direction) +
                     0.5 * CosinePdf::new(&scattered.direction).value(&scattered.direction);
+                    // 0.5 * CosinePdf::new(&hit.normal).value(&scattered.direction);
 
                 // clean NaNs and extreme cases
                 if pdf_val <= 0.0 || pdf_val != pdf_val {

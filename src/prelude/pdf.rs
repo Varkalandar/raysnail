@@ -125,6 +125,9 @@ impl BlinnPhongPdf {
 
         let reflected = r_in_direction.reflect(&normal);
         let onb_reflected = ONB::build_from(&reflected);
+
+//         assert!(onb_reflected.axis[2].dot(&normal) >= 0.0);
+
         let onb_normal = ONB::build_from(&normal);
         Self {
             r_in_direction,
@@ -142,17 +145,17 @@ impl PDF for BlinnPhongPdf {
 
         assert!((direction.length_squared() - 1.0).abs() < 0.00001);
 
-        let random_normal = (-&self.r_in_direction + direction).unit();
-        
         let cosine = direction.dot(&self.onb_normal.axis[2]);
         
+        let random_normal = (-&self.r_in_direction + direction).unit();
+        // let random_normal = &self.onb_normal.axis[2];
         let cosine_specular = random_normal.dot(&self.onb_normal.axis[2]).max(0.0);
 
         let normal_pdf =
             (self.exponent + 1.0) / (2.0 * PI) * cosine_specular.powf(self.exponent);
 
-        (cosine / PI).max(0.0)*(1.0 - self.k_specular) + normal_pdf 
-            / (4.0 * (&self.r_in_direction * -1.0).dot(&random_normal)) * self.k_specular
+        (cosine / PI).max(0.0)*(1.0 - self.k_specular) + 
+        normal_pdf / (4.0 * (&self.r_in_direction * -1.0).dot(&random_normal)) * self.k_specular
     }
 
 
