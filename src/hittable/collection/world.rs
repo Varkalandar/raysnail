@@ -14,8 +14,7 @@ use {
 
 #[must_use]
 pub fn default_background(ray: &Ray) -> Color {
-    let unit = ray.direction.unit();
-    let t = 0.5 * (unit.y + 1.0);
+    let t = 0.5 * (ray.direction.y + 1.0);
     Color::new(1.0, 1.0, 1.0).gradient(&Color::new(0.5, 0.7, 1.0), t)
 }
 

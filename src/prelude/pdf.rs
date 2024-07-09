@@ -201,13 +201,15 @@ impl PDF for SpherePdf {
 pub struct HittablePdf<'a> {
     objects: &'a HittableList,
     origin: Point3,
+    normal: Vec3,
 }
 
 impl HittablePdf <'_> {
-    pub fn new<'a>(objects: &'a HittableList, origin: &'a Point3) -> HittablePdf<'a> { 
+    pub fn new<'a>(objects: &'a HittableList, origin: &'a Point3, normal: &'a Vec3) -> HittablePdf<'a> { 
         HittablePdf {
             objects: objects,
             origin: origin.clone(),
+            normal: normal.clone(),
         }
     }
 }
@@ -216,7 +218,12 @@ impl HittablePdf <'_> {
 impl PDF for HittablePdf<'_> {
   
     fn value(&self, direction: &Vec3) -> f64 {
+        /*
         self.objects.pdf_value(&self.origin, direction)
+        */
+
+        let pdf = CosinePdf::new(&self.normal);
+        return pdf.value(direction);
     }
   
     fn generate(&self, rng: &mut FastRng) -> Vec3 {

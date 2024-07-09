@@ -188,21 +188,32 @@ impl<'c> TakePhotoSettings<'c> {
                         return emitted + srec.color * Vec3::new(1.0, 1.0, 1.0);
                     }
                 }
-
-                let light_pdf = HittablePdf::new(&world.lights, &hit.point);
-                let mixture = MixturePdf::new(&light_pdf, srec.pdf.as_ref());                
-
+/*
+                let light_pdf = HittablePdf::new(&world.lights, &hit.point, &hit.normal);
+                let mixture = MixturePdf::new(&light_pdf, srec.pdf.as_ref());
                 let scatter_direction = mixture.generate(rng);
+*/
+                let scatter_direction = 
+                    if rng.gen() < 0.5 
+                        {world.lights.random(&hit.point, rng).unit()} 
+                    else 
+                        {srec.pdf.generate(rng)};
 
                 // println!("hit normal={:?} scatter dir={:?}", hit.normal, scatter_direction);
 
                 let scattered = Ray::new(hit.point.clone(), scatter_direction, ray.departure_time);
-
+/*
+                let light_pdf = HittablePdf::new(&world.lights, &hit.point, &scattered.direction);
+                let mixture = MixturePdf::new(&light_pdf, srec.pdf.as_ref());                
                 let mut pdf_val = mixture.value(&scattered.direction);
+*/
+                let mut pdf_val = 
+                    0.5 * srec.pdf.value(&scattered.direction) +
+                    0.5 * CosinePdf::new(&scattered.direction).value(&scattered.direction);
 
                 // clean NaNs and extreme cases
-                if pdf_val <= 0.0 {
-                    pdf_val = 1e-4;
+                if pdf_val <= 0.0 || pdf_val != pdf_val {
+                    pdf_val = 1e-5;
                 }
 
                 let scattering_pdf_val = material.scattering_pdf(ray, &hit, &scattered);

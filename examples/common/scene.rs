@@ -38,8 +38,8 @@ fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, bounce_height
                 let mat = rng.normal();
                 if mat < 0.8 {
                     let color = Color::new(rng.normal(), rng.normal(), rng.normal());
-                    // let material = Lambertian::new(color);
-                    let material = BlinnPhong::new(0.2, 4.0, color);
+                    let material = Lambertian::new(color);
+                    // let material = BlinnPhong::new(0.2, 4.0, color);
                     let mut sphere = Sphere::new(center, small_ball_radius, material);
                     if need_speed {
                         sphere = sphere.with_speed(Vec3::new(0.0, Random::range(0.0..0.5), 0.0));
@@ -141,8 +141,8 @@ fn add_big_balls(world: &mut HittableList) {
     world.add(Sphere::new(
         Point3::new(-4.0, 1.0, 0.0),
         1.0,
-        // Lambertian::new(Color::new(0.4, 0.2, 0.1)),
-        BlinnPhong::new(0.2, 4.0, Color::new(0.99, 0.69, 0.2)),
+        Lambertian::new(Color::new(0.4, 0.2, 0.1)),
+        // BlinnPhong::new(0.2, 4.0, Color::new(0.99, 0.69, 0.2)),
     ));
 
     

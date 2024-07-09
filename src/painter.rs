@@ -290,7 +290,7 @@ impl Painter {
                 let diff = (&color - &last_color).length_squared();
 
                 if diff > 10.0 {
-                    let limit = diff.sqrt() as usize;
+                    let limit = (diff.sqrt() as usize).min(100);
                     let mut counter = 1;
                     
                     println!("Oversampling pixel {} times due to big color diff", limit);
