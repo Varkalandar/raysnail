@@ -100,6 +100,15 @@ impl Camera {
 }
 
 
+fn phong_highlight(dir_to_light: &Vec3, ray_dir: &Vec3, normal: &Vec3, exponent: i32, factor: f64) -> f64 {
+    let reflected = dir_to_light - 2.0 * dir_to_light.dot(normal) * normal;
+    let specular = reflected.dot(&-ray_dir.clone()).max(0.0).powi(exponent);
+    // println!("specular = {}", specular);
+
+    specular * factor
+}
+
+
 #[derive(Debug)]
 pub struct TakePhotoSettings<'c> {
     camera: &'c Camera,
@@ -192,11 +201,20 @@ impl<'c> TakePhotoSettings<'c> {
                 let mixture = MixturePdf::new(&light_pdf, srec.pdf.as_ref());
                 let scatter_direction = mixture.generate(rng);
 */
+
+                let mut light_multi = 1.0;
+
                 let scatter_direction = 
-                    if rng.gen() < 0.5 
-                        {world.lights.random(&hit.point, rng).unit()} 
-                    else 
-                        {srec.pdf.generate(rng)};
+                    if rng.gen() < 0.5 { 
+                        let dir_to_light = world.lights.random(&hit.point, rng).unit();
+
+                        light_multi += phong_highlight(&-dir_to_light.clone(), &ray.direction, &hit.normal, 20, 1.0);
+
+                        dir_to_light
+                    } 
+                    else {
+                        srec.pdf.generate(rng)
+                    };
 
                 // println!("hit normal={:?} scatter dir={:?}", hit.normal, scatter_direction);
 
@@ -208,6 +226,7 @@ impl<'c> TakePhotoSettings<'c> {
 */
                 // let light_pdf_val = CosinePdf::new(&scattered.direction).value(&scattered.direction);                
                 let light_pdf_val = 0.3183098861837907;
+
 
                 let mut pdf_val =
                     0.5 * srec.pdf.value(&scattered.direction) +
@@ -221,7 +240,7 @@ impl<'c> TakePhotoSettings<'c> {
                 let scattering_pdf_val = material.scattering_pdf(ray, &hit, &scattered);
                 let pdf_multiplicator = scattering_pdf_val / pdf_val;
 
-                let sample_color = Self::ray_color(&scattered, world, depth-1, rng);
+                let sample_color = light_multi * Self::ray_color(&scattered, world, depth-1, rng);
                 let color_from_scatter = (srec.color * sample_color) * pdf_multiplicator;
                 
                 return emitted + color_from_scatter;

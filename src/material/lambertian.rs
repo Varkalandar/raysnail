@@ -30,6 +30,7 @@ impl<T: Texture> Material for Lambertian<T> {
             color,
             ray: None,
             pdf: Box::new(CosinePdf::new(&hit.normal)), 
+            // pdf: Box::new(CosinePdfExponent::new(&hit.normal, 4000.0)), 
             skip_pdf: false,
         })
     }
@@ -39,8 +40,6 @@ impl<T: Texture> Material for Lambertian<T> {
         assert!((scattered.direction.length_squared() - 1.0).abs() < 0.00001);
         
         let cos_theta = hit.normal.dot(&scattered.direction);        
-        
-        // println!("cos_theta={}",cos_theta);
 
         if cos_theta <= 0.0 {0.0} else {cos_theta / PI}
     }        

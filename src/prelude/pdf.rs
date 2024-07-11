@@ -38,13 +38,46 @@ impl PDF for CosinePdf {
         assert!((direction.length_squared() - 1.0).abs() < 0.00001);
 
         let cosine_theta = direction.dot(&self.onb.axis[2]);
-        let v = cosine_theta / PI;
 
-        if v < 0.0 { 0.0 } else { v }
+        if cosine_theta < 0.0 { 0.0 } else { cosine_theta / PI }
     }
   
     fn generate(&self, rng: &mut FastRng) -> Vec3 {
         self.onb.local(&Vec3::random_cosine_direction(rng))
+    }
+}
+
+
+#[derive(Debug)]
+pub struct CosinePdfExponent {
+    onb: ONB,
+    exponent: f64,
+}
+
+impl CosinePdfExponent {
+    
+    pub fn new(n: &Vec3, exponent: f64) -> Self { 
+        CosinePdfExponent {
+            onb: ONB::build_from(n),
+            exponent,
+        } 
+    }
+}
+
+
+impl PDF for CosinePdfExponent {
+
+    fn value(&self, direction: &Vec3) -> f64 {
+
+        assert!((direction.length_squared() - 1.0).abs() < 0.00001);
+
+        let cosine_theta = direction.dot(&self.onb.axis[2]);
+
+        if cosine_theta < 0.0 { 0.0 } else { cosine_theta.powf(self.exponent) / PI }
+    }
+  
+    fn generate(&self, rng: &mut FastRng) -> Vec3 {
+        self.onb.local(&Vec3::random_cosine_direction_exponent(self.exponent, rng))
     }
 }
 

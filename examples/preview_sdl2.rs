@@ -86,7 +86,7 @@ struct PixelQueue {
 
 impl PainterTarget for PixelQueue {
     fn register_pixels(&self, y: usize, pixels: &Vec<[u8; 4]>) {
-        println!("Got {} pixels", pixels.len());
+        // println!("Got {} pixels", pixels.len());
 
         let status = self.sender.send((y, pixels.clone()));
 
@@ -126,8 +126,8 @@ pub fn main() -> Result<(), String> {
 
     spawn(move || boot_sdl(width, height, receiver, command_sender));
 
-    // render_ball_scene(&mut queue);
-    // render_time_test(&mut queue);
+    // render_ball_scene(width, height, &mut queue, &mut controller);
+    // render_time_test(width, height, &mut queue, &mut controller);
     render_raymarching_test(width, height, &mut queue, &mut controller);
 
     Ok(())
@@ -338,7 +338,7 @@ fn render_raymarching_test(width: usize, height: usize,
     camera
         .take_photo_with_lights(world, lights)
         .background(background)
-        .samples(65)
+        .samples(26)
         .depth(8)
         .shot_to_target(Some("raymarching.ppm"), target, controller)
         .unwrap();
@@ -369,7 +369,7 @@ fn render_ball_scene(width: usize, height: usize,
     camera
         .build()
         .take_photo_with_lights(world, lights)
-        .samples(122)
+        .samples(26)
         //.samples(257)
         .depth(8)
         .shot_to_target(Some("rtow_13_1.ppm"), target, controller)
