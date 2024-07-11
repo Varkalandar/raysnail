@@ -119,12 +119,7 @@ impl<Axis: RotationByAxis, T: Hittable> Hittable for AARotation<Axis, T> {
             .clone()
     }
 
-    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
-        self.object.pdf_value(origin, direction)
-    }
-
     fn random(&self, origin: &Point3, rng: &mut FastRng) -> Vec3 {
         self.object.random(origin, rng)
     }
-
 }

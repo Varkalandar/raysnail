@@ -71,10 +71,6 @@ impl<T: Hittable> Hittable for ConstantMedium<T> {
         self.boundary.bbox(time_limit)
     }
 
-    fn pdf_value(&self, _origin: &Point3, _direction: &Vec3) -> f64 {
-        0.0
-    }
-
     fn random(&self, _origin: &Point3, _rng: &mut FastRng) -> Vec3 {
         Vec3::new(1.0, 0.0, 0.0)
     }

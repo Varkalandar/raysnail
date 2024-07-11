@@ -9,7 +9,8 @@ use {
     },
     std::path::Path,
 };
-
+use crate::painter::PainterController;
+use crate::painter::PassivePainterController;
 use log::info;
 
 #[derive(Debug)]
@@ -23,6 +24,9 @@ pub struct Camera {
     aspect_ratio: f64,
     aperture: f64,
     shutter_speed: f64,
+
+    picture_width: usize,
+    picture_height: usize,
 }
 
 
@@ -32,6 +36,7 @@ impl Camera {
     pub(self) fn new(
         look_from: &Point3, look_at: &Point3, vup: &Vec3, fov: f64, aspect_ratio: f64,
         aperture: f64, focus_distance: f64, shutter_speed: f64,
+        picture_width: usize, picture_height: usize,            
     ) -> Self {
 
         // Determine viewport dimensions.
@@ -62,6 +67,8 @@ impl Camera {
             aspect_ratio,
             aperture,
             shutter_speed,
+            picture_width,
+            picture_height,
         }
     }
 
@@ -98,7 +105,6 @@ pub struct TakePhotoSettings<'c> {
     camera: &'c Camera,
     world: World,
     depth: usize,
-    picture_height: usize,       // Rendered image height
     gamma: bool,
     samples: usize,
     threads: usize,
@@ -112,7 +118,6 @@ impl<'c> TakePhotoSettings<'c> {
             camera,
             world,
             depth: 8,
-            picture_height: 108,
             gamma: true,
             samples: 50,
             threads: 0,
@@ -128,12 +133,6 @@ impl<'c> TakePhotoSettings<'c> {
     #[must_use]
     pub const fn depth(mut self, depth: usize) -> Self {
         self.depth = depth;
-        self
-    }
-
-    #[must_use]
-    pub const fn height(mut self, height: usize) -> Self {
-        self.picture_height = height;
         self
     }
 
@@ -207,10 +206,12 @@ impl<'c> TakePhotoSettings<'c> {
                 let mixture = MixturePdf::new(&light_pdf, srec.pdf.as_ref());                
                 let mut pdf_val = mixture.value(&scattered.direction);
 */
+                // let light_pdf_val = CosinePdf::new(&scattered.direction).value(&scattered.direction);                
+                let light_pdf_val = 0.3183098861837907;
+
                 let mut pdf_val =
                     0.5 * srec.pdf.value(&scattered.direction) +
-                    0.5 * CosinePdf::new(&scattered.direction).value(&scattered.direction);
-                    // 0.5 * CosinePdf::new(&hit.normal).value(&scattered.direction);
+                    0.5 * light_pdf_val;
 
                 // clean NaNs and extreme cases
                 if pdf_val <= 0.0 || pdf_val != pdf_val {
@@ -298,35 +299,37 @@ impl<'c> TakePhotoSettings<'c> {
     /// # Errors
     /// When open or save to file failed
     #[allow(clippy::needless_pass_by_value)] // Directly used public API, add & will make it harder to use
-    pub fn shot_to_target<P: AsRef<Path>>(&self, path: Option<P>, target: &mut dyn PainterTarget) -> std::io::Result<()> {
+    pub fn shot_to_target<P: AsRef<Path>>(&self, path: Option<P>, 
+                                          target: &mut dyn PainterTarget,
+                                          controller: &mut dyn PainterController) -> std::io::Result<()> {
         // because picture height/width is always positive and small enough in practice
         #[allow(
             clippy::cast_sign_loss,
             clippy::cast_precision_loss,
             clippy::cast_possible_truncation
         )]
-
-        let picture_width = (self.picture_height as f64 * self.camera.aspect_ratio).round();
         
-        Painter::new(picture_width as usize, self.picture_height)
+        Painter::new(self.camera.picture_width, self.camera.picture_height)
         .gamma(self.gamma)
         .samples(self.samples)
         .threads(self.threads)
         .parallel(self.parallel)
-        .draw(&path, target, |i: f64, j: f64, rng: &mut FastRng| -> Vec3 {
+        .draw(&path, target, controller,
+            |i: f64, j: f64, rng: &mut FastRng| -> Vec3 {
 
-            // info!("uv_color 1 {}, {}", i, j);
+                // info!("uv_color 1 {}, {}", i, j);
 
-            let ray = self.camera.ray(i, j, rng);
-            // info!("uv_color 2 {}, {}", i, j);
-            Self::ray_color(&ray, &self.world, self.depth, rng)
-        })
+                let ray = self.camera.ray(i, j, rng);
+                // info!("uv_color 2 {}, {}", i, j);
+                Self::ray_color(&ray, &self.world, self.depth, rng)
+            })
     }
 
 
     pub fn shot<P: AsRef<Path>>(&self, path: Option<P>) -> std::io::Result<()> {
         let mut target = PassivePainterTarget {};
-        self.shot_to_target(path, &mut target)
+        let mut controller = PassivePainterController {};
+        self.shot_to_target(path, &mut target, &mut controller)
     }
 }
 
@@ -337,10 +340,13 @@ pub struct CameraBuilder {
     look_at: Point3,
     vup: Vec3,
     fov: f64,
-    aspect_ratio: f64,
     aperture: f64,
     focus_distance: f64,
     shutter_speed: f64,
+
+    picture_width: usize,
+    picture_height: usize,
+    aspect_ratio: f64,    
 }
 
 impl Default for CameraBuilder {
@@ -350,10 +356,12 @@ impl Default for CameraBuilder {
             look_at: Point3::new(0.0, 0.0, -1.0),
             vup: Vec3::new(0.0, 1.0, 0.0),
             fov: 90.0,
-            aspect_ratio: 16.0 / 9.0,
             aperture: 0.0,
             focus_distance: 1.0,
             shutter_speed: 0.0,
+            picture_width: 400,
+            picture_height: 200,
+            aspect_ratio: 2.0,
         }
     }
 }
@@ -385,13 +393,6 @@ impl CameraBuilder {
     }
 
     #[must_use]
-    pub fn aspect_ratio(mut self, aspect_ratio: f64) -> Self {
-        debug_assert!(aspect_ratio > 0.0, "aspect_ratio = {}", aspect_ratio);
-        self.aspect_ratio = aspect_ratio;
-        self
-    }
-
-    #[must_use]
     pub fn aperture(mut self, aperture: f64) -> Self {
         debug_assert!(aperture >= 0.0, "aperture = {}", aperture);
         self.aperture = aperture;
@@ -418,6 +419,21 @@ impl CameraBuilder {
         self
     }
 
+    pub fn width(mut self, width: usize) -> Self {
+        self.picture_width = width;
+        self.aspect_ratio = self.picture_width as f64 / self.picture_height as f64;
+
+        self
+    }
+
+    #[must_use]
+    pub fn height(mut self, height: usize) -> Self {
+        self.picture_height = height;
+        self.aspect_ratio = self.picture_width as f64 / self.picture_height as f64;
+
+        self
+    }
+
     #[must_use]
     pub fn build(self) -> Camera {
         Camera::new(
@@ -429,6 +445,8 @@ impl CameraBuilder {
             self.aperture,
             self.focus_distance,
             self.shutter_speed,
+            self.picture_width,
+            self.picture_height,
         )
     }
 }

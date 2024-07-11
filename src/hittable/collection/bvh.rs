@@ -195,10 +195,6 @@ impl Hittable for BVH {
         self.bbox.clone()
     }
 
-    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
-        0.0
-    }
-
     fn random(&self, origin: &Point3, _rng: &mut FastRng) -> Vec3 {
         Vec3::new(1.0, 0.0, 0.0)
     }

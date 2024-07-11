@@ -2,6 +2,7 @@ use {
     super::scene,
     raysnail::{camera::Camera, hittable::collection::HittableList},
 };
+use crate::CameraBuilder;
 
 pub use scene::all_feature_scene;
 
@@ -11,12 +12,12 @@ fn motion_blur_world(seed: Option<u64>, checker: bool) -> HittableList {
 }
 
 #[must_use]
-fn motion_blur_camera() -> Camera {
+fn motion_blur_camera() -> CameraBuilder {
     scene::balls_scene_camera(true)
 }
 
 #[must_use]
-pub fn motion_blur(seed: Option<u64>, checker: bool) -> (Camera, HittableList) {
+pub fn motion_blur(seed: Option<u64>, checker: bool) -> (CameraBuilder, HittableList) {
     (motion_blur_camera(), motion_blur_world(seed, checker))
 }
 

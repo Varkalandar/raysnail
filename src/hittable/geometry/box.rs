@@ -120,10 +120,6 @@ impl<M: Material> Hittable for Box<M> {
         self.faces.bbox(time_limit)
     }
 
-    fn pdf_value(&self, _origin: &Point3, _direction: &Vec3) -> f64 {
-        0.5
-    }
-
     fn random(&self, _origin: &Point3, _rng: &mut FastRng) -> Vec3 {
         Vec3::new(1.0, 0.0, 0.0)
     }

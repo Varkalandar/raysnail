@@ -161,32 +161,6 @@ impl<M: Material> Hittable for RayMarcher<M> {
 
 
     /**
-     * This is only called if the object is a light source. It is used to check the probability of a
-     * particular direction to be scattered from this object.
-     */
-     fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
-
-        // this is for a sphere actually, maybe it's good enough as approximation?
-        let radius = 1.2;
-
-        if let Some(_hit) = self.hit(&Ray::new(origin.clone(), direction.clone(), 0.0), &(0.001..f64::INFINITY)) {
-    
-            let cos_theta_max =
-                (1.0 - radius * radius / (-origin).length_squared()).sqrt();
-            let solid_angle = 2.0 * PI * (1.0 - cos_theta_max);
-
-            if solid_angle == 0.0 {
-                return 1e10;
-            }
-
-            return 1.0 / solid_angle;
-        }
-
-        0.0
-    }
-
-
-    /**
      * This is only called if the object is a light source. It is used to generate
      * an extra ray towards the light source.
      */

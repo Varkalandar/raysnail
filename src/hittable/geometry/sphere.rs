@@ -132,32 +132,6 @@ impl<M: Material> Hittable for Sphere<M> {
         )
     }
 
-    /**
-     * This is only called if the object is a light source. It is used to check the probability of a
-     * particular direction to be scattered from this object.
-     */
-    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
-
-        if let Some(_hit) = self.hit(&Ray::new(origin.clone(), direction.clone(), 0.0), &(0.001..f64::INFINITY)) {
-            let cos_theta =
-                (1.0 - self.radius * self.radius / (&self.center - origin).length_squared()).sqrt();
-
-            let solid_angle = 2.0 * PI * (1.0 - cos_theta);
-
-            if solid_angle == 0.0 {
-                return 1e10;
-            }
-
-            println!("Light hit. pdf value={}", 1.0 / solid_angle);
-        
-            return 1.0 / solid_angle;
-        }
-
-        println!("Light miss. pdf value=0.0");
-
-        0.0
-    }
-
 
     /**
      * This is only called if the object is a light source. It is used to generate

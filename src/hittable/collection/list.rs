@@ -44,17 +44,6 @@ impl HittableList {
         self.objects
     }
 
-    pub fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
-        let weight = 1.0 / self.objects.len() as f64;
-        let mut sum = 0.0;
-
-        for object in &self.objects {
-            sum += weight * object.pdf_value(origin, direction);
-        }
-
-        sum
-    }
-
     pub fn random(&self, origin: &Point3, rng: &mut FastRng) -> Vec3 {
         let size = self.objects.len();
         return self.objects[rng.irange(0, size)].random(origin, rng);
@@ -110,10 +99,6 @@ impl Hittable for HittableList {
         }
 
         result
-    }
-    
-    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
-        0.0
     }
 
     fn random(&self, origin: &Point3, _rng: &mut FastRng) -> Vec3 {

@@ -122,24 +122,6 @@ impl<M: Material> Hittable for AARect<M> {
         Some(AABB::new(p0, p1))
     }
 
-    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
-
-        if let Some(hit) = self.hit(&Ray::new(origin.clone(), direction.clone(), 0.0), &(0.001..f64::INFINITY)) {
-
-            let distance_squared = hit.t1 * hit.t1 * direction.length_squared();    
-            let cosine = direction.dot(&hit.normal).abs() / direction.length();
-            
-            if cosine == 0.0 {
-                return 1e10;
-            }
-
-            let area = self.metrics.a_len * self.metrics.b_len;
-            return distance_squared / (cosine * area);
-        }
-
-        0.0
-    }
-
     fn random(&self, origin: &Point3, rng: &mut FastRng) -> Vec3 {
         // axis 2 is distance to the origin
         // axis 0 and 1 are orthoginal 2d vectors to the fixed axis

@@ -75,8 +75,6 @@ pub trait Hittable: Send + Sync {
     fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>>;
     fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB>;
 
-    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64;
-
     /**
      * This is only called if the object is a light source. It is used to generate
      * an extra ray towards the light source.

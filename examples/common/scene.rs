@@ -191,7 +191,7 @@ pub fn balls_scene(seed: Option<u64>, need_speed: bool, checker: bool) -> Hittab
 }
 
 #[must_use]
-pub fn balls_scene_camera(need_shutter_speed: bool) -> Camera {
+pub fn balls_scene_camera(need_shutter_speed: bool) -> CameraBuilder {
     let mut builder = CameraBuilder::default()
         .look_from(Point3::new(13.0, 2.0, 3.0))
         .look_at(Point3::new(0.0, 0.0, 0.0))
@@ -204,7 +204,7 @@ pub fn balls_scene_camera(need_shutter_speed: bool) -> Camera {
         builder = builder.shutter_speed(1.0);
     }
 
-    builder.build()
+    builder
 }
 
 #[must_use]
@@ -306,7 +306,6 @@ pub fn cornell_box_scene(
     }
 
     let camera = CameraBuilder::default()
-        .aspect_ratio(1.0)
         .fov(40.0)
         .look_from(Point3::new(278.0, 278.0, -800.0))
         .look_at(Point3::new(278.0, 278.0, 0.0))
@@ -434,7 +433,6 @@ pub fn all_feature_scene(seed: Option<u64>) -> (Camera, HittableList) {
     let camera = CameraBuilder::default()
         .look_from(Point3::new(478.0, 278.0, -600.0))
         .look_at(Point3::new(278.0, 278.0, 0.0))
-        .aspect_ratio(1.0)
         .fov(40.0)
         .shutter_speed(1.0)
         .build();
