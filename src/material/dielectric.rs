@@ -13,7 +13,7 @@ pub trait ReflectProbabilityCurve: Debug + Send + Sync {
     fn reflect_prob(&self, cos_theta: f64, refractive: f64) -> f64;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Glass {}
 
 impl ReflectProbabilityCurve for Glass {

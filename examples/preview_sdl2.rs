@@ -34,6 +34,7 @@ use raysnail::hittable::Box;
 use raysnail::hittable::AARect;
 use raysnail::hittable::AARectMetrics;
 use raysnail::hittable::geometry::RayMarcher;
+use raysnail::hittable::geometry::TriangleMesh;
 use raysnail::hittable::collection::HittableList;
 use raysnail::texture::Checker;
 
@@ -128,7 +129,8 @@ pub fn main() -> Result<(), String> {
 
     // render_ball_scene(width, height, &mut queue, &mut controller);
     // render_time_test(width, height, &mut queue, &mut controller);
-    render_raymarching_test(width, height, &mut queue, &mut controller);
+    // render_raymarching_test(width, height, &mut queue, &mut controller);
+    render_object_test(width, height, &mut queue, &mut controller);
 
     Ok(())
 }
@@ -377,4 +379,81 @@ fn render_ball_scene(width: usize, height: usize,
         .depth(8)
         .shot_to_target(Some("rtow_13_1.ppm"), target, controller)
         .unwrap();
+}
+
+
+fn render_object_test(width: usize, height: usize, 
+    target: &mut dyn PainterTarget, controller: &mut dyn PainterController) {
+
+    let builder = CameraBuilder::default()
+        .look_from(Point3::new(13.0, 1.5, 3.0) * 1.0)
+        .look_at(Point3::new(0.0, 0.3, 0.0))
+        .fov(20.0)
+        .aperture(0.01)
+        .focus(10.0)
+        .width(width)
+        .height(height);
+
+    let camera = builder.build();    
+
+    let mut world = HittableList::default();
+    let mut lights = HittableList::default();
+
+    let rs = 
+        Sphere::new(Vec3::new(300.0, 400.0, 100.0), 
+            12.0, 
+            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(1.5)
+        );
+
+    lights.add(rs.clone());
+    world.add(rs);
+
+    // let color = Color::new(0.8, 0.8, 0.8);
+    let color = Color::new(0.9, 0.3, 0.1);
+    let mut material = Lambertian::new(color);
+    material.settings.phong_factor = 4.0;
+    material.settings.phong_exponent = 4;
+
+    let mesh = TriangleMesh::load(
+        "objects/dragon.obj",
+        0.2, // scale: f64,
+        Vec3::new(0.0, 0.0, 0.0), // offset: Vec3,
+        120.0, // rotation_angle: f64,
+        1, // axis: i32,
+        material,
+    );
+
+    for tri in mesh.triangles {
+        world.add(tri);
+    }
+
+    world.add(Sphere::new(
+            Point3::new(0.0, -1000.0, 0.0),
+            1000.0,
+            // DiffuseMetal::new(5000.0, Checker::new(
+            // Metal::new(Checker::new(
+            //    Color::new(0.26, 0.3, 0.16),
+            //    Color::new(0.08, 0.1, 0.06),
+            //    )
+            Metal::new(Color::new(0.08, 0.1, 0.06))
+    ));
+
+    fn background(ray: &Ray) -> Color {
+
+    // assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
+
+    let t = 0.5 * (ray.direction.y + 1.0);
+    Color::new(0.68, 0.80, 0.95).gradient(&Color::new(0.2, 0.4, 0.7), t)
+
+    // Color::new(0.9, 0.9, 0.9)
+    // Color::new(0.06, 0.06, 0.25)
+    }
+
+    camera
+    .take_photo_with_lights(world, lights)
+    .background(background)
+    .samples(122)
+    .depth(8)
+    .shot_to_target(Some("raymarching.ppm"), target, controller)
+    .unwrap();
 }

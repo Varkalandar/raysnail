@@ -49,6 +49,23 @@ impl<'m> HitRecord<'m> {
             outside,
         }
     }
+
+    pub fn with_normal<G: Hittable>(ray: &Ray, normal: Vec3, object: &'m G, t1: f64, t2: f64) -> Self {
+        let point = ray.position_after(t1);
+
+        let material = object.material();
+        let (u, v) = object.uv(&point);
+        Self {
+            point,
+            normal,
+            material,
+            t1,
+            t2,
+            u,
+            v,
+            outside: true,
+        }
+    }
 }
 
 #[allow(unused_variables)]

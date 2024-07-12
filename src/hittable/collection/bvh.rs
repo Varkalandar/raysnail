@@ -87,8 +87,8 @@ impl BVH {
         } else {
 
             // try to create most even split
-            let axis = find_best_axis(objects, time_limit);
-
+            // let axis = find_best_axis(objects, time_limit);
+            let axis = Random::range(0..2);
             objects[index.clone()].sort_by(|a, b| {
                 cmp_geometry_by(
                     axis,

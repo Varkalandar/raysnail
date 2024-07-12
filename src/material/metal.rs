@@ -17,7 +17,7 @@ fn reflect(ray: &Ray, hit: &HitRecord<'_>) -> Ray {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DiffuseMetal<T: Texture> {
     texture: T,
     exponent: f64,
@@ -74,7 +74,7 @@ impl<T: Texture> Material for DiffuseMetal<T> {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Metal<T: Texture> {
     texture: T,
     settings: CommonMaterialSettings,

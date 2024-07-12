@@ -286,7 +286,7 @@ impl Painter {
 
         for s_j in 0 .. self.sqrt_spp {
             for s_i in 0 .. self.sqrt_spp {
-                let mut last_color = Vec3::new(0.5, 0.5, 0.5);
+                let last_color = Vec3::new(0.5, 0.5, 0.5);
 
                 let xo = x + (s_i as f64 + rng.gen()) / self.sqrt_spp as f64;
                 let yo = y + (s_j as f64 + rng.gen()) / self.sqrt_spp as f64;

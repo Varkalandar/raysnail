@@ -193,6 +193,26 @@ impl Vec3 {
         self / self.length()
     }
 
+    pub fn rotate(&self, axis: i32, cos: f64, sin: f64) -> Self {
+        match axis {
+            0 => Vec3::new(
+                self.x,
+                self.y * cos - self.z * sin,
+                self.y * sin + self.z * cos,
+            ),
+            1 => Vec3::new(
+                self.x * cos + self.z * sin,
+                self.y,
+                -self.x * sin + self.z * cos,
+            ),
+            _ => Vec3::new(
+                self.x * cos - self.y * sin,
+                self.x * sin + self.y * cos,
+                self.z,
+            ),
+        }
+    }
+
     #[inline(always)]
     pub fn mul_add(&self, a: f64, b: &Vec3) -> Self {
         Vec3 {
