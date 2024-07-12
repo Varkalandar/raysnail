@@ -4,11 +4,13 @@ use crate::{
     prelude::*,
     texture::Texture,
 };
+use crate::material::CommonMaterialSettings;
 
 
 #[derive(Debug, Clone)]
 pub struct Lambertian<T: Texture> {
     texture: T,
+    pub settings: CommonMaterialSettings,
 }
 
 impl<T: Texture> Lambertian<T> {
@@ -16,6 +18,7 @@ impl<T: Texture> Lambertian<T> {
     pub fn new(texture: T) -> Self {
         Self {
             texture,
+            settings: CommonMaterialSettings::new(),
         }
     }
 }
@@ -43,4 +46,8 @@ impl<T: Texture> Material for Lambertian<T> {
 
         if cos_theta <= 0.0 {0.0} else {cos_theta / PI}
     }        
+
+    fn settings(&self) -> CommonMaterialSettings {
+        self.settings.clone()
+    }
 }

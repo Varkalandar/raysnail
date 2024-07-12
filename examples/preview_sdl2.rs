@@ -309,8 +309,11 @@ fn render_raymarching_test(width: usize, height: usize,
     lights.add(rs.clone());
     world.add(rs);
 
-    let color = Color::new(0.8, 0.8, 0.8);
-    let material = Lambertian::new(color);
+    // let color = Color::new(0.8, 0.8, 0.8);
+    let color = Color::new(0.5, 0.5, 0.5);
+    let mut material = Lambertian::new(color);
+    material.settings.phong_factor = 4.0;
+    material.settings.phong_exponent = 2;
     // let material = BlinnPhong::new(0.5, 4.0, color);
     // let material = Metal::new(color);
     world.add(RayMarcher::new(material));
@@ -338,7 +341,7 @@ fn render_raymarching_test(width: usize, height: usize,
     camera
         .take_photo_with_lights(world, lights)
         .background(background)
-        .samples(26)
+        .samples(122)
         .depth(8)
         .shot_to_target(Some("raymarching.ppm"), target, controller)
         .unwrap();

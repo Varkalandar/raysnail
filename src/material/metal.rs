@@ -4,6 +4,8 @@ use crate::{
     prelude::*,
     texture::Texture,
 };
+use crate::material::CommonMaterialSettings;
+
 
 #[inline]
 fn reflect(ray: &Ray, hit: &HitRecord<'_>) -> Ray {
@@ -18,7 +20,8 @@ fn reflect(ray: &Ray, hit: &HitRecord<'_>) -> Ray {
 #[derive(Debug)]
 pub struct DiffuseMetal<T: Texture> {
     texture: T,
-    exponent: f64, 
+    exponent: f64,
+    settings: CommonMaterialSettings,
 }
 
 impl<T: Texture> DiffuseMetal<T> {
@@ -30,7 +33,8 @@ impl<T: Texture> DiffuseMetal<T> {
     pub fn new(exponent: f64, texture: T) -> Self {
         Self {
             exponent,
-            texture
+            texture,
+            settings: CommonMaterialSettings::new(),
         }
     }
 }
@@ -63,20 +67,27 @@ impl<T: Texture> Material for DiffuseMetal<T> {
 
         if cos_theta <= 0.0 {0.0} else {cos_theta / PI}
     }        
+
+    fn settings(&self) -> CommonMaterialSettings {
+        self.settings.clone()
+    }
 }
 
 
 #[derive(Debug)]
 pub struct Metal<T: Texture> {
     texture: T,
+    settings: CommonMaterialSettings,
 }
 
 impl<T: Texture> Metal<T> {
     #[must_use]
     pub fn new(texture: T) -> Self {
-        Self { texture }
+        Self {
+            texture,
+            settings: CommonMaterialSettings::new(),
+        }
     }
-
 }
 
 impl<T: Texture> Material for Metal<T> {
@@ -94,5 +105,9 @@ impl<T: Texture> Material for Metal<T> {
         } else {
             None
         }
+    }
+
+    fn settings(&self) -> CommonMaterialSettings {
+        self.settings.clone()
     }
 }

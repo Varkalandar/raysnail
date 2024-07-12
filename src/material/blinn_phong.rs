@@ -4,6 +4,7 @@ use crate::{
     prelude::*,
     texture::Texture,
 };
+use crate::material::CommonMaterialSettings;
 
 
 #[derive(Debug, Clone)]
@@ -11,6 +12,7 @@ pub struct BlinnPhong<T: Texture> {
     texture: T,
     k_specular: f64,
     exponent: f64,
+    settings: CommonMaterialSettings,
 }
 
 impl<T: Texture> BlinnPhong<T> {
@@ -20,6 +22,7 @@ impl<T: Texture> BlinnPhong<T> {
             texture,
             exponent,
             k_specular,
+            settings: CommonMaterialSettings::new(),
         }
     }
 }
@@ -50,5 +53,9 @@ impl<T: Texture> Material for BlinnPhong<T> {
 
         ((((1.0 - self.k_specular) * cos_theta).max(0.0)  
             + (self.k_specular * specular).max(0.0))) * 0.5 / PI
+    }
+
+    fn settings(&self) -> CommonMaterialSettings {
+        self.settings.clone()
     }
 }

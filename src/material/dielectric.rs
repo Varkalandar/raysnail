@@ -6,6 +6,8 @@ use {
     },
     std::fmt::Debug,
 };
+use crate::material::CommonMaterialSettings;
+
 
 pub trait ReflectProbabilityCurve: Debug + Send + Sync {
     fn reflect_prob(&self, cos_theta: f64, refractive: f64) -> f64;
@@ -28,6 +30,7 @@ pub struct Dielectric {
     enter_refractive: f64,
     outer_refractive: f64,
     reflect_curve: Option<Box<dyn ReflectProbabilityCurve>>,
+    settings: CommonMaterialSettings,
 }
 
 impl Dielectric {
@@ -40,6 +43,7 @@ impl Dielectric {
             enter_refractive,
             outer_refractive,
             reflect_curve: None,
+            settings: CommonMaterialSettings::new(),
         }
     }
 
@@ -86,5 +90,9 @@ impl Material for Dielectric {
             pdf: Box::new(CosinePdf::new(&hit.normal)), 
             skip_pdf: true,            
         })
+    }
+
+    fn settings(&self) -> CommonMaterialSettings {
+        self.settings.clone()
     }
 }

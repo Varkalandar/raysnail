@@ -103,7 +103,7 @@ impl Camera {
 fn phong_highlight(dir_to_light: &Vec3, ray_dir: &Vec3, normal: &Vec3, exponent: i32, factor: f64) -> f64 {
     let reflected = dir_to_light - 2.0 * dir_to_light.dot(normal) * normal;
     let specular = reflected.dot(&-ray_dir.clone()).max(0.0).powi(exponent);
-    // println!("specular = {}", specular);
+    // println!("specular = {}", specular * factor);
 
     specular * factor
 }
@@ -207,8 +207,11 @@ impl<'c> TakePhotoSettings<'c> {
                 let scatter_direction = 
                     if rng.gen() < 0.5 { 
                         let dir_to_light = world.lights.random(&hit.point, rng).unit();
-
-                        light_multi += phong_highlight(&-dir_to_light.clone(), &ray.direction, &hit.normal, 20, 1.0);
+                        let settings = material.settings();
+                        if settings.phong_factor > 0.0 {
+                            light_multi += phong_highlight(&-dir_to_light.clone(), &ray.direction, &hit.normal, 
+                                                           settings.phong_exponent, settings.phong_factor);
+                        }
 
                         dir_to_light
                     } 

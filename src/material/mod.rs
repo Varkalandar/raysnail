@@ -37,6 +37,22 @@ impl Debug for ScatterRecord {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct CommonMaterialSettings {
+    pub phong_factor: f64,
+    pub phong_exponent: i32,
+}
+
+impl CommonMaterialSettings {
+    fn new() -> CommonMaterialSettings {
+        CommonMaterialSettings {
+            phong_factor: 0.0,
+            phong_exponent: 1,
+        }
+    }
+}
+
+
 pub trait Material: Send + Sync {
 
     fn scatter(&self, _ray: &Ray, _hit: &HitRecord<'_>) -> Option<ScatterRecord> {
@@ -50,7 +66,10 @@ pub trait Material: Send + Sync {
     fn scattering_pdf(&self, _ray: &Ray, _hit: &HitRecord<'_>, _scattered: &Ray) -> f64 {
         0.0
     }
+
+    fn settings(&self) -> CommonMaterialSettings;
 }
+
 
 impl<M: Material> Material for Arc<M> {
     fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
@@ -64,7 +83,12 @@ impl<M: Material> Material for Arc<M> {
     fn scattering_pdf(&self, ray: &Ray, hit: &HitRecord<'_>, scattered: &Ray) -> f64 {
         self.as_ref().scattering_pdf(ray, hit, scattered)
     }
+
+    fn settings(&self) -> CommonMaterialSettings {
+        self.as_ref().settings()
+    }
 }
+
 
 pub(crate) fn reflect(ray: &Ray, hit: &HitRecord<'_>) -> Ray {
 

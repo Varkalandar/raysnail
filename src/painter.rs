@@ -312,8 +312,7 @@ impl Painter {
                 }
 
                 color_vec = color_vec + &color;
-                last_color = color;
-                
+                // last_color = color;
             }
         }
 
