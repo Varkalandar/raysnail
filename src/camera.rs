@@ -21,7 +21,6 @@ pub struct Camera {
     vertical_full: Vec3,
     horizontal_unit: Vec3,
     vertical_unit: Vec3,
-    aspect_ratio: f64,
     aperture: f64,
     shutter_speed: f64,
 
@@ -64,7 +63,6 @@ impl Camera {
             vertical_full: viewport_v,
             horizontal_unit,
             vertical_unit,
-            aspect_ratio,
             aperture,
             shutter_speed,
             picture_width,
