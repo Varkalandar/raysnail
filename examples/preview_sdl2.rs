@@ -37,6 +37,7 @@ use raysnail::hittable::geometry::RayMarcher;
 use raysnail::hittable::geometry::TriangleMesh;
 use raysnail::hittable::collection::HittableList;
 use raysnail::texture::Checker;
+use raysnail::sdl_parser::SdlParser;
 
 use rayon::spawn;
 use std::sync::mpsc::sync_channel;
@@ -130,7 +131,8 @@ pub fn main() -> Result<(), String> {
     // render_ball_scene(width, height, &mut queue, &mut controller);
     // render_time_test(width, height, &mut queue, &mut controller);
     // render_raymarching_test(width, height, &mut queue, &mut controller);
-    render_object_test(width, height, &mut queue, &mut controller);
+    // render_object_test(width, height, &mut queue, &mut controller);
+    render_parser_test(width, height, &mut queue, &mut controller);
 
     Ok(())
 }
@@ -456,4 +458,54 @@ fn render_object_test(width: usize, height: usize,
     .depth(8)
     .shot_to_target(Some("raymarching.ppm"), target, controller)
     .unwrap();
+}
+
+
+fn render_parser_test(width: usize, height: usize, 
+                      target: &mut dyn PainterTarget, controller: &mut dyn PainterController) {
+
+
+    let mut scene_data = SdlParser::parse("sdl/example.sdl");
+    let camera_data = &scene_data.camera.unwrap();
+
+    let builder = CameraBuilder::default()
+        .look_from(camera_data.location.clone())
+        .look_at(camera_data.look_at.clone())
+        .fov(20.0)
+        .aperture(0.01)
+        .focus(10.0)
+        .width(width)
+        .height(height);
+
+    let camera = builder.build();    
+
+    let mut lights = HittableList::default();
+
+    let rs = 
+        Sphere::new(Vec3::new(300.0, 400.0, 100.0), 
+            12.0, 
+            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(1.5)
+        );
+
+    lights.add(rs.clone());
+    scene_data.hittables.add(rs);
+
+    fn background(ray: &Ray) -> Color {
+
+    // assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
+
+    let t = 0.5 * (ray.direction.y + 1.0);
+    Color::new(0.68, 0.80, 0.95).gradient(&Color::new(0.2, 0.4, 0.7), t)
+
+    // Color::new(0.9, 0.9, 0.9)
+    // Color::new(0.06, 0.06, 0.25)
+    }
+
+    camera
+        .take_photo_with_lights(scene_data.hittables, lights)
+        .background(background)
+        .samples(122)
+        .depth(8)
+        .shot_to_target(Some("sample_scene.ppm"), target, controller)
+        .unwrap();
 }

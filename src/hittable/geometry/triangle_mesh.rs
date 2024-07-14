@@ -1,4 +1,3 @@
-use std::mem;
 use std::ops::Range;
 
 use crate::prelude::Vec3;

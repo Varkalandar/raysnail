@@ -6,19 +6,21 @@ use crate::prelude::Vec3;
 use crate::hittable::Sphere;
 use crate::prelude::Color;
 use crate::material::Lambertian;
+use crate::hittable::collection::HittableList;
 
 
 // All data parsed from the scene definition
 #[derive(Debug)]
 pub struct SceneData {
-    camera: Option <CameraData>,
+    pub camera: Option <CameraData>,
+    pub hittables: HittableList,
 }
 
 
 #[derive(Debug)]
 pub struct CameraData {
-    location: Vec3,
-    look_at: Vec3,
+    pub location: Vec3,
+    pub look_at: Vec3,
 }
 
 
@@ -63,6 +65,7 @@ impl SdlParser {
 
         let mut scene = SceneData {
             camera: None,
+            hittables: HittableList::default(),
         };
 
         parse_root(&mut input, &mut scene);
@@ -114,7 +117,7 @@ fn read_tokens(filename: &str) -> Vec<String> {
         let token_line = &line.to_string();
         let tokens = tokenize(token_line);
         for token in tokens {
-            println!("Token = '{}' len = {}", token, token.len());
+            // println!("Token = '{}' len = {}", token, token.len());
             result.push(token);
         }
     }
@@ -175,7 +178,7 @@ fn nextsym(input: &mut Input) {
         input.symbol_text = "EOF".to_string();
     }
 
-    // println!("Current symbol is: {}", input.symbol_text);
+    println!("Current symbol is: {}", input.symbol_text);
 }
 
 fn accept(input: &mut Input, s: Symbol) -> bool {
@@ -218,7 +221,7 @@ fn parse_root(input: &mut Input, scene: &mut SceneData) {
 fn parse_statement(input: &mut Input, scene: &mut SceneData) -> bool {
     while input.pos < input.tokens.len() {
 
-        println!("parse_statement: {}", input.symbol_text);
+        println!("parse_statement: {:?} ('{}') ", input.symbol, input.symbol_text);
 
 
         if parse_camera(input, scene) {
@@ -226,6 +229,7 @@ fn parse_statement(input: &mut Input, scene: &mut SceneData) -> bool {
         else if parse_sphere(input, scene) {
         }
         else if input.symbol == Symbol::Eof {
+            println!("EOF, stop parsing");
             break;
         }
         else {
@@ -291,7 +295,7 @@ fn parse_camera_vector(input: &mut Input, camera: &mut CameraData) -> bool {
 
 fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
 
-    // println!("parse_sphere: called");
+    println!("parse_sphere: called, current symbol is {:?}", input.symbol);
 
     if expect_quiet(input, Symbol::Sphere) {
         if expect(input, Symbol::BlockOpen) {
@@ -304,6 +308,9 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
             let sphere = Sphere::new(v, r, material);
 
             println!("parse_sphere: ok -> {:?}", sphere);
+            scene.hittables.add(sphere);
+
+            return true;
         }
         else {
             println!("parse_sphere: expected {{, found {}", input.symbol_text);
