@@ -1,58 +1,24 @@
 # Raysnail
 
-Based on learn [*Ray Tracing in One Weekend* series][book-series] using Rust, forked from the Remda project.
+The Raysail is a Monte Carlo type raytracer based on the [learn *Ray Tracing in One Weekend* series][book-series] using Rust. It was forked from the [Remda] project, which implements the features from first two books of the series. I've tried to add the features of the third, but I have doubts that my code is actually correct, even that the resulting images look alright.
 
-Yet another naive and pure software ray tracing renderer.
+Furthermore the Raysnail incorporates code from the [QBVH-Rust-Ray-Tracer], namely the triangle mesh module, OBJ file loading and the Blinn-Phong material code.
 
-## Render Result Examples
+## Planned Additions
 
-![rendered image of RTOW's balls scene][rtow-balls-scene-render-result]
-*example rtow_13_1, 512 sample, 8 depth, 1920x1080, 8m30s*
+Beyond the ongoing work to incorporate all the improvements layed out in the third book of the series, fittingly named "The rest of your life", there are two features which I want to add to the Raysnail next.
 
-![rendered image of RTNW's balls motion blur scene][rtnw-balls-scene-motion-blur-render-result]
-*example rtnw_4_3, 1024 sample, 8 depth, 1920x1080, 22min*
+### A preview window. 
 
-![rendered image of RTNW's ball with noise texture scene][rtnw-ball-noise-texture-scene-render-result]
-*example rtnw_7_4_2, 4096 sample, 8 depth, 1500x900, 15min*
+There is a very crude implementation of a preview window right now in the example "preview_sdl2", but it needs to become more separated from the scene examples and command line paramaters to trace some scene with given height and width using the preview.
 
-![rendered image of RTNW's Cornell scene][rtnw-cornell-rotated-scene-render-result]
-*example rtnw_8_2, 10240 sample, 10 depth, 1000x1000, 1h20m*
+### Support for the PovRay SDL
 
-![rendered image of RTNW's Cornel smoke scene][rtnw-cornell-smoke-scene-render-result]
-*example rtnw_9_2, 10240 sample, 10 depth, 1000x1000, 1h30m*
-
-![rendered image of RTNW's final scene][rtnw-final-scene-render-result]
-*example rtnw_10, 10240 sample, 10 depth, 1000x1000, 2h30m*
-
-## Current Progress
-
-- [x] [*Ray Tracing in One Weekend*][book-1]
-  - [x] Basic types, Vec, Color, Ray, etc
-  - [x] Background/Sky
-  - [x] Sphere
-  - [x] Lambertian Material
-  - [x] Metal Material with Different Fuzz
-  - [x] Glass Material with Different Refractive
-  - [x] Pinhole Camera
-  - [x] Camera Defocus/Depth Field
-  - [x] (Extra) Parallelism (by using [rayon][rayon-crates-io])
-- [x] [*Ray Tracing: The Next Week*][book-2]
-  - [x] Motion Blur
-  - [x] BVH(Bounding Volume Hierarchies)
-  - [x] Solid Textures
-  - [x] Perlin Noise
-  - [x] Image Textures
-  - [x] Rectangles
-  - [x] Lights
-  - [x] Cornell Box
-  - [x] Box
-  - [x] Instance Translation and Rotation
-  - [x] Volumes/Participating Media
-- [ ] [*Ray Tracing: The Rest of Your Life*][book-3] not started yet
+I want to implement at least partial support for the [PovRay] scene definition language (SDL). Sadly, PovRay's material definitions are very different from the materials in the Raysnail, and it might be hard or even impossible to emulate PovRay materials properly, past trivial examples. At the time of writing this, I've implemented a very rudimentary SDL parser which can read PovRay camera and sphere definitions (see sdl/example.sdl). I want to expand this for more geometry and material definitons, but likely it will only support a subset of the PovRay SDL features.
 
 ## Run
 
-raysnail is a library crate, but you can run built-in examples(from the book series) to try it.
+The Raysnail is a library crate, but you can run built-in examples to try it.
 
 Use `cargo run --example` to get examples list, then choose one to run.
 
@@ -61,14 +27,15 @@ For example, to get final scene in section 13.1 of *Ray Tracing in One Weekend*,
 ```bash
 cargo run --example rtow_13_1 --release
 ```
+After some time (depending on your machine), you will get a `rtow_13_1.ppm` in current dir, that's your result.
 
-Wait about 1s(according to your machine's CPU performance), you will get a `rtow_13_1.ppm` in current dir, that's your result.
+To test the preview window, you can run
 
-If you want a bigger and clear image, adjust `height()`, `depth` and `samples()` parameter in example source file and re-run.
+```bash
+cargo run --example preview_sdl2 --release
+```
 
-You can also try other examples if you want.
-
-PS: Pure software ray tracing takes a long time to render, be patient.
+If you want a bigger and clearer image, adjust `height()`, `depth()` and `samples()` parameters in source of the example file and re-run.
 
 ## LICENSE
 
@@ -76,17 +43,13 @@ GPLv3
 
 Except:
 
-- `example/earth-map.png`, download from [NASA][earth-map-source], fall in public domain.
+- `example/earth-map.png`, download from [NASA][earth-map-source], falls in public domain.
 
 [book-series]: https://raytracing.github.io/
 [book-1]: https://raytracing.github.io/books/RayTracingInOneWeekend.html
 [book-2]: https://raytracing.github.io/books/RayTracingTheNextWeek.html
 [book-3]: https://raytracing.github.io/books/RayTracingTheRestOfYourLife.html
-[rtow-balls-scene-render-result]: https://rikka.7sdre.am/files/a952c7ca-af57-46a6-959f-237702333ab6.png
-[rtnw-balls-scene-motion-blur-render-result]: https://rikka.7sdre.am/files/a0f8d5bd-9bc5-4361-b1dc-4adabd9c9949.png
-[rtnw-ball-noise-texture-scene-render-result]: https://rikka.7sdre.am/files/e5b459c6-aa8e-47aa-ab20-33d430ba6b2f.png
-[rtnw-cornell-rotated-scene-render-result]: https://rikka.7sdre.am/files/1721b196-b746-4e6d-a4d0-f9c7c2e75c41.png
-[rtnw-cornell-smoke-scene-render-result]: https://rikka.7sdre.am/files/545972fd-d10d-4345-9e8c-3ba16fb50524.png
-[rtnw-final-scene-render-result]: https://rikka.7sdre.am/files/3e1e1849-54bf-4a7b-9e09-b2cc25b5cf6f.png
-[rayon-crates-io]: https://crates.io/crates/rayon
 [earth-map-source]: http://visibleearth.nasa.gov/view.php?id=57752
+[Remda]: https://github.com/7sDream/remda
+[QBVH-Rust-Ray-Tracer]: https://github.com/miguelggcc/QBVH-Rust-Ray-Tracer
+[PovRay]: http://www.povray.org/
