@@ -18,7 +18,7 @@ impl<T> Translation<T> {
 }
 
 impl<T: Hittable> Hittable for Translation<T> {
-    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
         let moved_ray = Ray::new(
             &ray.origin - &self.movement,
             ray.direction.clone(),

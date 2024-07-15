@@ -80,7 +80,7 @@ impl Hittable for Sphere {
     // Delta = b^2 - 4ac = 4(DL)^2 - 4 D^2 (L^2 - r2)
     // So, check (DL)^2 - D^2(L^2 - r^2)
     // root is
-    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
         let current_center = self.center_at(ray.departure_time);
         let l = &ray.origin - current_center;
         let half_b = ray.direction.dot(&l);

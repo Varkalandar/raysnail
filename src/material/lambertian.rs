@@ -25,7 +25,7 @@ impl<T: Texture> Lambertian<T> {
 
 impl<T: Texture> Material for Lambertian<T> {
 
-    fn scatter(&self, _ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
+    fn scatter(&self, _ray: &Ray, hit: &HitRecord) -> Option<ScatterRecord> {
 
         let color = self.texture.color(hit.u, hit.v, &hit.point);
 
@@ -38,7 +38,7 @@ impl<T: Texture> Material for Lambertian<T> {
         })
     }
     
-    fn scattering_pdf(&self, _ray: &Ray, hit: &HitRecord<'_>, scattered: &Ray) -> f64 {
+    fn scattering_pdf(&self, _ray: &Ray, hit: &HitRecord, scattered: &Ray) -> f64 {
 
         assert!((scattered.direction.length_squared() - 1.0).abs() < 0.00001);
         

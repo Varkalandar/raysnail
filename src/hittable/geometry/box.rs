@@ -6,13 +6,23 @@ use {
     },
     std::{ops::Range, sync::Arc},
 };
+use std::fmt::Formatter;
+use std::fmt::Debug;
 
-#[derive(Debug)]
 pub struct Box {
     point_min: Point3,
     point_max: Point3,
     material: Arc<dyn Material>,
     faces: HittableList,
+}
+
+impl Debug for Box {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "Box {{ min: {:?}, max: {:?} }}",
+            self.point_min, self.point_max,
+        ))
+    }
 }
 
 impl Clone for Box {
@@ -112,7 +122,7 @@ impl Hittable for Box {
         self.material.clone()
     }
 
-    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
         self.faces.hit(ray, unit_limit)
     }
 

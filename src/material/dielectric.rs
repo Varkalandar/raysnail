@@ -52,7 +52,7 @@ impl Dielectric {
         self
     }
 
-    fn refract(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<Ray> {
+    fn refract(&self, ray: &Ray, hit: &HitRecord) -> Option<Ray> {
         assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
 
         let cos_theta = (-&ray.direction).dot(&hit.normal);
@@ -80,7 +80,7 @@ impl Dielectric {
 }
 
 impl Material for Dielectric {
-    fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
+    fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<ScatterRecord> {
         let refract = self
             .refract(ray, &hit)
             .unwrap_or_else(|| reflect(ray, &hit));

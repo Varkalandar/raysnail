@@ -55,7 +55,7 @@ impl World {
 }
 
 impl Hittable for World {
-    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
         self.bvh.hit(ray, unit_limit)
     }
 

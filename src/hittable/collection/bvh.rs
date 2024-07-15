@@ -170,7 +170,7 @@ fn find_best_axis(objects: &mut Vec<Option<Box<dyn Hittable>>>, time_limit: &Ran
 
 /// Bounding Volume Hierarchies
 impl Hittable for BVH {
-    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
         let bbox = self.bbox.as_ref()?;
         if !bbox.hit(ray, unit_limit) {
             return None;

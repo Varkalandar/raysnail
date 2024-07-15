@@ -320,10 +320,17 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
             expect(input, Symbol::Comma);
             let r = parse_float(input).unwrap();   
 
-            let material = Lambertian::new(Color::new(1.0, 1.0, 1.0));
-            let mut sphere = Sphere::new(v, r, Arc::new(material));
 
-            parse_object_modifiers(input, &mut sphere);
+            let material =
+                if let Some(material) = parse_object_modifiers(input) {
+                    material
+                }
+                else {
+                    println!("parse_sphere: found no texture, using default diffuse white");
+                    Arc::new(Lambertian::new(Color::new(1.0, 1.0, 1.0)))
+                };
+
+            let mut sphere = Sphere::new(v, r, material);
 
             println!("parse_sphere: ok -> {:?}", sphere);
             scene.hittables.add(sphere);
@@ -340,16 +347,12 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
     false
 }
 
-fn parse_object_modifiers<O>(input: &mut Input, object: &mut O) -> bool {
+fn parse_object_modifiers(input: &mut Input) -> Option<Arc<dyn Material>> {
 
-    if parse_texture(input).is_some() {
-        return true;
-    }
-    
-    false
+    parse_texture(input)
 }
 
-fn parse_texture(input: &mut Input) -> Option<Box<dyn Material>> {
+fn parse_texture(input: &mut Input) -> Option<Arc<dyn Material>> {
 
     if expect_quiet(input, Symbol::Texture) {
         if expect(input, Symbol::BlockOpen) {
@@ -359,7 +362,7 @@ fn parse_texture(input: &mut Input) -> Option<Box<dyn Material>> {
             let material = Lambertian::new(Color::new(1.0, 1.0, 1.0));
 
 
-            return Some(Box::new(material));
+            return Some(Arc::new(material));
         }
     }
 

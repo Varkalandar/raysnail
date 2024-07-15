@@ -55,7 +55,7 @@ impl CommonMaterialSettings {
 
 pub trait Material: Send + Sync {
 
-    fn scatter(&self, _ray: &Ray, _hit: &HitRecord<'_>) -> Option<ScatterRecord> {
+    fn scatter(&self, _ray: &Ray, _hit: &HitRecord) -> Option<ScatterRecord> {
         None
     }
 
@@ -63,7 +63,7 @@ pub trait Material: Send + Sync {
         None
     }
 
-    fn scattering_pdf(&self, _ray: &Ray, _hit: &HitRecord<'_>, _scattered: &Ray) -> f64 {
+    fn scattering_pdf(&self, _ray: &Ray, _hit: &HitRecord, _scattered: &Ray) -> f64 {
         0.0
     }
 
@@ -71,7 +71,7 @@ pub trait Material: Send + Sync {
 }
 
 
-pub(crate) fn reflect(ray: &Ray, hit: &HitRecord<'_>) -> Ray {
+pub(crate) fn reflect(ray: &Ray, hit: &HitRecord) -> Ray {
 
     assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
 

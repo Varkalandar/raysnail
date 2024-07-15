@@ -5,21 +5,33 @@ use crate::{
 };
 
 use std::ops::Range;
+use std::sync::Arc;
+use std::fmt::Formatter;
+use std::fmt::Debug;
+use crate::material::Material;
 
-#[derive(Debug)]
 pub struct ConstantMedium<T> {
     boundary: T,
-    material: Isotropic,
+    material: Arc<dyn Material>,
     density: f64,
     neg_inv_density: f64,
 }
+
+impl<T> Debug for ConstantMedium<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "ConstantMedium",
+        ))
+    }
+}
+
 
 impl<T> ConstantMedium<T> {
     #[must_use]
     pub fn new(boundary: T, color: Color, density: f64) -> Self {
         Self {
             boundary,
-            material: Isotropic::new(color),
+            material: Arc::new(Isotropic::new(color)),
             density,
             neg_inv_density: -1.0 / density,
         }
@@ -29,7 +41,7 @@ impl<T> ConstantMedium<T> {
 impl<T: Hittable> Hittable for ConstantMedium<T> {
     fn hit(
         &self, ray: &Ray, unit_limit: &std::ops::Range<f64>,
-    ) -> Option<crate::hittable::HitRecord<'_>> {
+    ) -> Option<crate::hittable::HitRecord> {
         let mut rec1 = self.boundary.hit(ray, &(f64::NEG_INFINITY..f64::INFINITY))?;
         let mut rec2 = self.boundary.hit(ray, &(rec1.t1 + 0.0001..f64::INFINITY))?;
         if rec1.t1 < unit_limit.start {
@@ -58,7 +70,7 @@ impl<T: Hittable> Hittable for ConstantMedium<T> {
         Some(HitRecord {
             point: ray.position_after(hit_point_unit),
             normal: Vec3::new(1.0, 0.0, 0.0), // useless,
-            material: &self.material,
+            material: self.material.clone(),
             t1: hit_point_unit,
             t2: hit_point_unit,
             u: 0.0,         // useless

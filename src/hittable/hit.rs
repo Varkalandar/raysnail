@@ -18,7 +18,7 @@ pub struct HitRecord {
     pub outside: bool,
 }
 
-impl Debug for HitRecord<'_> {
+impl Debug for HitRecord {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
             "HitRecord {{ t1: {}, t2: {}, hit: {:?}, normal: {:?}, outside: {} }}",
@@ -28,7 +28,7 @@ impl Debug for HitRecord<'_> {
 }
 
 impl HitRecord {
-    pub fn new<G: Hittable>(ray: &Ray, object: &'m G, t1: f64, t2: f64) -> Self {
+    pub fn new<G: Hittable>(ray: &Ray, object: &G, t1: f64, t2: f64) -> Self {
         let point = ray.position_after(t1);
 
         let mut normal = object.normal(&point);
@@ -51,7 +51,7 @@ impl HitRecord {
         }
     }
 
-    pub fn with_normal<G: Hittable>(ray: &Ray, normal: Vec3, object: &'m G, t1: f64, t2: f64) -> Self {
+    pub fn with_normal<G: Hittable>(ray: &Ray, normal: Vec3, object: &G, t1: f64, t2: f64) -> Self {
         let point = ray.position_after(t1);
 
         let material = object.material();
@@ -90,7 +90,7 @@ pub trait Hittable: Send + Sync {
         )
     }
 
-    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>>;
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord>;
     fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB>;
 
     /**

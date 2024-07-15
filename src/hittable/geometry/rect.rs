@@ -98,7 +98,7 @@ impl Hittable for AARect {
         )
     }
 
-    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
         let t1 = (self.metrics.k - ray.origin[self.axis.2]) / ray.direction[self.axis.2];
         if !unit_limit.contains(&t1) {
             return None;

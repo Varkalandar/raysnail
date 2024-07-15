@@ -72,7 +72,7 @@ impl<Axis, T> AARotation<Axis, T> {
 }
 
 impl<Axis: RotationByAxis, T: Hittable> Hittable for AARotation<Axis, T> {
-    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
         let rotated_origin = Axis::rotate(&ray.origin, -self.radian);
         let rotated_direction = Axis::rotate(&ray.direction, -self.radian);
         let rotated_ray = Ray::new(rotated_origin, rotated_direction, ray.departure_time);

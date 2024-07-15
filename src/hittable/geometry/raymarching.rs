@@ -108,7 +108,7 @@ impl Hittable for RayMarcher {
         (u, v)
     }
 
-    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
         
         let ray_direction_length = ray.direction.length();
         let direction = &ray.direction * (1.0 / ray_direction_length);

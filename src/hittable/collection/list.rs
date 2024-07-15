@@ -52,7 +52,7 @@ impl HittableList {
 
 
 impl Hittable for HittableList {
-    fn hit(&self, r: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, r: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
 
         let mut best_hit = None;
         let mut best_t = 0.0;

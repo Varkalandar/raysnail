@@ -177,7 +177,7 @@ impl<'c> TakePhotoSettings<'c> {
         }
 
         if let Some(hit) = world.hit(ray, &(0.001..f64::INFINITY)) {
-            let material = hit.material;
+            let material = hit.material.clone();
             let emitted = material
                 .emitted(hit.u, hit.v, &hit.point)
                 .unwrap_or_default();

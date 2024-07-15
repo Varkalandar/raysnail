@@ -8,7 +8,7 @@ use crate::material::CommonMaterialSettings;
 
 
 #[inline]
-fn reflect(ray: &Ray, hit: &HitRecord<'_>) -> Ray {
+fn reflect(ray: &Ray, hit: &HitRecord) -> Ray {
 
     assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
 
@@ -41,7 +41,7 @@ impl<T: Texture> DiffuseMetal<T> {
 
 
 impl<T: Texture> Material for DiffuseMetal<T> {
-    fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
+    fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<ScatterRecord> {
         let color = self.texture.color(hit.u, hit.v, &hit.point);
         let reflected = reflect(ray, &hit);
         
@@ -57,7 +57,7 @@ impl<T: Texture> Material for DiffuseMetal<T> {
         }
     }
 
-    fn scattering_pdf(&self, _ray: &Ray, rec: &HitRecord<'_>, scattered: &Ray) -> f64 {
+    fn scattering_pdf(&self, _ray: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
 
         assert!((scattered.direction.length_squared() - 1.0).abs() < 0.00001);
 
@@ -91,7 +91,7 @@ impl<T: Texture> Metal<T> {
 }
 
 impl<T: Texture> Material for Metal<T> {
-    fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
+    fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<ScatterRecord> {
         let color = self.texture.color(hit.u, hit.v, &hit.point);
         let reflected = reflect(ray, &hit);
         

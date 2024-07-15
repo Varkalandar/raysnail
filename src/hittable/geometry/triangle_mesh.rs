@@ -82,7 +82,7 @@ impl Hittable for Triangle {
     }
 
     // #[inline(always)]
-    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
         let g = ray.direction.x;
         let h = ray.direction.y;
         let i = ray.direction.z;
@@ -141,10 +141,18 @@ impl Hittable for Triangle {
 }
 
 
-// #[derive(Debug)]
 pub struct TriangleMesh {
     pub triangles: Vec<Triangle>,
     material: Arc<dyn Material>,
+}
+
+impl Debug for TriangleMesh {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "TriangleMesh {{ triangles: {:?} }}",
+            self.triangles,
+        ))
+    }
 }
 
 impl TriangleMesh {
