@@ -18,6 +18,7 @@ use sdl2::surface::SurfaceContext;
 use sdl2::video::WindowContext;
 
 use std::time::Duration;
+use std::sync::Arc;
 
 use raysnail::prelude::Ray;
 use raysnail::prelude::Color;
@@ -234,7 +235,7 @@ fn render_time_test(width: usize, height: usize,
     let rs = 
         Sphere::new(Vec3::new(50.0, 200.0, 200.0), 
             12.0, 
-            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(2.0)
+            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(2.0))
         );
 
     lights.add(rs.clone());
@@ -243,7 +244,7 @@ fn render_time_test(width: usize, height: usize,
     world.add(Sphere::new(
         Point3::new(0.0, 0.0, 0.0),
         1.0,
-        BlinnPhong::new(0.5, 4.0, Color::new(0.99, 0.69, 0.2)),
+        Arc::new(BlinnPhong::new(0.5, 4.0, Color::new(0.99, 0.69, 0.2))),
         // Lambertian::new(Color::new(0.99, 0.69, 0.2)),
         // DiffuseMetal::new(200.0, Color::new(0.99, 0.69, 0.2)),
     ));
@@ -259,10 +260,10 @@ fn render_time_test(width: usize, height: usize,
     world.add(Sphere::new(
         Point3::new(0.0, -1001.0, 0.0),
         1000.0,
-        Lambertian::new(Checker::new(
+        Arc::new(Lambertian::new(Checker::new(
             Color::new(0.3, 0.3, 0.3),
             Color::new(0.1, 0.1, 0.1),
-        ))
+        )))
     ));
 
     fn background(ray: &Ray) -> Color {
@@ -307,7 +308,7 @@ fn render_raymarching_test(width: usize, height: usize,
     let rs = 
         Sphere::new(Vec3::new(300.0, 400.0, 100.0), 
             12.0, 
-            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(1.5)
+            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(1.5))
         );
 
     lights.add(rs.clone());
@@ -320,15 +321,15 @@ fn render_raymarching_test(width: usize, height: usize,
     material.settings.phong_exponent = 2;
     // let material = BlinnPhong::new(0.5, 4.0, color);
     // let material = Metal::new(color);
-    world.add(RayMarcher::new(material));
+    world.add(RayMarcher::new(Arc::new(material)));
 
     world.add(Sphere::new(
         Point3::new(0.0, -1002.0, 0.0),
         1000.0,
-        DiffuseMetal::new(800.0, Checker::new(
+        Arc::new(DiffuseMetal::new(800.0, Checker::new(
             Color::new(0.26, 0.3, 0.16),
             Color::new(0.1, 0.1, 0.1),
-        ))
+        )))
     ));
 
     fn background(ray: &Ray) -> Color {
@@ -367,7 +368,7 @@ fn render_ball_scene(width: usize, height: usize,
     let rs = 
         Sphere::new(Vec3::new(200.0, 400.0, 200.0), 
             12.0, 
-            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(1.5)
+            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(1.5))
         );
 
     lights.add(rs.clone());
@@ -404,7 +405,7 @@ fn render_object_test(width: usize, height: usize,
     let rs = 
         Sphere::new(Vec3::new(300.0, 400.0, 100.0), 
             12.0, 
-            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(1.5)
+            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(1.5))
         );
 
     lights.add(rs.clone());
@@ -422,7 +423,7 @@ fn render_object_test(width: usize, height: usize,
         Vec3::new(0.0, 0.0, 0.0), // offset: Vec3,
         120.0, // rotation_angle: f64,
         1, // axis: i32,
-        material,
+        Arc::new(material),
     );
 
     for tri in mesh.triangles {
@@ -437,7 +438,7 @@ fn render_object_test(width: usize, height: usize,
             //    Color::new(0.26, 0.3, 0.16),
             //    Color::new(0.08, 0.1, 0.06),
             //    )
-            Metal::new(Color::new(0.08, 0.1, 0.06))
+            Arc::new(Metal::new(Color::new(0.08, 0.1, 0.06)))
     ));
 
     fn background(ray: &Ray) -> Color {
@@ -484,7 +485,7 @@ fn render_parser_test(width: usize, height: usize,
     let rs = 
         Sphere::new(Vec3::new(300.0, 400.0, 100.0), 
             12.0, 
-            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(1.5)
+            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(1.5))
         );
 
     lights.add(rs.clone());
