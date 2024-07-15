@@ -1,4 +1,7 @@
 use std::ops::Range;
+use std::sync::Arc;
+use std::fmt::Formatter;
+use std::fmt::Debug;
 
 use crate::prelude::Vec3;
 use crate::prelude::Point3;
@@ -10,8 +13,8 @@ use crate::prelude::AABB;
 use crate::prelude::FastRng;
 
 
-#[derive(Debug, Clone)]
-pub struct Triangle<M> {
+#[derive(Clone)]
+pub struct Triangle {
     p0: Vec3,
     normal0: Vec3,
     normal1: Vec3,
@@ -23,12 +26,20 @@ pub struct Triangle<M> {
     pub e: f64,
     pub f: f64,
     bounding_box: AABB,
-    material: M,
+    material: Arc<dyn Material>,
 }
 
+impl Debug for Triangle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "Triangle {{ p0: {:?} }}",
+            self.p0,
+        ))
+    }
+}
 
-impl<M> Triangle<M> {
-    pub fn new(p0: Vec3, p1: Vec3, p2: Vec3, material: M) -> Self {
+impl Triangle {
+    pub fn new(p0: Vec3, p1: Vec3, p2: Vec3, material: Arc<dyn Material>) -> Self {
         let minimum = Vec3::new_min(&(Vec3::new_min(&p0, &p1)), &p2);
         let maximum = Vec3::new_max(&(Vec3::new_max(&p0, &p1)), &p2);
         let bounding_box = AABB::new(minimum, maximum);
@@ -60,10 +71,10 @@ impl<M> Triangle<M> {
     }
 }
 
-impl<M: Material> Hittable for Triangle<M> {
+impl Hittable for Triangle {
 
-    fn material(&self) -> &dyn Material {
-        &self.material
+    fn material(&self) -> Arc<dyn Material> {
+        self.material.clone()
     }
 
     fn uv(&self, point: &Point3) -> (f64, f64) {
@@ -130,20 +141,20 @@ impl<M: Material> Hittable for Triangle<M> {
 }
 
 
-#[derive(Debug)]
-pub struct TriangleMesh<M> {
-    pub triangles: Vec<Triangle<M>>,
-    material: M,
+// #[derive(Debug)]
+pub struct TriangleMesh {
+    pub triangles: Vec<Triangle>,
+    material: Arc<dyn Material>,
 }
 
-impl<M: Material + Clone> TriangleMesh<M> {
+impl TriangleMesh {
     pub fn load(
         filename: &str,
         scale: f64,
         offset: Vec3,
         rotation_angle: f64,
         axis: i32,
-        material: M,
+        material: Arc<dyn Material>,
     ) -> Self {
 
         let object = tobj::load_obj(

@@ -71,25 +71,6 @@ pub trait Material: Send + Sync {
 }
 
 
-impl<M: Material> Material for Arc<M> {
-    fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
-        self.as_ref().scatter(ray, hit)
-    }
-
-    fn emitted(&self, u: f64, v: f64, point: &Point3) -> Option<Vec3> {
-        self.as_ref().emitted(u, v, point)
-    }
-
-    fn scattering_pdf(&self, ray: &Ray, hit: &HitRecord<'_>, scattered: &Ray) -> f64 {
-        self.as_ref().scattering_pdf(ray, hit, scattered)
-    }
-
-    fn settings(&self) -> CommonMaterialSettings {
-        self.as_ref().settings()
-    }
-}
-
-
 pub(crate) fn reflect(ray: &Ray, hit: &HitRecord<'_>) -> Ray {
 
     assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);

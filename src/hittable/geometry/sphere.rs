@@ -10,16 +10,19 @@ use {
     },
 };
 
+use std::sync::Arc;
+
+
 #[derive(Clone)]
-pub struct Sphere<M> {
+pub struct Sphere {
     center: Point3,
     radius: f64,
     speed: Vec3,
-    material: M,
+    material: Arc<dyn Material>,
     radius_squared: f64,
 }
 
-impl<M> Debug for Sphere<M> {
+impl Debug for Sphere {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
             "Sphere {{ center: {:?}, radius: {}, speed: {:?} }}",
@@ -28,8 +31,8 @@ impl<M> Debug for Sphere<M> {
     }
 }
 
-impl<M> Sphere<M> {
-    pub fn new(center: Point3, radius: f64, material: M) -> Self {
+impl Sphere {
+    pub fn new(center: Point3, radius: f64, material: Arc<dyn Material>) -> Self {
         Self {
             center,
             radius,
@@ -49,13 +52,13 @@ impl<M> Sphere<M> {
     }
 }
 
-impl<M: Material> Hittable for Sphere<M> {
+impl Hittable for Sphere {
     fn normal(&self, point: &Point3) -> crate::prelude::Vec3 {
         (point - &self.center) / self.radius
     }
 
-    fn material(&self) -> &dyn Material {
-        &self.material
+    fn material(&self) -> Arc<dyn Material> {
+        self.material.clone()
     }
 
     fn uv(&self, point: &Point3) -> (f64, f64) {

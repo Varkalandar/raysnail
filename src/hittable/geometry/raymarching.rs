@@ -1,4 +1,7 @@
 use std::ops::Range;
+use std::sync::Arc;
+use std::fmt::Formatter;
+use std::fmt::Debug;
 
 use crate::prelude::PI;
 use crate::prelude::Vec3;
@@ -14,19 +17,26 @@ use crate::material::Material;
 use crate::material::Lambertian;
 
 
-#[derive(Clone, Debug)]
-pub struct RayMarcher <M> {
+#[derive(Clone)]
+pub struct RayMarcher {
 
-    material: M,
-    sphere: Sphere<Lambertian<Color>>,
+    material: Arc<dyn Material>,
+    sphere: Sphere,
 }
 
+impl Debug for RayMarcher {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "Raymarcher"
+        ))
+    }
+}
 
-impl<M> RayMarcher<M> {
-    pub fn new(material: M) -> Self {
+impl RayMarcher {
+    pub fn new(material: Arc<dyn Material>) -> Self {
         RayMarcher {
             material,
-            sphere: Sphere::new(Vec3::new(0.0, 0.0, 0.0), 1.5, Lambertian::new(Color::new(1.0, 0.0, 1.0))),
+            sphere: Sphere::new(Vec3::new(0.0, 0.0, 0.0), 1.5, Arc::new(Lambertian::new(Color::new(1.0, 0.0, 1.0)))),
         }
     }
 
@@ -67,7 +77,7 @@ impl<M> RayMarcher<M> {
 }
 
 
-impl<M: Material> Hittable for RayMarcher<M> {
+impl Hittable for RayMarcher {
     fn normal(&self, pos: &Point3) -> crate::prelude::Vec3 {
      
         let d = 0.01;
@@ -83,8 +93,8 @@ impl<M: Material> Hittable for RayMarcher<M> {
 
     }
 
-    fn material(&self) -> &dyn Material {
-        &self.material
+    fn material(&self) -> Arc<dyn Material> {
+        self.material.clone()
     }
 
     fn uv(&self, point: &Point3) -> (f64, f64) {

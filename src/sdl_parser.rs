@@ -1,12 +1,15 @@
 
 use std::fs::read_to_string;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use crate::prelude::Vec3;
 use crate::hittable::Sphere;
 use crate::prelude::Color;
 use crate::material::Lambertian;
 use crate::hittable::collection::HittableList;
+use crate::texture::Texture;
+use crate::material::Material;
 
 
 // All data parsed from the scene definition
@@ -44,6 +47,11 @@ enum Symbol {
     VectorOpen,
     VectorClose,
     Comma,
+
+    Texture,
+    Pigment,
+    Finish,
+
     Eof,
     None
 }
@@ -157,6 +165,15 @@ fn to_symbol(token: &String) -> Symbol {
     }
     else if token == "sphere" {
         Symbol::Sphere
+    }
+    else if token == "texture" {
+        Symbol::Texture
+    }
+    else if token == "pigment" {
+        Symbol::Pigment
+    }
+    else if token == "finish" {
+        Symbol::Finish
     }
     else {
         // println!("Unknown token: {}", token);
@@ -302,13 +319,16 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
             let v = parse_vector(input).unwrap();
             expect(input, Symbol::Comma);
             let r = parse_float(input).unwrap();   
-            expect(input, Symbol::BlockClose);
 
             let material = Lambertian::new(Color::new(1.0, 1.0, 1.0));
-            let sphere = Sphere::new(v, r, material);
+            let mut sphere = Sphere::new(v, r, Arc::new(material));
+
+            parse_object_modifiers(input, &mut sphere);
 
             println!("parse_sphere: ok -> {:?}", sphere);
             scene.hittables.add(sphere);
+
+            expect(input, Symbol::BlockClose);
 
             return true;
         }
@@ -320,6 +340,31 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
     false
 }
 
+fn parse_object_modifiers<O>(input: &mut Input, object: &mut O) -> bool {
+
+    if parse_texture(input).is_some() {
+        return true;
+    }
+    
+    false
+}
+
+fn parse_texture(input: &mut Input) -> Option<Box<dyn Material>> {
+
+    if expect_quiet(input, Symbol::Texture) {
+        if expect(input, Symbol::BlockOpen) {
+
+            expect(input, Symbol::BlockClose);
+
+            let material = Lambertian::new(Color::new(1.0, 1.0, 1.0));
+
+
+            return Some(Box::new(material));
+        }
+    }
+
+    None
+}
 
 fn parse_vector(input: &mut Input) -> Option<Vec3> {
     if expect(input, Symbol::VectorOpen) {

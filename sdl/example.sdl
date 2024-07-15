@@ -5,6 +5,10 @@ camera {
 
 sphere {
 	<0, -0.5, -1>, 1
+
+	texture {
+		
+	}
 }
 
 sphere {

@@ -6,6 +6,9 @@ use {
     },
     std::ops::Range,
 };
+use std::sync::Arc;
+use std::fmt::Formatter;
+use std::fmt::Debug;
 
 #[derive(Debug, Clone)]
 pub struct AARectMetrics {
@@ -35,16 +38,24 @@ impl AARectMetrics {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct AARect<M> {
+#[derive(Clone)]
+pub struct AARect {
     // 0: a axis, 1: b axis, 2: fixed axis
     axis: (usize, usize, usize),
     metrics: AARectMetrics,
-    material: M,
+    material: Arc<dyn Material>,
 }
 
-impl<M> AARect<M> {
-    pub const fn new_xy(metrics: AARectMetrics, material: M) -> Self {
+impl Debug for AARect {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "AARect"
+        ))
+    }
+}
+
+impl AARect {
+    pub const fn new_xy(metrics: AARectMetrics, material: Arc<dyn Material>) -> Self {
         Self {
             metrics,
             material,
@@ -52,7 +63,7 @@ impl<M> AARect<M> {
         }
     }
 
-    pub const fn new_xz(metrics: AARectMetrics, material: M) -> Self {
+    pub const fn new_xz(metrics: AARectMetrics, material: Arc<dyn Material>) -> Self {
         Self {
             metrics,
             material,
@@ -60,7 +71,7 @@ impl<M> AARect<M> {
         }
     }
 
-    pub const fn new_yz(metrics: AARectMetrics, material: M) -> Self {
+    pub const fn new_yz(metrics: AARectMetrics, material: Arc<dyn Material>) -> Self {
         Self {
             metrics,
             material,
@@ -69,15 +80,15 @@ impl<M> AARect<M> {
     }
 }
 
-impl<M: Material> Hittable for AARect<M> {
+impl Hittable for AARect {
     fn normal(&self, _point: &Point3) -> Vec3 {
         let mut n = Vec3::default();
         n[self.axis.2] = 1.0;
         n
     }
 
-    fn material(&self) -> &dyn Material {
-        &self.material
+    fn material(&self) -> Arc<dyn Material> {
+        self.material.clone()
     }
 
     fn uv(&self, point: &Point3) -> (f64, f64) {

@@ -5,11 +5,12 @@ use {
         ops::Range,
     },
 };
+use std::sync::Arc;
 
-pub struct HitRecord<'m> {
+pub struct HitRecord {
     pub point: Point3,
     pub normal: Vec3,
-    pub material: &'m dyn Material,
+    pub material: Arc<dyn Material>,
     pub t1: f64,
     pub t2: f64,
     pub u: f64,
@@ -26,7 +27,7 @@ impl Debug for HitRecord<'_> {
     }
 }
 
-impl<'m> HitRecord<'m> {
+impl HitRecord {
     pub fn new<G: Hittable>(ray: &Ray, object: &'m G, t1: f64, t2: f64) -> Self {
         let point = ray.position_after(t1);
 
@@ -76,7 +77,7 @@ pub trait Hittable: Send + Sync {
             std::any::type_name::<Self>()
         )
     }
-    fn material(&self) -> &dyn Material {
+    fn material(&self) -> Arc<dyn Material> {
         unimplemented!(
             "{}'s material function should not be called directly",
             std::any::type_name::<Self>()
