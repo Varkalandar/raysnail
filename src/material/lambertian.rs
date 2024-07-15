@@ -1,3 +1,6 @@
+use std::fmt::Formatter;
+use std::fmt::Debug;
+
 use crate::{
     hittable::HitRecord,
     material::{Material, ScatterRecord},
@@ -7,15 +10,23 @@ use crate::{
 use crate::material::CommonMaterialSettings;
 
 
-#[derive(Debug, Clone)]
-pub struct Lambertian<T: Texture> {
-    texture: T,
+// #[derive(Debug, Clone)]
+pub struct Lambertian {
+    texture: Box<dyn Texture>,
     pub settings: CommonMaterialSettings,
 }
 
-impl<T: Texture> Lambertian<T> {
+impl Debug for Lambertian {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "Lambertian: {{ Texture: ? }}"
+        ))
+    }
+}
+
+impl Lambertian {
     #[must_use]
-    pub fn new(texture: T) -> Self {
+    pub fn new(texture: Box<dyn Texture>) -> Self {
         Self {
             texture,
             settings: CommonMaterialSettings::new(),
@@ -23,7 +34,7 @@ impl<T: Texture> Lambertian<T> {
     }
 }
 
-impl<T: Texture> Material for Lambertian<T> {
+impl Material for Lambertian {
 
     fn scatter(&self, _ray: &Ray, hit: &HitRecord) -> Option<ScatterRecord> {
 

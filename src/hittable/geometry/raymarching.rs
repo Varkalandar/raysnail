@@ -36,7 +36,7 @@ impl RayMarcher {
     pub fn new(material: Arc<dyn Material>) -> Self {
         RayMarcher {
             material,
-            sphere: Sphere::new(Vec3::new(0.0, 0.0, 0.0), 1.5, Arc::new(Lambertian::new(Color::new(1.0, 0.0, 1.0)))),
+            sphere: Sphere::new(Vec3::new(0.0, 0.0, 0.0), 1.5, Arc::new(Lambertian::new(Box::new(Color::new(1.0, 0.0, 1.0))))),
         }
     }
 

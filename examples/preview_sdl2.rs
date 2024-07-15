@@ -31,7 +31,7 @@ use raysnail::painter::PainterCommand;
 use raysnail::painter::PainterController;
 use raysnail::material::*;
 use raysnail::hittable::Sphere;
-use raysnail::hittable::Box;
+use raysnail::hittable::Box as GeometryBox;
 use raysnail::hittable::AARect;
 use raysnail::hittable::AARectMetrics;
 use raysnail::hittable::geometry::RayMarcher;
@@ -260,10 +260,10 @@ fn render_time_test(width: usize, height: usize,
     world.add(Sphere::new(
         Point3::new(0.0, -1001.0, 0.0),
         1000.0,
-        Arc::new(Lambertian::new(Checker::new(
+        Arc::new(Lambertian::new(Box::new(Checker::new(
             Color::new(0.3, 0.3, 0.3),
             Color::new(0.1, 0.1, 0.1),
-        )))
+        ))))
     ));
 
     fn background(ray: &Ray) -> Color {
@@ -315,7 +315,7 @@ fn render_raymarching_test(width: usize, height: usize,
     world.add(rs);
 
     // let color = Color::new(0.8, 0.8, 0.8);
-    let color = Color::new(0.5, 0.5, 0.5);
+    let color = Box::new(Color::new(0.5, 0.5, 0.5));
     let mut material = Lambertian::new(color);
     material.settings.phong_factor = 4.0;
     material.settings.phong_exponent = 2;
@@ -412,7 +412,7 @@ fn render_object_test(width: usize, height: usize,
     world.add(rs);
 
     // let color = Color::new(0.8, 0.8, 0.8);
-    let color = Color::new(0.9, 0.3, 0.1);
+    let color = Box::new(Color::new(0.9, 0.3, 0.1));
     let mut material = Lambertian::new(color);
     material.settings.phong_factor = 4.0;
     material.settings.phong_exponent = 4;
@@ -485,21 +485,20 @@ fn render_parser_test(width: usize, height: usize,
     let rs = 
         Sphere::new(Vec3::new(300.0, 400.0, 100.0), 
             12.0, 
-            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(1.5))
+            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.7)).multiplier(1.5))
         );
 
     lights.add(rs.clone());
     scene_data.hittables.add(rs);
 
     fn background(ray: &Ray) -> Color {
+        // assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
 
-    // assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
+        let t = 0.5 * (ray.direction.y + 1.0);
+        Color::new(0.4, 0.8, 0.0).gradient(&Color::new(0.0, 0.1, 0.8), t)
 
-    let t = 0.5 * (ray.direction.y + 1.0);
-    Color::new(0.68, 0.80, 0.95).gradient(&Color::new(0.2, 0.4, 0.7), t)
-
-    // Color::new(0.9, 0.9, 0.9)
-    // Color::new(0.06, 0.06, 0.25)
+        // Color::new(0.9, 0.9, 0.9)
+        // Color::new(0.06, 0.06, 0.25)
     }
 
     camera

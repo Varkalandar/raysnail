@@ -51,6 +51,8 @@ enum Symbol {
     Texture,
     Pigment,
     Finish,
+    Color,
+    Rgb,
 
     Eof,
     None
@@ -174,6 +176,12 @@ fn to_symbol(token: &String) -> Symbol {
     }
     else if token == "finish" {
         Symbol::Finish
+    }
+    else if token == "color" {
+        Symbol::Color
+    }
+    else if token == "rgb" {
+        Symbol::Rgb
     }
     else {
         // println!("Unknown token: {}", token);
@@ -327,7 +335,7 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
                 }
                 else {
                     println!("parse_sphere: found no texture, using default diffuse white");
-                    Arc::new(Lambertian::new(Color::new(1.0, 1.0, 1.0)))
+                    Arc::new(Lambertian::new(Box::new(Color::new(1.0, 1.0, 1.0))))
                 };
 
             let mut sphere = Sphere::new(v, r, material);
@@ -357,10 +365,17 @@ fn parse_texture(input: &mut Input) -> Option<Arc<dyn Material>> {
     if expect_quiet(input, Symbol::Texture) {
         if expect(input, Symbol::BlockOpen) {
 
+            let texture =
+                if let Some(texture) = parse_pigment(input) {
+                    texture
+                } else {
+                    println!("parse_texture: no pigment found, using default white");
+                    Box::new(Color::new(1.0, 1.0, 1.0))
+                };
+
             expect(input, Symbol::BlockClose);
 
-            let material = Lambertian::new(Color::new(1.0, 1.0, 1.0));
-
+            let material = Lambertian::new(texture);
 
             return Some(Arc::new(material));
         }
@@ -368,6 +383,29 @@ fn parse_texture(input: &mut Input) -> Option<Arc<dyn Material>> {
 
     None
 }
+
+fn parse_pigment(input: &mut Input) -> Option<Box<dyn Texture>> {
+
+    if expect(input, Symbol::Pigment) {
+        if expect(input, Symbol::BlockOpen) {
+            if expect(input, Symbol::Color) {
+                expect_quiet(input, Symbol::Rgb);   // should this be made mandatory?
+
+                if let Some(v) = parse_vector(input) {
+                    expect(input, Symbol::BlockClose);
+                    return Some(Box::new(Color::new(v.x, v.y, v.z)));
+                } else {
+                    println!("parse_pigment: expected color vector, but found '{}'", input.symbol_text);
+                    return None;
+                }
+            }
+        }
+    }
+
+    None
+}
+
+
 
 fn parse_vector(input: &mut Input) -> Option<Vec3> {
     if expect(input, Symbol::VectorOpen) {
