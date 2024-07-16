@@ -263,6 +263,7 @@ fn render_time_test(width: usize, height: usize,
         Arc::new(Lambertian::new(Box::new(Checker::new(
             Color::new(0.3, 0.3, 0.3),
             Color::new(0.1, 0.1, 0.1),
+            10.0,
         ))))
     ));
 
@@ -329,6 +330,7 @@ fn render_raymarching_test(width: usize, height: usize,
         Arc::new(DiffuseMetal::new(800.0, Checker::new(
             Color::new(0.26, 0.3, 0.16),
             Color::new(0.1, 0.1, 0.1),
+            10.0,
         )))
     ));
 
@@ -472,7 +474,7 @@ fn render_parser_test(width: usize, height: usize,
     let builder = CameraBuilder::default()
         .look_from(camera_data.location.clone())
         .look_at(camera_data.look_at.clone())
-        .fov(20.0)
+        .fov(camera_data.fov_angle)
         .aperture(0.01)
         .focus(10.0)
         .width(width)
@@ -482,23 +484,20 @@ fn render_parser_test(width: usize, height: usize,
 
     let mut lights = HittableList::default();
 
-    let rs = 
-        Sphere::new(Vec3::new(300.0, 400.0, 100.0), 
-            12.0, 
-            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.7)).multiplier(1.5))
-        );
+    for light in scene_data.lights {
+        let rs = 
+            Sphere::new(light.location, 
+                12.0, 
+                Arc::new(DiffuseLight::new(light.color).multiplier(1.7))
+            );
 
-    lights.add(rs.clone());
-    scene_data.hittables.add(rs);
+        lights.add(rs.clone());
+        scene_data.hittables.add(rs);
+    }
 
     fn background(ray: &Ray) -> Color {
-        // assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
-
-        let t = 0.5 * (ray.direction.y + 1.0);
-        Color::new(0.4, 0.8, 0.0).gradient(&Color::new(0.0, 0.1, 0.8), t)
-
-        // Color::new(0.9, 0.9, 0.9)
-        // Color::new(0.06, 0.06, 0.25)
+        let t = (ray.direction.y + 1.0) * 0.5;  // norm to range 0..1
+        Color::new(0.3, 0.4, 0.5).gradient(&Color::new(0.7, 0.89, 1.0), t)
     }
 
     camera

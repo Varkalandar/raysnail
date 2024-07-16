@@ -29,7 +29,7 @@ impl Debug for HitRecord {
 
 impl HitRecord {
     pub fn new<G: Hittable>(ray: &Ray, object: &G, t1: f64, t2: f64) -> Self {
-        let point = ray.position_after(t1);
+        let point = ray.at(t1);
 
         let mut normal = object.normal(&point);
         let outside = ray.direction.dot(&normal) < 0.0;
@@ -52,7 +52,7 @@ impl HitRecord {
     }
 
     pub fn with_normal<G: Hittable>(ray: &Ray, normal: Vec3, object: &G, t1: f64, t2: f64) -> Self {
-        let point = ray.position_after(t1);
+        let point = ray.at(t1);
 
         let material = object.material();
         let (u, v) = object.uv(&point);

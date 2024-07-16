@@ -101,11 +101,15 @@ impl Color {
 
     #[must_use]
     pub fn gradient(&self, rhs: &Self, slide: f64) -> Self {
-        let a = (1.0 - slide) * self;
-        let b = slide * rhs;
-        let c1 = a.f();
-        let c2 = b.f();
-        Self::new(c1.r + c2.r, c1.g + c2.g, c1.b + c2.b)
+        let a = slide.max(0.0).min(1.0);
+        let b = 1.0 - a;
+
+        let c1 = self.f();
+        let c2 = rhs.f();
+
+        Self::new(c1.r * b + c2.r * a, 
+                  c1.g * b + c2.g * a,
+                  c1.b * b + c2.b * a)
     }
 }
 

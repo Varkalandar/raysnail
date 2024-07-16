@@ -2,14 +2,17 @@
 use std::fs::read_to_string;
 use std::str::FromStr;
 use std::sync::Arc;
+use std::collections::HashMap;
 
 use crate::prelude::Vec3;
-use crate::hittable::Sphere;
 use crate::prelude::Color;
-use crate::material::Lambertian;
+use crate::hittable::Sphere;
+use crate::hittable::Box as GeometryBox;
 use crate::hittable::collection::HittableList;
-use crate::texture::Texture;
 use crate::material::Material;
+use crate::material::Lambertian;
+use crate::texture::Checker;
+use crate::texture::Texture;
 
 
 // All data parsed from the scene definition
@@ -17,6 +20,7 @@ use crate::material::Material;
 pub struct SceneData {
     pub camera: Option <CameraData>,
     pub hittables: HittableList,
+    pub lights: Vec<LightData>,
 }
 
 
@@ -24,11 +28,18 @@ pub struct SceneData {
 pub struct CameraData {
     pub location: Vec3,
     pub look_at: Vec3,
+    pub fov_angle: f64,
 }
 
+#[derive(Debug)]
+pub struct LightData {
+    pub location: Vec3, 
+    pub color: Color, 
+}
 
 #[derive(Debug)]
 struct Input {
+    symbol_map: HashMap<String, Symbol>,
     pos: usize,
     tokens: Vec<String>,
     
@@ -42,6 +53,8 @@ enum Symbol {
     Location,
     LookAt,
     Sphere,
+    Box,
+    Light,
     BlockOpen,
     BlockClose,
     VectorOpen,
@@ -53,20 +66,24 @@ enum Symbol {
     Finish,
     Color,
     Rgb,
+    Angle,
 
+    Checker,
+    
+    Id,
     Eof,
     None
 }
 
 #[derive(Debug)]
 pub struct SdlParser {
-
 }
 
 impl SdlParser {
 
     pub fn parse(filename: &str) -> SceneData {
         let mut input = Input {
+            symbol_map: build_symbol_map(),
             pos: 0,
             tokens: read_tokens(filename),
             symbol: Symbol::None,
@@ -76,12 +93,40 @@ impl SdlParser {
         let mut scene = SceneData {
             camera: None,
             hittables: HittableList::default(),
+            lights: Vec::new(),
         };
 
         parse_root(&mut input, &mut scene);
 
         return scene;
     }
+}
+
+fn build_symbol_map() -> HashMap<String, Symbol> {
+    let mut map = HashMap::new();
+
+    map.insert("camera".to_string(), Symbol::Camera);
+    map.insert("look_at".to_string(), Symbol::LookAt);
+    map.insert("location".to_string(), Symbol::Location);
+    map.insert("{".to_string(), Symbol::BlockOpen);
+    map.insert("}".to_string(), Symbol::BlockClose);
+    
+    map.insert("<".to_string(), Symbol::VectorOpen);
+    map.insert(">".to_string(), Symbol::VectorClose);
+    map.insert(",".to_string(), Symbol::Comma);
+    map.insert("sphere".to_string(), Symbol::Sphere);
+    map.insert("box".to_string(), Symbol::Box);
+    map.insert("light".to_string(), Symbol::Light);
+
+    map.insert("texture".to_string(), Symbol::Texture);
+    map.insert("pigment".to_string(), Symbol::Pigment);
+    map.insert("finish".to_string(), Symbol::Finish);
+    map.insert("color".to_string(), Symbol::Color);
+    map.insert("rgb".to_string(), Symbol::Rgb);
+    map.insert("checker".to_string(), Symbol::Checker);
+    map.insert("angle".to_string(), Symbol::Angle);
+
+    map
 }
 
 
@@ -135,65 +180,24 @@ fn read_tokens(filename: &str) -> Vec<String> {
     result
 }
 
-
-
-
 // lexer functions
 
-fn to_symbol(token: &String) -> Symbol {
-    if token == "camera" {
-        Symbol::Camera
+fn to_symbol(map: &HashMap<String, Symbol>, token: &String) -> Symbol {
+
+    let option = map.get(token);
+
+    if let Some(symbol) = option {
+        return symbol.clone()
     }
-    else if token == "look_at" {
-        Symbol::LookAt
-    }
-    else if token == "location" {
-        Symbol::Location
-    }
-    else if token == "{" {
-        Symbol::BlockOpen
-    }
-    else if token == "}" {
-        Symbol::BlockClose
-    }
-    else if token == "<" {
-        Symbol::VectorOpen
-    }
-    else if token == ">" {
-        Symbol::VectorClose
-    }
-    else if token == "," {
-        Symbol::Comma
-    }
-    else if token == "sphere" {
-        Symbol::Sphere
-    }
-    else if token == "texture" {
-        Symbol::Texture
-    }
-    else if token == "pigment" {
-        Symbol::Pigment
-    }
-    else if token == "finish" {
-        Symbol::Finish
-    }
-    else if token == "color" {
-        Symbol::Color
-    }
-    else if token == "rgb" {
-        Symbol::Rgb
-    }
-    else {
-        // println!("Unknown token: {}", token);
-        Symbol::None
-    }
+
+    Symbol::Id
 }
 
 fn nextsym(input: &mut Input) {
     if input.pos < input.tokens.len() {
         let token = &input.tokens[input.pos];
 
-        input.symbol = to_symbol(token);
+        input.symbol = to_symbol(&input.symbol_map, token);
         input.symbol_text = token.to_string();
 
         input.pos += 1;
@@ -238,6 +242,7 @@ fn expect(input: &mut Input, s: Symbol) -> bool {
 // parser functions
 
 fn parse_root(input: &mut Input, scene: &mut SceneData) {
+
     nextsym(input);
 
     parse_statement(input, scene);
@@ -251,7 +256,11 @@ fn parse_statement(input: &mut Input, scene: &mut SceneData) -> bool {
 
         if parse_camera(input, scene) {
         }
+        else if parse_light(input, scene) {
+        }
         else if parse_sphere(input, scene) {
+        }
+        else if parse_box(input, scene) {
         }
         else if input.symbol == Symbol::Eof {
             println!("EOF, stop parsing");
@@ -274,10 +283,14 @@ fn parse_camera(input: &mut Input, scene: &mut SceneData) -> bool {
 
         if expect(input, Symbol::BlockOpen) {
             
-            let mut camera = CameraData {location: Vec3::default(), look_at: Vec3::default(), };
+            let mut camera = CameraData {
+                location: Vec3::default(), 
+                look_at: Vec3::default(), 
+                fov_angle: 60.0,
+            };
 
             while input.symbol != Symbol::BlockClose {
-                let ok = parse_camera_vector(input, &mut camera);
+                let ok = parse_camera_item(input, &mut camera);
 
                 if !ok {
                     println!("parse_camera: expected camera vector or }}, found {}", input.symbol_text);
@@ -299,7 +312,49 @@ fn parse_camera(input: &mut Input, scene: &mut SceneData) -> bool {
     false
 }
 
-fn parse_camera_vector(input: &mut Input, camera: &mut CameraData) -> bool {
+
+fn parse_light(input: &mut Input, scene: &mut SceneData) -> bool {
+    if expect_quiet(input, Symbol::Light) {
+
+        if expect(input, Symbol::BlockOpen) {
+            
+            let mut light = LightData {
+                location: Vec3::default(), 
+                color: Color::default(), 
+            };
+
+            if let Some(location) = parse_vector(input) {
+                expect(input, Symbol::Comma);
+                if let Some(color) = parse_color(input) {
+
+                    expect(input, Symbol::BlockClose);
+                    light.location = location;
+                    light.color = color;
+                }
+                else {
+                    println!("parse_light: expected color vector, found {}", input.symbol_text);
+                    return false;
+                }
+            }
+            else {
+                println!("parse_light: expected location vector, found {}", input.symbol_text);
+                return false;
+            }
+
+            println!("parse_light: ok -> {:?}", light);
+            scene.lights.push(light);
+
+            return true;
+        }
+        println!("parse_camera: expected {{, found {}", input.symbol_text);
+    }
+
+    false
+}
+
+
+
+fn parse_camera_item(input: &mut Input, camera: &mut CameraData) -> bool {
 
     if input.symbol == Symbol::Location {
         nextsym(input);
@@ -309,6 +364,11 @@ fn parse_camera_vector(input: &mut Input, camera: &mut CameraData) -> bool {
     else if input.symbol == Symbol::LookAt {
         nextsym(input);
         camera.look_at = parse_vector(input).unwrap();
+        return true;
+    }
+    else if input.symbol == Symbol::Angle {
+        nextsym(input);
+        camera.fov_angle = parse_float(input).unwrap();
         return true;
     }
     else {
@@ -328,7 +388,6 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
             expect(input, Symbol::Comma);
             let r = parse_float(input).unwrap();   
 
-
             let material =
                 if let Some(material) = parse_object_modifiers(input) {
                     material
@@ -338,7 +397,7 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
                     Arc::new(Lambertian::new(Box::new(Color::new(1.0, 1.0, 1.0))))
                 };
 
-            let mut sphere = Sphere::new(v, r, material);
+            let sphere = Sphere::new(v, r, material);
 
             println!("parse_sphere: ok -> {:?}", sphere);
             scene.hittables.add(sphere);
@@ -349,6 +408,42 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
         }
         else {
             println!("parse_sphere: expected {{, found {}", input.symbol_text);
+        }
+    }
+
+    false
+}
+
+fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
+
+    println!("parse_box: called, current symbol is {:?}", input.symbol);
+
+    if expect_quiet(input, Symbol::Box) {
+        if expect(input, Symbol::BlockOpen) {
+            let v1 = parse_vector(input).unwrap();
+            expect(input, Symbol::Comma);
+            let v2 = parse_vector(input).unwrap();
+
+            let material =
+                if let Some(material) = parse_object_modifiers(input) {
+                    material
+                }
+                else {
+                    println!("parse_box: found no texture, using default diffuse white");
+                    Arc::new(Lambertian::new(Box::new(Color::new(1.0, 1.0, 1.0))))
+                };
+
+            let gbox = GeometryBox::new(v1, v2, material);
+
+            println!("parse_box: ok -> {:?}", gbox);
+            scene.hittables.add(gbox);
+
+            expect(input, Symbol::BlockClose);
+
+            return true;
+        }
+        else {
+            println!("parse_box: expected {{, found {}", input.symbol_text);
         }
     }
 
@@ -388,16 +483,15 @@ fn parse_pigment(input: &mut Input) -> Option<Box<dyn Texture>> {
 
     if expect(input, Symbol::Pigment) {
         if expect(input, Symbol::BlockOpen) {
-            if expect(input, Symbol::Color) {
+            if let Some(color) = parse_color(input) {
                 expect_quiet(input, Symbol::Rgb);   // should this be made mandatory?
 
-                if let Some(v) = parse_vector(input) {
-                    expect(input, Symbol::BlockClose);
-                    return Some(Box::new(Color::new(v.x, v.y, v.z)));
-                } else {
-                    println!("parse_pigment: expected color vector, but found '{}'", input.symbol_text);
-                    return None;
-                }
+                expect(input, Symbol::BlockClose);
+                return Some(Box::new(color));
+            }
+            else if let Some(colors) = parse_checker(input) {
+                expect(input, Symbol::BlockClose);
+                return Some(Box::new(Checker::new(colors.0, colors.1, 2.0)));
             }
         }
     }
@@ -405,7 +499,39 @@ fn parse_pigment(input: &mut Input) -> Option<Box<dyn Texture>> {
     None
 }
 
+fn parse_checker(input: &mut Input) -> Option<(Color, Color)> {
+    if expect_quiet(input, Symbol::Checker) {
+        if let Some(color1) = parse_color(input) {
 
+            expect(input, Symbol::Comma);
+
+            if let Some(color2) = parse_color(input) {
+                println!("parse_checker: -> ok ({:?}, {:?})", color1, color2);
+                return Some((color1, color2));
+            }
+            else {
+                println!("parse_checker: expected color, found '{}'", input.symbol_text);
+            }
+        }
+        else {
+            println!("parse_checker: expected color, found '{}'", input.symbol_text);
+        }
+    }
+    None
+}
+
+fn parse_color(input: &mut Input) -> Option<Color> {
+    if expect_quiet(input, Symbol::Color) {
+        expect_quiet(input, Symbol::Rgb);   // should this be made mandatory?
+
+        if let Some(v) = parse_vector(input) {
+            return Some(Color::new(v.x, v.y, v.z))
+        } else {
+            println!("parse_color: expected color vector, but found '{}'", input.symbol_text);
+        }
+    }
+    None
+}
 
 fn parse_vector(input: &mut Input) -> Option<Vec3> {
     if expect(input, Symbol::VectorOpen) {

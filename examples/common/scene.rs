@@ -165,6 +165,7 @@ pub fn balls_scene(seed: Option<u64>, need_speed: bool, checker: bool) -> Hittab
             Arc::new(Lambertian::new(Box::new(Checker::new(
                 Color::new(0.3, 0.3, 0.3),
                 Color::new(0.1, 0.1, 0.1),
+                10.0,
             )))),
         ));
     } else {

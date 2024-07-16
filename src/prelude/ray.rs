@@ -18,7 +18,7 @@ impl Ray {
     }
 
     #[must_use]
-    pub fn position_after(&self, t: f64) -> Vec3 {
+    pub fn at(&self, t: f64) -> Vec3 {
         // &self.origin + &self.direction * t
 
         // self.direction.mul_add(t, &self.origin)

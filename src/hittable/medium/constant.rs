@@ -68,7 +68,7 @@ impl<T: Hittable> Hittable for ConstantMedium<T> {
         let hit_point_unit = rec1.t1 + hit_distance / length_per_unit;
 
         Some(HitRecord {
-            point: ray.position_after(hit_point_unit),
+            point: ray.at(hit_point_unit),
             normal: Vec3::new(1.0, 0.0, 0.0), // useless,
             material: self.material.clone(),
             t1: hit_point_unit,

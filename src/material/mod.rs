@@ -1,6 +1,5 @@
 use {
     crate::{hittable::HitRecord, prelude::*},
-    std::sync::Arc,
 };
 
 use std::fmt::Debug;
