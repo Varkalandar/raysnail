@@ -2,7 +2,7 @@ use {
     super::scene,
     raysnail::{camera::Camera, hittable::collection::HittableList},
 };
-use crate::CameraBuilder;
+use raysnail::camera::CameraBuilder;
 
 pub use scene::all_feature_scene;
 

@@ -2,7 +2,7 @@ use {
     super::scene,
     raysnail::{camera::Camera, hittable::collection::HittableList},
 };
-use crate::CameraBuilder;
+use raysnail::camera::CameraBuilder;
 
 #[must_use]
 fn final_world(seed: Option<u64>) -> HittableList {

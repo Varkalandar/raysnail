@@ -16,8 +16,8 @@ use {
 
 use raysnail::material::Material;
 use raysnail::hittable::transform::ByXAxis;
-use crate::BlinnPhong;
-use crate::DiffuseMetal;
+use raysnail::material::BlinnPhong;
+use raysnail::material::DiffuseMetal;
 
 fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, bounce_height: f64, need_speed: bool) {
     let small_ball_radius = 0.2;
