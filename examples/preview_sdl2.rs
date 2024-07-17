@@ -81,10 +81,8 @@ impl Renderer {
     }
 }
 
-
 struct PixelQueue {
     sender: SyncSender<(usize, Vec<[u8; 4]>)>,
-    // command_receiver: Receiver<PainterCommand>,
 }
 
 impl PainterTarget for PixelQueue {
@@ -145,25 +143,20 @@ fn boot_sdl(width: usize, height: usize, receiver: Receiver<(usize, Vec<[u8; 4]>
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
-
     let window = video_subsystem
-        .window("rust-sdl2 demo: Video", width as u32, height as u32)
+        .window("Raysnail Render Preview", width as u32, height as u32)
         .position_centered()
         .opengl()
         .build()
         .map_err(|e| e.to_string()).unwrap();
 
-    // let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
-
     let mut renderer = Renderer::new(window);
     let mut pixels: Vec<u8> = Vec::with_capacity(width * 3);
 
-    let creator = 
-        renderer.canvas.texture_creator();
+    let creator = renderer.canvas.texture_creator();
     let mut line =
         creator 
-        .create_texture(PixelFormatEnum::RGB24, TextureAccess::Static, width as u32, height as u32).unwrap();
-        // .create_texture(None, TextureAccess::Static, width, 1).unwrap();
+        .create_texture(PixelFormatEnum::RGB24, TextureAccess::Streaming, width as u32, height as u32).unwrap();
 
     println!("Color mod={:?}", line.color_mod());
     println!("query={:?}", line.query());
@@ -199,8 +192,12 @@ fn boot_sdl(width: usize, height: usize, receiver: Receiver<(usize, Vec<[u8; 4]>
             pixels.clear();
         } 
         else {
-            let error = data_result.err().unwrap();
-            println!("Receiving window could not read pixels: {:?}", error.to_string());        
+            // let error = data_result.err().unwrap();
+
+            // there don't seem to be any temporary errors, so the only thing
+            // left to do is to quit the loop
+
+            break;
         }
     }
 
@@ -465,10 +462,16 @@ fn render_object_test(width: usize, height: usize,
 
 
 fn render_parser_test(width: usize, height: usize, 
-                      target: &mut dyn PainterTarget, controller: &mut dyn PainterController) {
+                      target: &mut dyn PainterTarget, controller: &mut dyn PainterController) -> bool {
 
+    let mut scene_data_result = SdlParser::parse("sdl/example.sdl");
 
-    let mut scene_data = SdlParser::parse("sdl/example.sdl");
+    if let Err(message) = scene_data_result {
+        println!("Could not parse scene data: {}", message);
+        return false;
+    } 
+
+    let mut scene_data = scene_data_result.unwrap();
     let camera_data = &scene_data.camera.unwrap();
 
     let builder = CameraBuilder::default()
@@ -507,4 +510,6 @@ fn render_parser_test(width: usize, height: usize,
         .depth(8)
         .shot_to_target(Some("sample_scene.ppm"), target, controller)
         .unwrap();
+
+    true
 }

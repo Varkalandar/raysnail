@@ -81,7 +81,7 @@ pub struct SdlParser {
 
 impl SdlParser {
 
-    pub fn parse(filename: &str) -> SceneData {
+    pub fn parse(filename: &str) -> Result<SceneData, String> {
         let mut input = Input {
             symbol_map: build_symbol_map(),
             pos: 0,
@@ -96,9 +96,11 @@ impl SdlParser {
             lights: Vec::new(),
         };
 
-        parse_root(&mut input, &mut scene);
+        if !parse_root(&mut input, &mut scene) {
+            return Err("Parse error".to_string());
+        }
 
-        return scene;
+        return Ok(scene);
     }
 }
 
@@ -241,11 +243,11 @@ fn expect(input: &mut Input, s: Symbol) -> bool {
 
 // parser functions
 
-fn parse_root(input: &mut Input, scene: &mut SceneData) {
+fn parse_root(input: &mut Input, scene: &mut SceneData) -> bool {
 
     nextsym(input);
 
-    parse_statement(input, scene);
+    parse_statement(input, scene)
 }
 
 fn parse_statement(input: &mut Input, scene: &mut SceneData) -> bool {

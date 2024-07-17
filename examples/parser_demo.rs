@@ -1,9 +1,11 @@
 use raysnail::sdl_parser::SdlParser;
+use raysnail::sdl_parser::SceneData;
 
+pub fn main() {
 
-pub fn main() -> Result<(), String> {
+    let result = SdlParser::parse("sdl/example.sdl");
 
-    SdlParser::parse("sdl/example.sdl");
-
-    Ok(())
+    if let Err(message) = result {
+        println!("Could not parse scene data.");
+    } 
 }
