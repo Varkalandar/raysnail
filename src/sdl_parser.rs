@@ -38,14 +38,30 @@ pub struct LightData {
 }
 
 #[derive(Debug)]
+struct Token {
+    text: String,
+    line: u32,
+}
+
+#[derive(Debug)]
 struct Input {
     symbol_map: HashMap<String, Symbol>,
     pos: usize,
-    tokens: Vec<String>,
+    tokens: Vec<Token>,
     
     symbol: Symbol,
-    symbol_text: String,
 }
+
+impl Input {
+    fn current_line(&self) -> u32 {
+        self.tokens[pos].line
+    }
+
+    fn current_text(&self) -> &String {
+        &self.tokens[pos].text
+    }
+}
+
 
 #[derive(Debug, PartialEq, Clone)]
 enum Symbol {
@@ -132,7 +148,7 @@ fn build_symbol_map() -> HashMap<String, Symbol> {
 }
 
 
-fn push_non_empty(v: &mut Vec<String>, value: &str) {
+fn push_non_empty(v: &mut Vec<Token>, value: &str, line: u32) {
     let t = value.trim();
     if t.len() > 0 {
         v.push(t.to_string());
@@ -140,12 +156,13 @@ fn push_non_empty(v: &mut Vec<String>, value: &str) {
 }
 
 
-fn tokenize(line: &String) -> Vec<String> {
+fn tokenize(line: &String) -> Vec<Token> {
     
     let seps = [' ', ',', '<', '>', '{', '}', '\n'];
 
     let mut v = Vec::new();
-    
+    let mut line_no = 0;
+
     for part in line.split_inclusive(&seps[..]) {
         if part.ends_with(seps) {
             
@@ -153,22 +170,27 @@ fn tokenize(line: &String) -> Vec<String> {
             let sep = chars.next_back();
             let left = part.strip_suffix(seps);
 
-            push_non_empty(&mut v, left.unwrap());
-            push_non_empty(&mut v, &sep.unwrap().to_string());
+            push_non_empty(&mut v, left.unwrap(), line_no);
+            push_non_empty(&mut v, &sep.unwrap().to_string(), line_no);
         }
         else {
             if part.len() > 0 {
-                push_non_empty(&mut v, part);
+                push_non_empty(&mut v, part, line_no);
             }
         }
+
+        line_no += 1;
     }
     
     v
 }
 
 
-fn read_tokens(filename: &str) -> Vec<String> {
+fn read_tokens(filename: &str) -> Vec<Token> {
     let mut result = Vec::new();
+
+    // generate start token to fill (unused) position 0
+    result.push(Token {text: "START".to_string(), line: 0});
 
     for line in read_to_string(filename).unwrap().lines() {
         let token_line = &line.to_string();
@@ -196,20 +218,19 @@ fn to_symbol(map: &HashMap<String, Symbol>, token: &String) -> Symbol {
 }
 
 fn nextsym(input: &mut Input) {
+    input.pos += 1;
+
     if input.pos < input.tokens.len() {
         let token = &input.tokens[input.pos];
-
         input.symbol = to_symbol(&input.symbol_map, token);
-        input.symbol_text = token.to_string();
 
-        input.pos += 1;
     }
     else {
         input.symbol = Symbol::Eof;
-        input.symbol_text = "EOF".to_string();
+        input.symbol_token = Token {text: "EOF".to_string(), line: 0 };
     }
 
-    println!("Current symbol is: {}", input.symbol_text);
+    println!("Current symbol is: {}", input.current_line(), input.current_text());
 }
 
 fn accept(input: &mut Input, s: Symbol) -> bool {
@@ -236,7 +257,7 @@ fn expect(input: &mut Input, s: Symbol) -> bool {
         true
     }
     else {
-        println!("Expected {:?}, found {}", s, input.symbol_text);
+        println!("Expected {:?}, found {}", s, input.current_line(), input.current_text());
         false
     }
 }    
@@ -253,7 +274,7 @@ fn parse_root(input: &mut Input, scene: &mut SceneData) -> bool {
 fn parse_statement(input: &mut Input, scene: &mut SceneData) -> bool {
     while input.pos < input.tokens.len() {
 
-        println!("parse_statement: {:?} ('{}') ", input.symbol, input.symbol_text);
+        println!("Line {}, parse_statement: {:?} ('{}') ", input.symbol, input.current_line(), input.current_text());
 
 
         if parse_camera(input, scene) {
@@ -269,7 +290,7 @@ fn parse_statement(input: &mut Input, scene: &mut SceneData) -> bool {
             break;
         }
         else {
-            println!("Invalid statement found: {}", input.symbol_text);
+            println!("Invalid statement found: {}", input.current_line(), input.current_text());
             return false;
         }
     }
@@ -281,7 +302,7 @@ fn parse_statement(input: &mut Input, scene: &mut SceneData) -> bool {
 fn parse_camera(input: &mut Input, scene: &mut SceneData) -> bool {
     if expect_quiet(input, Symbol::Camera) {
 
-        // println!("parse_camera: parsing camera data");
+        // println!("Line {}, parse_camera: parsing camera data");
 
         if expect(input, Symbol::BlockOpen) {
             
@@ -295,7 +316,7 @@ fn parse_camera(input: &mut Input, scene: &mut SceneData) -> bool {
                 let ok = parse_camera_item(input, &mut camera);
 
                 if !ok {
-                    println!("parse_camera: expected camera vector or }}, found {}", input.symbol_text);
+                    println!("Line {}, parse_camera: expected camera vector or }}, found {}", input.current_line(), input.current_text());
                     return false;
                 }
             }
@@ -306,10 +327,10 @@ fn parse_camera(input: &mut Input, scene: &mut SceneData) -> bool {
 
             return true;
         }
-        println!("parse_camera: expected {{, found {}", input.symbol_text);
+        println!("Line {}, parse_camera: expected {{, found {}", input.current_line(), input.current_text());
     }
 
-    // println!("parse_camera: statement is no camera, {}", input.symbol_text);
+    // println!("Line {}, parse_camera: statement is no camera, {}", input.current_line(), input.current_text());
 
     false
 }
@@ -334,12 +355,12 @@ fn parse_light(input: &mut Input, scene: &mut SceneData) -> bool {
                     light.color = color;
                 }
                 else {
-                    println!("parse_light: expected color vector, found {}", input.symbol_text);
+                    println!("Line {}, parse_light: expected color vector, found {}", input.current_line(), input.current_text());
                     return false;
                 }
             }
             else {
-                println!("parse_light: expected location vector, found {}", input.symbol_text);
+                println!("Line {}, parse_light: expected location vector, found {}", input.current_line(), input.current_text());
                 return false;
             }
 
@@ -348,7 +369,7 @@ fn parse_light(input: &mut Input, scene: &mut SceneData) -> bool {
 
             return true;
         }
-        println!("parse_camera: expected {{, found {}", input.symbol_text);
+        println!("Line {}, parse_camera: expected {{, found {}", input.current_line(), input.current_text());
     }
 
     false
@@ -374,7 +395,7 @@ fn parse_camera_item(input: &mut Input, camera: &mut CameraData) -> bool {
         return true;
     }
     else {
-        println!("parse_camera_vector: expected 'location' or 'look_at', found '{}'", input.symbol_text);
+        println!("Line {}, parse_camera_vector: expected 'location' or 'look_at', found '{}'", input.current_line(), input.current_text());
     }
 
     false
@@ -382,7 +403,7 @@ fn parse_camera_item(input: &mut Input, camera: &mut CameraData) -> bool {
 
 fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
 
-    println!("parse_sphere: called, current symbol is {:?}", input.symbol);
+    println!("Line {}, parse_sphere: called, current symbol is {:?}", input.symbol);
 
     if expect_quiet(input, Symbol::Sphere) {
         if expect(input, Symbol::BlockOpen) {
@@ -395,7 +416,7 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
                     material
                 }
                 else {
-                    println!("parse_sphere: found no texture, using default diffuse white");
+                    println!("Line {}, parse_sphere: found no texture, using default diffuse white");
                     Arc::new(Lambertian::new(Box::new(Color::new(1.0, 1.0, 1.0))))
                 };
 
@@ -409,7 +430,7 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
             return true;
         }
         else {
-            println!("parse_sphere: expected {{, found {}", input.symbol_text);
+            println!("Line {}, parse_sphere: expected {{, found {}", input.current_line(), input.current_text());
         }
     }
 
@@ -418,7 +439,7 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
 
 fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
 
-    println!("parse_box: called, current symbol is {:?}", input.symbol);
+    println!("Line {}, parse_box: called, current symbol is {:?}", input.symbol);
 
     if expect_quiet(input, Symbol::Box) {
         if expect(input, Symbol::BlockOpen) {
@@ -431,7 +452,7 @@ fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
                     material
                 }
                 else {
-                    println!("parse_box: found no texture, using default diffuse white");
+                    println!("Line {}, parse_box: found no texture, using default diffuse white");
                     Arc::new(Lambertian::new(Box::new(Color::new(1.0, 1.0, 1.0))))
                 };
 
@@ -445,7 +466,7 @@ fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
             return true;
         }
         else {
-            println!("parse_box: expected {{, found {}", input.symbol_text);
+            println!("Line {}, parse_box: expected {{, found {}", input.current_line(), input.current_text());
         }
     }
 
@@ -466,7 +487,7 @@ fn parse_texture(input: &mut Input) -> Option<Arc<dyn Material>> {
                 if let Some(texture) = parse_pigment(input) {
                     texture
                 } else {
-                    println!("parse_texture: no pigment found, using default white");
+                    println!("Line {}, parse_texture: no pigment found, using default white");
                     Box::new(Color::new(1.0, 1.0, 1.0))
                 };
 
@@ -512,11 +533,11 @@ fn parse_checker(input: &mut Input) -> Option<(Color, Color)> {
                 return Some((color1, color2));
             }
             else {
-                println!("parse_checker: expected color, found '{}'", input.symbol_text);
+                println!("Line {}, parse_checker: expected color, found '{}'", input.current_line(), input.current_text());
             }
         }
         else {
-            println!("parse_checker: expected color, found '{}'", input.symbol_text);
+            println!("Line {}, parse_checker: expected color, found '{}'", input.current_line(), input.current_text());
         }
     }
     None
@@ -529,7 +550,7 @@ fn parse_color(input: &mut Input) -> Option<Color> {
         if let Some(v) = parse_vector(input) {
             return Some(Color::new(v.x, v.y, v.z))
         } else {
-            println!("parse_color: expected color vector, but found '{}'", input.symbol_text);
+            println!("Line {}, parse_color: expected color vector, but found '{}'", input.current_line(), input.current_text());
         }
     }
     None
@@ -550,7 +571,7 @@ fn parse_vector(input: &mut Input) -> Option<Vec3> {
         return Some(Vec3::new(v1, v2, v3));
     }
     else {
-        println!("parse_vector: expected <, found {}", input.symbol_text);
+        println!("Line {}, parse_vector: expected <, found {}", input.current_line(), input.current_text());
     }
 
     None
@@ -558,10 +579,10 @@ fn parse_vector(input: &mut Input) -> Option<Vec3> {
 
 
 fn parse_float(input: &mut Input) -> Result <f64, <f64 as FromStr>::Err> {
-    let v = input.symbol_text.parse::<f64>();
+    let v = input.current_text().parse::<f64>();
     
     if v.is_err() {
-        println!("parse_float: expected float number, found {}", input.symbol_text);       
+        println!("Line {}, parse_float: expected float number, found {}", input.current_line(), input.current_text());
     }
 
     nextsym(input);
