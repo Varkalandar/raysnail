@@ -53,12 +53,23 @@ struct Input {
 }
 
 impl Input {
+
     fn current_line(&self) -> u32 {
-        self.tokens[pos].line
+        if self.pos < self.tokens.len() {        
+            self.tokens[self.pos].line
+        }
+        else {
+            self.tokens.len() as u32
+        }
     }
 
     fn current_text(&self) -> &String {
-        &self.tokens[pos].text
+        if self.pos < self.tokens.len() {        
+            &self.tokens[self.pos].text
+        }
+        else {
+            &self.tokens[self.tokens.len() - 1].text
+        }
     }
 }
 
@@ -103,7 +114,6 @@ impl SdlParser {
             pos: 0,
             tokens: read_tokens(filename),
             symbol: Symbol::None,
-            symbol_text: "".to_string(), 
         };
 
         let mut scene = SceneData {
@@ -151,17 +161,16 @@ fn build_symbol_map() -> HashMap<String, Symbol> {
 fn push_non_empty(v: &mut Vec<Token>, value: &str, line: u32) {
     let t = value.trim();
     if t.len() > 0 {
-        v.push(t.to_string());
+        v.push(Token {text: t.to_string(), line});
     }
 }
 
 
-fn tokenize(line: &String) -> Vec<Token> {
+fn tokenize(line: &String, line_no: u32) -> Vec<Token> {
     
     let seps = [' ', ',', '<', '>', '{', '}', '\n'];
 
     let mut v = Vec::new();
-    let mut line_no = 0;
 
     for part in line.split_inclusive(&seps[..]) {
         if part.ends_with(seps) {
@@ -178,8 +187,6 @@ fn tokenize(line: &String) -> Vec<Token> {
                 push_non_empty(&mut v, part, line_no);
             }
         }
-
-        line_no += 1;
     }
     
     v
@@ -188,17 +195,20 @@ fn tokenize(line: &String) -> Vec<Token> {
 
 fn read_tokens(filename: &str) -> Vec<Token> {
     let mut result = Vec::new();
+    let mut line_no = 1; // Editors start with line 1 
 
     // generate start token to fill (unused) position 0
     result.push(Token {text: "START".to_string(), line: 0});
 
     for line in read_to_string(filename).unwrap().lines() {
         let token_line = &line.to_string();
-        let tokens = tokenize(token_line);
+        let tokens = tokenize(token_line, line_no);
         for token in tokens {
             // println!("Token = '{}' len = {}", token, token.len());
             result.push(token);
         }
+
+        line_no += 1;
     }
 
     result
@@ -222,15 +232,13 @@ fn nextsym(input: &mut Input) {
 
     if input.pos < input.tokens.len() {
         let token = &input.tokens[input.pos];
-        input.symbol = to_symbol(&input.symbol_map, token);
-
+        input.symbol = to_symbol(&input.symbol_map, &token.text);
     }
     else {
         input.symbol = Symbol::Eof;
-        input.symbol_token = Token {text: "EOF".to_string(), line: 0 };
     }
 
-    println!("Current symbol is: {}", input.current_line(), input.current_text());
+    println!("Line {}, Current symbol is: {}", input.current_line(), input.current_text());
 }
 
 fn accept(input: &mut Input, s: Symbol) -> bool {
@@ -257,7 +265,7 @@ fn expect(input: &mut Input, s: Symbol) -> bool {
         true
     }
     else {
-        println!("Expected {:?}, found {}", s, input.current_line(), input.current_text());
+        println!("Expected {:?}, found {}", s, input.current_text());
         false
     }
 }    
@@ -274,8 +282,7 @@ fn parse_root(input: &mut Input, scene: &mut SceneData) -> bool {
 fn parse_statement(input: &mut Input, scene: &mut SceneData) -> bool {
     while input.pos < input.tokens.len() {
 
-        println!("Line {}, parse_statement: {:?} ('{}') ", input.symbol, input.current_line(), input.current_text());
-
+        println!("Line {}, parse_statement: '{}'", input.current_line(), input.current_text());
 
         if parse_camera(input, scene) {
         }
@@ -290,7 +297,7 @@ fn parse_statement(input: &mut Input, scene: &mut SceneData) -> bool {
             break;
         }
         else {
-            println!("Invalid statement found: {}", input.current_line(), input.current_text());
+            println!("Line {}, Invalid statement found: {}", input.current_line(), input.current_text());
             return false;
         }
     }
@@ -403,7 +410,7 @@ fn parse_camera_item(input: &mut Input, camera: &mut CameraData) -> bool {
 
 fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
 
-    println!("Line {}, parse_sphere: called, current symbol is {:?}", input.symbol);
+    println!("Line {}, parse_sphere: called, current symbol is {:?}", input.current_line(), input.current_text());
 
     if expect_quiet(input, Symbol::Sphere) {
         if expect(input, Symbol::BlockOpen) {
@@ -416,7 +423,7 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
                     material
                 }
                 else {
-                    println!("Line {}, parse_sphere: found no texture, using default diffuse white");
+                    println!("Line {}, parse_sphere: found no texture, using default diffuse white", input.current_line());
                     Arc::new(Lambertian::new(Box::new(Color::new(1.0, 1.0, 1.0))))
                 };
 
@@ -439,7 +446,7 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
 
 fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
 
-    println!("Line {}, parse_box: called, current symbol is {:?}", input.symbol);
+    println!("Line {}, parse_box: called, current symbol is {:?}", input.current_line(), input.current_text());
 
     if expect_quiet(input, Symbol::Box) {
         if expect(input, Symbol::BlockOpen) {
@@ -452,7 +459,7 @@ fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
                     material
                 }
                 else {
-                    println!("Line {}, parse_box: found no texture, using default diffuse white");
+                    println!("Line {}, parse_box: found no texture, using default diffuse white", input.current_line());
                     Arc::new(Lambertian::new(Box::new(Color::new(1.0, 1.0, 1.0))))
                 };
 
@@ -487,7 +494,7 @@ fn parse_texture(input: &mut Input) -> Option<Arc<dyn Material>> {
                 if let Some(texture) = parse_pigment(input) {
                     texture
                 } else {
-                    println!("Line {}, parse_texture: no pigment found, using default white");
+                    println!("Line {}, parse_texture: no pigment found, using default white", input.current_line());
                     Box::new(Color::new(1.0, 1.0, 1.0))
                 };
 
