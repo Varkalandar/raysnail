@@ -18,24 +18,15 @@ I want to implement at least partial support for the [PovRay] scene definition l
 
 ## Run
 
-The Raysnail is a library crate, but you can run built-in examples to try it.
-
-Use `cargo run --example` to get examples list, then choose one to run.
-
-For example, to get final scene in section 13.1 of *Ray Tracing in One Weekend*, run
+If you have installed Rust and Cargo, an easy way to run the raysnail is this command: 
 
 ```bash
-cargo run --example rtow_13_1 --release
+cargo run -r --bin raysnail -- -w 800 -h 500 --samples 65 --scene sdl/example.sdl
 ```
-After some time (depending on your machine), you will get a `rtow_13_1.ppm` in current dir, that's your result.
+* --scene <File> tells which SDL file to read and render
+* -w <Integer> is the image width
+* -h <Integer> is the image height
 
-To test the preview window, you can run
-
-```bash
-cargo run --example preview_sdl2 --release
-```
-
-If you want a bigger and clearer image, adjust `height()`, `depth()` and `samples()` parameters in source of the example file and re-run.
 
 ## LICENSE
 
