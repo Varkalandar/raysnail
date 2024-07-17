@@ -10,7 +10,7 @@ use sdl2::pixels::PixelFormatEnum;
 use sdl2::render::Texture;
 use sdl2::rect::Rect;
 
-use clap::{Arg, ArgAction, Command};
+use clap::{Arg, Command};
 use clap::crate_version;
 
 use rayon::spawn;
@@ -180,7 +180,7 @@ fn boot_sdl(width: usize, height: usize, receiver: Receiver<(usize, Vec<[u8; 4]>
 fn parse_and_render(width: usize, height: usize, samples: usize, filename: &str,
                     target: &mut dyn PainterTarget, controller: &mut dyn PainterController) -> bool {
 
-    let mut scene_data_result = SdlParser::parse(filename);
+    let scene_data_result = SdlParser::parse(filename);
 
     if let Err(message) = scene_data_result {
         println!("Could not parse scene data: {}", message);

@@ -82,10 +82,20 @@ enum Symbol {
     Sphere,
     Box,
     Light,
+
+
+    Plus,
+    Minus,
+    Multiply,
+    Divide,
+
+
     BlockOpen,
     BlockClose,
     VectorOpen,
     VectorClose,
+    ParenOpen,
+    ParenClose,
     Comma,
 
     Texture,
@@ -154,6 +164,13 @@ fn build_symbol_map() -> HashMap<String, Symbol> {
     map.insert("checker".to_string(), Symbol::Checker);
     map.insert("angle".to_string(), Symbol::Angle);
 
+    map.insert("+".to_string(), Symbol::Plus);
+    map.insert("-".to_string(), Symbol::Minus);
+    map.insert("*".to_string(), Symbol::Multiply);
+    map.insert("/".to_string(), Symbol::Divide);
+    map.insert("(".to_string(), Symbol::ParenOpen);
+    map.insert(")".to_string(), Symbol::ParenClose);
+
     map
 }
 
@@ -168,7 +185,7 @@ fn push_non_empty(v: &mut Vec<Token>, value: &str, line: u32) {
 
 fn tokenize(line: &String, line_no: u32) -> Vec<Token> {
     
-    let seps = [' ', ',', '<', '>', '{', '}', '\n'];
+    let seps = [' ', ',', '<', '>', '{', '}', '+', '-', '*', '/', '\n'];
 
     let mut v = Vec::new();
 
@@ -398,7 +415,7 @@ fn parse_camera_item(input: &mut Input, camera: &mut CameraData) -> bool {
     }
     else if input.symbol == Symbol::Angle {
         nextsym(input);
-        camera.fov_angle = parse_float(input).unwrap();
+        camera.fov_angle = parse_expression(input).unwrap();
         return true;
     }
     else {
@@ -416,7 +433,7 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
         if expect(input, Symbol::BlockOpen) {
             let v = parse_vector(input).unwrap();
             expect(input, Symbol::Comma);
-            let r = parse_float(input).unwrap();   
+            let r = parse_expression(input).unwrap();   
 
             let material =
                 if let Some(material) = parse_object_modifiers(input) {
@@ -566,13 +583,13 @@ fn parse_color(input: &mut Input) -> Option<Color> {
 fn parse_vector(input: &mut Input) -> Option<Vec3> {
     if expect(input, Symbol::VectorOpen) {
 
-        let v1 = parse_float(input).unwrap();
+        let v1 = parse_expression(input).unwrap();
         expect(input, Symbol::Comma);
 
-        let v2 = parse_float(input).unwrap();
+        let v2 = parse_expression(input).unwrap();
         expect(input, Symbol::Comma);
         
-        let v3 = parse_float(input).unwrap();
+        let v3 = parse_expression(input).unwrap();
         expect(input, Symbol::VectorClose);
 
         return Some(Vec3::new(v1, v2, v3));
@@ -585,14 +602,131 @@ fn parse_vector(input: &mut Input) -> Option<Vec3> {
 }
 
 
-fn parse_float(input: &mut Input) -> Result <f64, <f64 as FromStr>::Err> {
+fn parse_expression(input: &mut Input) -> Option<f64> {
+
+    println!("Line {}, parse_expression: called with {}", input.current_line(), input.current_text());
+
+    let mut e;
+
+    if expect(input, Symbol::Minus) {
+        if let Some(value) = parse_term(input) {
+            e = -value;
+        }
+        else {
+            return None;
+        }
+    }
+    else {
+        if let Some(value) = parse_term(input) {
+            e = value;
+        }
+        else {
+            return None;
+        }
+    }
+
+    loop {
+
+        if expect(input, Symbol::Minus) {
+            if let Some(value) = parse_term(input) {
+                e -= value;
+            }    
+            else {
+                println!("Line {}, parse_expression: expected term, found {}", input.current_line(), input.current_text());
+                return None;
+            }    
+        }            
+        else if expect(input, Symbol::Plus) {
+            if let Some(value) = parse_term(input) {
+                e += value;
+            }
+            else {
+                println!("Line {}, parse_expression: expected term, found {}", input.current_line(), input.current_text());
+                return None;
+            }    
+        }
+        else {
+            // end of expression? Diagnosis?
+            break;
+        }
+    }
+
+    println!("Line {}, parse_expression: -> ok, value is {}", input.current_line(), e);
+
+    Some(e)
+}
+
+
+fn parse_term(input: &mut Input) -> Option<f64> {
+    if let Some(mut f) = parse_factor(input) {
+
+        loop {
+            if expect(input, Symbol::Multiply) {
+                if let Some(value) = parse_factor(input) {
+                    f *= value;
+                }    
+                else {
+                    println!("Line {}, parse_term: expected factor, found {}", input.current_line(), input.current_text());
+                    return None;
+                }    
+            }            
+            else if expect(input, Symbol::Divide) {
+                if let Some(value) = parse_factor(input) {
+                    f /= value;
+                }
+                else {
+                    println!("Line {}, parse_term: expected factor, found {}", input.current_line(), input.current_text());
+                    return None;
+                }    
+            }
+            else {
+                // end of expression? Diagnosis?
+                break;
+            }            
+        }
+
+        return Some(f);
+    }
+    else {
+        println!("Line {}, parse_term: expected factor, found {}", input.current_line(), input.current_text());
+    }
+
+    None
+}
+
+
+fn parse_factor(input: &mut Input) -> Option<f64> {
+    if expect(input, Symbol::ParenOpen) {
+        let e = parse_expression(input);
+
+        if expect(input, Symbol::ParenClose) {
+            return e; 
+        }
+        else {
+            println!("Line {}, parse_factor: expected closing parenthesis, found {}", input.current_line(), input.current_text());
+        }
+    }
+    else {
+        return parse_float(input)
+    }
+
+    println!("Line {}, parse_factor: expected float value or openening parenthesis, found {}", input.current_line(), input.current_text());
+
+    None
+}
+
+fn parse_float(input: &mut Input) -> Option<f64> {
     let v = input.current_text().parse::<f64>();
     
-    if v.is_err() {
+    if v.is_ok() {
+        let v = v.unwrap();
+        println!("Line {}, parse_float: -> ok, value is {}", input.current_line(), v);
+        nextsym(input);
+        return Some(v);
+    }
+    else {
         println!("Line {}, parse_float: expected float number, found {}", input.current_line(), input.current_text());
     }
 
-    nextsym(input);
-
-    v
+    None
 }
