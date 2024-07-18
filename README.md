@@ -24,9 +24,9 @@ If you have installed Rust and Cargo, an easy way to run the raysnail is this co
 cargo run -r --bin raysnail -- -w 800 -h 500 --samples 65 --scene sdl/example.sdl
 ```
 * --scene <File> tells which SDL file to read and render
+* --samples is the number of samples taken per pixel. Taking more samples improves the image quality, but also raises the rendering time.
 * -w <Integer> is the image width
 * -h <Integer> is the image height
-
 
 ## LICENSE
 
