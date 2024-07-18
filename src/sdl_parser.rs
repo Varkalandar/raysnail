@@ -183,7 +183,19 @@ fn push_non_empty(v: &mut Vec<Token>, value: &str, line: u32) {
 }
 
 
-fn tokenize(line: &String, line_no: u32) -> Vec<Token> {
+fn strip_line_comments(line: &String) -> String {
+
+    let mut parts = line.split("//");
+    if let Some(part) = parts.next() {
+        return part.to_string();
+    }
+
+    return line.to_string();
+}
+
+fn tokenize(line_in: &String, line_no: u32) -> Vec<Token> {
+
+    let line = strip_line_comments(line_in);
     
     let seps = [' ', ',', '<', '>', '{', '}', '+', '-', '*', '/', '\n'];
 

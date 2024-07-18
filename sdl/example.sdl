@@ -1,6 +1,12 @@
+//
+// example.sdl
+// 
+// Example file for the SDL parser
+//
+
 camera {
-	location <6.0, 1.0, 2.5>
-	look_at <0, -0.4, 0>
+	location <6.0, 1.0, 2.5>  // the location of the camera
+	look_at <0, -0.4, 0>      // where the camera is aimed at
 	angle 50
 }
 
