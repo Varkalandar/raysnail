@@ -129,9 +129,9 @@ pub fn main() -> Result<(), String> {
 
     // render_ball_scene(width, height, &mut queue, &mut controller);
     // render_time_test(width, height, &mut queue, &mut controller);
-    // render_raymarching_test(width, height, &mut queue, &mut controller);
+    render_raymarching_test(width, height, &mut queue, &mut controller);
     // render_object_test(width, height, &mut queue, &mut controller);
-    render_parser_test(width, height, &mut queue, &mut controller);
+    // render_parser_test(width, height, &mut queue, &mut controller);
 
     Ok(())
 }
@@ -376,7 +376,7 @@ fn render_ball_scene(width: usize, height: usize,
     camera
         .build()
         .take_photo_with_lights(world, lights)
-        .samples(26)
+        .samples(122)
         //.samples(257)
         .depth(8)
         .shot_to_target(Some("rtow_13_1.ppm"), target, controller)

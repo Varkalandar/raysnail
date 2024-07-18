@@ -57,17 +57,6 @@ impl<T: Texture> Material for DiffuseMetal<T> {
         }
     }
 
-    fn scattering_pdf(&self, _ray: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
-
-        assert!((scattered.direction.length_squared() - 1.0).abs() < 0.00001);
-
-        let cos_theta = rec.normal.dot(&scattered.direction);
-
-        // println!("cos_theta={}",cos_theta);
-
-        if cos_theta <= 0.0 {0.0} else {cos_theta / PI}
-    }        
-
     fn settings(&self) -> CommonMaterialSettings {
         self.settings.clone()
     }

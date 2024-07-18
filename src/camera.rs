@@ -246,7 +246,8 @@ impl<'c> TakePhotoSettings<'c> {
                     pdf_val = 1e-5;
                 }
 
-                let scattering_pdf_val = material.scattering_pdf(ray, &hit, &scattered_ray);
+                // let scattering_pdf_val = material.scattering_pdf(ray, &hit, &scattered_ray);
+                let scattering_pdf_val = srec.pdf.value(&scattered_ray.direction);
                 let pdf_multiplicator = scattering_pdf_val / pdf_val;
 
                 let sample_color = light_multi * Self::ray_color(&scattered_ray, world, depth-1, rng);

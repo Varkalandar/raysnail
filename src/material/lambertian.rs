@@ -48,15 +48,6 @@ impl Material for Lambertian {
             skip_pdf: false,
         })
     }
-    
-    fn scattering_pdf(&self, _ray: &Ray, hit: &HitRecord, scattered: &Ray) -> f64 {
-
-        assert!((scattered.direction.length_squared() - 1.0).abs() < 0.00001);
-        
-        let cos_theta = hit.normal.dot(&scattered.direction);        
-
-        if cos_theta <= 0.0 {0.0} else {cos_theta / PI}
-    }        
 
     fn settings(&self) -> CommonMaterialSettings {
         self.settings.clone()

@@ -32,10 +32,6 @@ impl Material for Isotropic {
         })
     }
 
-    fn scattering_pdf(&self, _ray: &Ray, _rec: &HitRecord, _scattered: &Ray) -> f64 {
-        1.0 / (4.0 * PI)
-    }
-
     fn settings(&self) -> CommonMaterialSettings {
         self.settings.clone()
     }

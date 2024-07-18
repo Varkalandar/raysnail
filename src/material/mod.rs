@@ -62,10 +62,6 @@ pub trait Material: Send + Sync {
         None
     }
 
-    fn scattering_pdf(&self, _ray: &Ray, _hit: &HitRecord, _scattered: &Ray) -> f64 {
-        0.0
-    }
-
     fn settings(&self) -> CommonMaterialSettings;
 }
 
