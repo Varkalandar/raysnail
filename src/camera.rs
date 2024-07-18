@@ -201,9 +201,12 @@ impl<'c> TakePhotoSettings<'c> {
 */
 
                 let mut light_multi = 1.0;
+                let mut pdf_val;
 
                 let scattered_ray = 
                     if rng.gen() < 0.5 { 
+                        pdf_val = 0.3183098861837907;
+
                         let dir_to_light = world.lights.random(&hit.point, rng).unit();
                         let settings = material.settings();
                         if settings.phong_factor > 0.0 {
@@ -218,25 +221,25 @@ impl<'c> TakePhotoSettings<'c> {
                         Ray::new(start, dir_to_light, ray.departure_time)
                     } 
                     else {
-                        let scatter_direction= srec.pdf.generate(rng);
+                        let scatter_direction = srec.pdf.generate(rng);
+                        pdf_val = srec.pdf.value(&scatter_direction);
                         Ray::new(hit.point.clone(), scatter_direction, ray.departure_time)
                     };
 
                 // println!("hit normal={:?} scatter dir={:?}", hit.normal, scatter_direction);
 
-                 
 /*
                 let light_pdf = HittablePdf::new(&world.lights, &hit.point, &scattered.direction);
                 let mixture = MixturePdf::new(&light_pdf, srec.pdf.as_ref());                
                 let mut pdf_val = mixture.value(&scattered.direction);
-*/
+
                 // let light_pdf_val = CosinePdf::new(&scattered.direction).value(&scattered.direction);                
                 let light_pdf_val = 0.3183098861837907;
-
 
                 let mut pdf_val =
                     0.5 * srec.pdf.value(&scattered_ray.direction) +
                     0.5 * light_pdf_val;
+*/
 
                 // clean NaNs and extreme cases
                 if pdf_val <= 0.0 || pdf_val != pdf_val {
