@@ -127,8 +127,8 @@ pub fn main() -> Result<(), String> {
 
     spawn(move || boot_sdl(width, height, receiver, command_sender));
 
-    // render_ball_scene(width, height, &mut queue, &mut controller);
-    render_time_test(width, height, &mut queue, &mut controller);
+    render_ball_scene(width, height, &mut queue, &mut controller);
+    // render_time_test(width, height, &mut queue, &mut controller);
     // render_raymarching_test(width, height, &mut queue, &mut controller);
     // render_object_test(width, height, &mut queue, &mut controller);
     // render_parser_test(width, height, &mut queue, &mut controller);
@@ -223,11 +223,6 @@ fn render_time_test(width: usize, height: usize,
 
     let mut world = HittableList::default();
     let mut lights = HittableList::default();
-/*
-    let rs = 
-        AARect::new_xz(AARectMetrics::new(200.0, (-15.0, 15.0), (-15.0, 15.0)),
-            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(200.0));
-*/
 
     let rs = 
         Sphere::new(Vec3::new(50.0, 200.0, 200.0), 
@@ -245,14 +240,6 @@ fn render_time_test(width: usize, height: usize,
         // Lambertian::new(Color::new(0.99, 0.69, 0.2)),
         // DiffuseMetal::new(200.0, Color::new(0.99, 0.69, 0.2)),
     ));
-
-/*
-    let color = Color::new(0.99, 0.8, 0.2);
-    // let material = Lambertian::new(color);
-    let material = BlinnPhong::new(0.5, 4.0, color);
-    // let material = Metal::new(color);
-    world.add(RayMarcher::new(material));
-*/    
 
     world.add(Sphere::new(
         Point3::new(0.0, -1001.0, 0.0),
@@ -410,7 +397,7 @@ fn render_object_test(width: usize, height: usize,
     world.add(rs);
 
     // let color = Color::new(0.8, 0.8, 0.8, 1.0);
-    let color = Box::new(Color::new(0.9, 0.3, 0.1, 1.0));
+    let color = Box::new(Color::new(0.9, 0.25, 0.1, 1.0));
     let mut material = Lambertian::new(color);
     material.settings.phong_factor = 4.0;
     material.settings.phong_exponent = 4;
@@ -431,12 +418,14 @@ fn render_object_test(width: usize, height: usize,
     world.add(Sphere::new(
             Point3::new(0.0, -1000.0, 0.0),
             1000.0,
-            // DiffuseMetal::new(5000.0, Checker::new(
-            // Metal::new(Checker::new(
-            //    Color::new(0.26, 0.3, 0.16, 1.0),
-            //    Color::new(0.08, 0.1, 0.06, 1.0),
-            //    )
-            Arc::new(Metal::new(Color::new(0.08, 0.1, 0.06, 1.0)))
+            Arc::new(DiffuseMetal::new(1000.0, Color::new(0.08, 0.1, 0.06, 1.0)))
+            /*
+            Arc::new(DiffuseMetal::new(1000.0, Checker::new(
+                Color::new(0.26, 0.3, 0.16, 1.0),
+                Color::new(0.08, 0.1, 0.06, 1.0),
+                )
+            */
+            // Arc::new(Metal::new(Color::new(0.08, 0.1, 0.06, 1.0)))
     ));
 
     fn background(ray: &Ray) -> Color {
