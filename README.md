@@ -6,15 +6,19 @@ Furthermore the Raysnail incorporates code from the [QBVH-Rust-Ray-Tracer], name
 
 ## Planned Additions
 
-Beyond the ongoing work to incorporate all the improvements layed out in the third book of the series, fittingly named "The rest of your life", there are two features which I want to add to the Raysnail next.
+Beyond the ongoing work to incorporate all the improvements layed out in the third book of the series, fittingly named "The rest of your life", there are some features which I want to add to the Raysnail next.
 
-### A preview window. 
+### A preview window
 
 There is a very crude implementation of a preview window right now in the example "preview_sdl2", but it needs to become more separated from the scene examples and command line paramaters to trace some scene with given height and width using the preview.
 
 ### Support for the PovRay SDL
 
 I want to implement at least partial support for the [PovRay] scene definition language (SDL). Sadly, PovRay's material definitions are very different from the materials in the Raysnail, and it might be hard or even impossible to emulate PovRay materials properly, past trivial examples. At the time of writing this, I've implemented a very rudimentary SDL parser which can read PovRay camera and sphere definitions (see sdl/example.sdl). I want to expand this for more geometry and material definitons, but likely it will only support a subset of the PovRay SDL features.
+
+### 3D Fractal rendering capabilities
+
+As a fan of 3D fractals I'd like to implement some fractal rendering code. At the moment there is a crude implmentation of the mandelbulb, which renders only very low quality, but it can serve as a proof of concept that iut is possible to use the raysnail code to render 3D fractals. Maybe it requires a different frontend though.
 
 ## Run
 
