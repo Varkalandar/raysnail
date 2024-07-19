@@ -45,6 +45,6 @@ impl Texture for Image {
         }
 
         let color = self.img.get_pixel(px, py);
-        Color::new_int(color.0[0], color.0[1], color.0[2])
+        Color::new(color.0[0] as f32 / 255.0, color.0[1] as f32 / 255.0, color.0[2] as f32 / 255.0, 1.0)
     }
 }

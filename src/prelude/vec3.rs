@@ -231,10 +231,11 @@ impl Vec3 {
             self.y = self.y.sqrt();
             self.z = self.z.sqrt();
         }
-        Color::new(
-            clamp(self.x, 0.0..=1.0),
-            clamp(self.y, 0.0..=1.0),
-            clamp(self.z, 0.0..=1.0),
+        Color::new64(
+            self.x,
+            self.y,
+            self.z,
+            1.0
         )
     }
 }
@@ -386,7 +387,6 @@ impl Mul<&Color> for &Vec3 {
     type Output = Vec3;
     #[inline]
     fn mul(self, rhs: &Color) -> Self::Output {
-        let rhs = rhs.f();
         Vec3::new(
             self.x * rhs.r as f64,
             self.y * rhs.g as f64,
@@ -579,7 +579,6 @@ impl Sum for Vec3 {
 
 impl From<Color> for Vec3 {
     fn from(c: Color) -> Self {
-        let c = c.f();
         Self::new(c.r as f64, c.g as f64, c.b as f64)
     }
 }

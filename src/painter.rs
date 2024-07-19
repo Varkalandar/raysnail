@@ -82,13 +82,13 @@ impl PPMImage {
         for row in 0..self.height {
             for column in 0..self.width {
                 let index = row * self.width + column;
-                let color = &self.colors[index].i();
+                let color = &self.colors[index];
                 writeln!(
                     &mut file,
                     "{r} {g} {b}",
-                    r = color.r,
-                    g = color.g,
-                    b = color.b
+                    r = (clamp(color.r as f64, 0.0..1.0) * 255.0) as u8,
+                    g = (clamp(color.g as f64, 0.0..1.0) * 255.0) as u8,
+                    b = (clamp(color.b as f64, 0.0..1.0) * 255.0) as u8
                 )?;
             }
         }
@@ -317,9 +317,11 @@ impl Painter {
         }
 
         let color = color_vec.into_color(self.samples, self.gamma);
-        let int_color = color.i();
 
-        [int_color.r, int_color.g, int_color.b, 255]
+        [(clamp(color.r as f64, 0.0..1.0) * 255.0) as u8, 
+         (clamp(color.g as f64, 0.0..1.0) * 255.0) as u8, 
+         (clamp(color.b as f64, 0.0..1.0) * 255.0) as u8, 
+         255]
     }
 
     fn parallel_render_row<F>(&self, row: usize, uv_color: &F, cancel: &AtomicBool,

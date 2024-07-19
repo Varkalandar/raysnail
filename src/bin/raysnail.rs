@@ -216,7 +216,7 @@ fn parse_and_render(width: usize, height: usize, samples: usize, filename: &str,
 
     fn background(ray: &Ray) -> Color {
         let t = (ray.direction.y + 1.0) * 0.5;  // norm to range 0..1
-        Color::new(0.3, 0.4, 0.5).gradient(&Color::new(0.7, 0.89, 1.0), t)
+        Color::new(0.3, 0.4, 0.5, 1.0).gradient(&Color::new(0.7, 0.89, 1.0, 1.0), t)
     }
 
     camera

@@ -453,7 +453,7 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
                 }
                 else {
                     println!("Line {}, parse_sphere: found no texture, using default diffuse white", input.current_line());
-                    Arc::new(Lambertian::new(Box::new(Color::new(1.0, 1.0, 1.0))))
+                    Arc::new(Lambertian::new(Box::new(Color::new(1.0, 1.0, 1.0, 1.0))))
                 };
 
             let sphere = Sphere::new(v, r, material);
@@ -489,7 +489,7 @@ fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
                 }
                 else {
                     println!("Line {}, parse_box: found no texture, using default diffuse white", input.current_line());
-                    Arc::new(Lambertian::new(Box::new(Color::new(1.0, 1.0, 1.0))))
+                    Arc::new(Lambertian::new(Box::new(Color::new(1.0, 1.0, 1.0, 1.0))))
                 };
 
             let gbox = GeometryBox::new(v1, v2, material);
@@ -524,7 +524,7 @@ fn parse_texture(input: &mut Input) -> Option<Arc<dyn Material>> {
                     texture
                 } else {
                     println!("Line {}, parse_texture: no pigment found, using default white", input.current_line());
-                    Box::new(Color::new(1.0, 1.0, 1.0))
+                    Box::new(Color::new(1.0, 1.0, 1.0, 1.0))
                 };
 
             expect(input, Symbol::BlockClose);
@@ -584,7 +584,7 @@ fn parse_color(input: &mut Input) -> Option<Color> {
         expect_quiet(input, Symbol::Rgb);   // should this be made mandatory?
 
         if let Some(v) = parse_vector(input) {
-            return Some(Color::new(v.x, v.y, v.z))
+            return Some(Color::new64(v.x, v.y, v.z, 1.0))
         } else {
             println!("Line {}, parse_color: expected color vector, but found '{}'", input.current_line(), input.current_text());
         }

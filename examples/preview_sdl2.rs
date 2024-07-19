@@ -128,8 +128,8 @@ pub fn main() -> Result<(), String> {
     spawn(move || boot_sdl(width, height, receiver, command_sender));
 
     // render_ball_scene(width, height, &mut queue, &mut controller);
-    // render_time_test(width, height, &mut queue, &mut controller);
-    render_raymarching_test(width, height, &mut queue, &mut controller);
+    render_time_test(width, height, &mut queue, &mut controller);
+    // render_raymarching_test(width, height, &mut queue, &mut controller);
     // render_object_test(width, height, &mut queue, &mut controller);
     // render_parser_test(width, height, &mut queue, &mut controller);
 
@@ -232,7 +232,7 @@ fn render_time_test(width: usize, height: usize,
     let rs = 
         Sphere::new(Vec3::new(50.0, 200.0, 200.0), 
             12.0, 
-            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(2.0))
+            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8, 1.0)).multiplier(2.0))
         );
 
     lights.add(rs.clone());
@@ -241,7 +241,7 @@ fn render_time_test(width: usize, height: usize,
     world.add(Sphere::new(
         Point3::new(0.0, 0.0, 0.0),
         1.0,
-        Arc::new(BlinnPhong::new(0.5, 4.0, Color::new(0.99, 0.69, 0.2))),
+        Arc::new(BlinnPhong::new(0.5, 4.0, Color::new(0.99, 0.69, 0.2, 1.0))),
         // Lambertian::new(Color::new(0.99, 0.69, 0.2)),
         // DiffuseMetal::new(200.0, Color::new(0.99, 0.69, 0.2)),
     ));
@@ -258,8 +258,8 @@ fn render_time_test(width: usize, height: usize,
         Point3::new(0.0, -1001.0, 0.0),
         1000.0,
         Arc::new(Lambertian::new(Box::new(Checker::new(
-            Color::new(0.3, 0.3, 0.3),
-            Color::new(0.1, 0.1, 0.1),
+            Color::new(0.3, 0.3, 0.3, 1.0),
+            Color::new(0.1, 0.1, 0.1, 1.0),
             10.0,
         ))))
     ));
@@ -271,15 +271,14 @@ fn render_time_test(width: usize, height: usize,
         let t = 0.5 * (ray.direction.y + 1.0);
         // Color::new(0.68, 0.80, 0.95).gradient(&Color::new(0.2, 0.4, 0.7), t)
  
-        Color::new(0.9, 0.9, 0.9)
+        Color::new(0.9, 0.9, 0.9, 1.0)
         // Color::new(0.1, 0.12, 0.3)
     }
 
     camera
         .take_photo_with_lights(world, lights)
         .background(background)
-        .samples(5)
-        //.samples(257)
+        .samples(122)
         .depth(8)
         .shot_to_target(Some("rtow_13_1.ppm"), target, controller)
         .unwrap();
@@ -306,14 +305,14 @@ fn render_raymarching_test(width: usize, height: usize,
     let rs = 
         Sphere::new(Vec3::new(300.0, 400.0, 100.0), 
             12.0, 
-            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(1.5))
+            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8, 1.0)).multiplier(1.5))
         );
 
     lights.add(rs.clone());
     world.add(rs);
 
-    // let color = Color::new(0.8, 0.8, 0.8);
-    let color = Box::new(Color::new(0.5, 0.5, 0.5));
+    // let color = Color::new(0.8, 0.8, 0.8, 1.0);
+    let color = Box::new(Color::new(0.5, 0.5, 0.5, 1.0));
     let mut material = Lambertian::new(color);
     material.settings.phong_factor = 4.0;
     material.settings.phong_exponent = 2;
@@ -325,8 +324,8 @@ fn render_raymarching_test(width: usize, height: usize,
         Point3::new(0.0, -1002.0, 0.0),
         1000.0,
         Arc::new(DiffuseMetal::new(800.0, Checker::new(
-            Color::new(0.26, 0.3, 0.16),
-            Color::new(0.1, 0.1, 0.1),
+            Color::new(0.26, 0.3, 0.16, 1.0),
+            Color::new(0.1, 0.1, 0.1, 1.0),
             10.0,
         )))
     ));
@@ -336,7 +335,7 @@ fn render_raymarching_test(width: usize, height: usize,
         // assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
 
         let t = 0.5 * (ray.direction.y + 1.0);
-        Color::new(0.68, 0.80, 0.95).gradient(&Color::new(0.2, 0.4, 0.7), t)
+        Color::new(0.68, 0.80, 0.95, 1.0).gradient(&Color::new(0.2, 0.4, 0.7, 1.0), t)
  
         // Color::new(0.9, 0.9, 0.9)
         // Color::new(0.06, 0.06, 0.25)
@@ -367,7 +366,7 @@ fn render_ball_scene(width: usize, height: usize,
     let rs = 
         Sphere::new(Vec3::new(200.0, 400.0, 200.0), 
             12.0, 
-            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(1.5))
+            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8, 1.0)).multiplier(1.5))
         );
 
     lights.add(rs.clone());
@@ -404,14 +403,14 @@ fn render_object_test(width: usize, height: usize,
     let rs = 
         Sphere::new(Vec3::new(300.0, 400.0, 100.0), 
             12.0, 
-            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(1.5))
+            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8, 1.0)).multiplier(1.5))
         );
 
     lights.add(rs.clone());
     world.add(rs);
 
-    // let color = Color::new(0.8, 0.8, 0.8);
-    let color = Box::new(Color::new(0.9, 0.3, 0.1));
+    // let color = Color::new(0.8, 0.8, 0.8, 1.0);
+    let color = Box::new(Color::new(0.9, 0.3, 0.1, 1.0));
     let mut material = Lambertian::new(color);
     material.settings.phong_factor = 4.0;
     material.settings.phong_exponent = 4;
@@ -434,10 +433,10 @@ fn render_object_test(width: usize, height: usize,
             1000.0,
             // DiffuseMetal::new(5000.0, Checker::new(
             // Metal::new(Checker::new(
-            //    Color::new(0.26, 0.3, 0.16),
-            //    Color::new(0.08, 0.1, 0.06),
+            //    Color::new(0.26, 0.3, 0.16, 1.0),
+            //    Color::new(0.08, 0.1, 0.06, 1.0),
             //    )
-            Arc::new(Metal::new(Color::new(0.08, 0.1, 0.06)))
+            Arc::new(Metal::new(Color::new(0.08, 0.1, 0.06, 1.0)))
     ));
 
     fn background(ray: &Ray) -> Color {
@@ -445,19 +444,19 @@ fn render_object_test(width: usize, height: usize,
     // assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
 
     let t = 0.5 * (ray.direction.y + 1.0);
-    Color::new(0.68, 0.80, 0.95).gradient(&Color::new(0.2, 0.4, 0.7), t)
+    Color::new(0.68, 0.80, 0.95, 1.0).gradient(&Color::new(0.2, 0.4, 0.7, 1.0), t)
 
-    // Color::new(0.9, 0.9, 0.9)
-    // Color::new(0.06, 0.06, 0.25)
+    // Color::new(0.9, 0.9, 0.9, 1.0)
+    // Color::new(0.06, 0.06, 0.25, 1.0)
     }
 
     camera
-    .take_photo_with_lights(world, lights)
-    .background(background)
-    .samples(122)
-    .depth(8)
-    .shot_to_target(Some("raymarching.ppm"), target, controller)
-    .unwrap();
+        .take_photo_with_lights(world, lights)
+        .background(background)
+        .samples(122)
+        .depth(8)
+        .shot_to_target(Some("raymarching.ppm"), target, controller)
+        .unwrap();
 }
 
 
@@ -500,7 +499,7 @@ fn render_parser_test(width: usize, height: usize,
 
     fn background(ray: &Ray) -> Color {
         let t = (ray.direction.y + 1.0) * 0.5;  // norm to range 0..1
-        Color::new(0.3, 0.4, 0.5).gradient(&Color::new(0.7, 0.89, 1.0), t)
+        Color::new(0.3, 0.4, 0.5, 1.0).gradient(&Color::new(0.7, 0.89, 1.0, 1.0), t)
     }
 
     camera
