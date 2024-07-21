@@ -1,6 +1,5 @@
 
 use std::fs::read_to_string;
-use std::str::FromStr;
 use std::sync::Arc;
 use std::collections::HashMap;
 
@@ -410,7 +409,6 @@ fn parse_light(input: &mut Input, scene: &mut SceneData) -> bool {
 
     false
 }
-
 
 
 fn parse_camera_item(input: &mut Input, camera: &mut CameraData) -> bool {

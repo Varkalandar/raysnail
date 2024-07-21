@@ -1,9 +1,9 @@
 use {
     crate::{
-        prelude::{clamp, vec3::Point3},
+        prelude::{vec3::Point3},
         texture::Texture,
     },
-    std::{borrow::Cow, ops::Mul},
+    std::ops::Mul,
 };
 
 

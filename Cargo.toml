@@ -1,6 +1,6 @@
 [package]
 name = "raysnail"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["7sDream <i@7sdre.am>", "Varkalandar"]
 edition = "2018"
 description = "Yet another simple and pure software ray tracing renderer"

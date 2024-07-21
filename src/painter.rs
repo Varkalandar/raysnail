@@ -8,7 +8,7 @@ use {
         iter::FromIterator,
         ops::{Index, IndexMut},
         path::Path,
-        sync::atomic::{AtomicBool, AtomicUsize, Ordering},
+        sync::atomic::{AtomicBool, Ordering},
     },
 };
 
@@ -421,7 +421,6 @@ impl Painter {
         F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync,
     {
         let cancel = AtomicBool::new(false);
-        let finished_row = AtomicUsize::new(0);
 
         info!("Starting parallel render");
 

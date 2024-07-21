@@ -144,6 +144,6 @@ impl Hittable for AARect {
         root.x = rng.range(self.metrics.a0, self.metrics.a1);
         root.z = rng.range(self.metrics.b0, self.metrics.b1);
 
-        root
+        origin - root
     }
 }
