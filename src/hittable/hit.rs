@@ -51,19 +51,17 @@ impl HitRecord {
         }
     }
 
-    pub fn with_normal<G: Hittable>(ray: &Ray, normal: Vec3, object: &G, t1: f64, t2: f64) -> Self {
+    pub fn with_normal(ray: &Ray, normal: Vec3, material: Arc<dyn Material>, uv: (f64, f64), t1: f64, t2: f64) -> Self {
         let point = ray.at(t1);
 
-        let material = object.material();
-        let (u, v) = object.uv(&point);
         Self {
             point,
             normal,
             material,
             t1,
             t2,
-            u,
-            v,
+            u: uv.0,
+            v: uv.1,
             outside: true,
         }
     }

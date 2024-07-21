@@ -118,9 +118,10 @@ impl Hittable for Triangle {
             Some(HitRecord::with_normal(
                 ray,
                 normal,
-                self,
+                self.material(),
+                self.uv(&ray.at(t)),
                 t,
-                t,
+                f64::MAX,
             ))
         } else {
             None

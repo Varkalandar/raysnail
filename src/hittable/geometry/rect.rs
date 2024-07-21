@@ -116,7 +116,7 @@ impl Hittable for AARect {
             return None;
         }
 
-        Some(HitRecord::new(ray, self, t1, t1))
+        Some(HitRecord::new(ray, self, t1, f64::MAX))
     }
 
     fn bbox(&self, _time_limit: &Range<f64>) -> Option<AABB> {

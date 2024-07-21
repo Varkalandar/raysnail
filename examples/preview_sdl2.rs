@@ -32,11 +32,11 @@ use raysnail::painter::PainterController;
 use raysnail::material::*;
 use raysnail::hittable::Sphere;
 use raysnail::hittable::Box as GeometryBox;
-use raysnail::hittable::AARect;
-use raysnail::hittable::AARectMetrics;
+use raysnail::hittable::geometry::Quadric;
 use raysnail::hittable::geometry::RayMarcher;
 use raysnail::hittable::geometry::TriangleMesh;
 use raysnail::hittable::collection::HittableList;
+use raysnail::hittable::Intersection;
 use raysnail::texture::Checker;
 use raysnail::sdl_parser::SdlParser;
 
@@ -127,8 +127,8 @@ pub fn main() -> Result<(), String> {
 
     spawn(move || boot_sdl(width, height, receiver, command_sender));
 
-    render_ball_scene(width, height, &mut queue, &mut controller);
-    // render_time_test(width, height, &mut queue, &mut controller);
+    // render_ball_scene(width, height, &mut queue, &mut controller);
+    render_time_test(width, height, &mut queue, &mut controller);
     // render_raymarching_test(width, height, &mut queue, &mut controller);
     // render_object_test(width, height, &mut queue, &mut controller);
     // render_parser_test(width, height, &mut queue, &mut controller);
@@ -211,9 +211,9 @@ fn render_time_test(width: usize, height: usize,
                     target: &mut dyn PainterTarget, controller: &mut dyn PainterController) {
     
     let builder = CameraBuilder::default()
-        .look_from(Point3::new(13.0, 2.0, 3.0) * 0.5)
+        .look_from(Point3::new(13.0, 1.5, 3.0) * 0.3)
         .look_at(Point3::new(0.0, 0.0, 0.0))
-        .fov(15.0)
+        .fov(50.0)
         .aperture(0.01)
         .focus(10.0)
         .width(width)
@@ -233,6 +233,7 @@ fn render_time_test(width: usize, height: usize,
     lights.add(rs.clone());
     world.add(rs);
 
+    /*
     world.add(Sphere::new(
         Point3::new(0.0, 0.0, 0.0),
         1.0,
@@ -240,6 +241,39 @@ fn render_time_test(width: usize, height: usize,
         // Lambertian::new(Color::new(0.99, 0.69, 0.2)),
         // DiffuseMetal::new(200.0, Color::new(0.99, 0.69, 0.2)),
     ));
+    */
+
+
+    // Cone Y
+    //                     A    B    C    D    E    F    G    H    I    J 
+    let cone = Box::new(Quadric::new(1.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0,
+        // Arc::new(Metal::new(Color::new(0.3, 0.3, 0.3, 1.0))),
+        Arc::new(Lambertian::new(Box::new(Color::new(0.4, 0.5, 0.3, 1.0)))),
+    ));
+
+    let gbox = Box::new(GeometryBox::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0),
+        Arc::new(Lambertian::new(Box::new(Color::new(0.4, 0.5, 0.3, 1.0)))),
+    ));
+
+
+    world.add(Intersection::new(cone, gbox));
+
+
+
+    /*
+    // Cone Z
+    //                     A    B    C    D    E    F    G    H    I    J 
+    world.add(Quadric::new(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0,
+        Arc::new(Lambertian::new(Box::new(Color::new(0.3, 0.3, 0.3, 1.0)))),
+    ));
+    */
+    /*
+    // Cylinder Z
+    //                     A    B    C    D    E    F    G    H    I    J 
+    world.add(Quadric::new(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, -1.0,
+        Arc::new(Lambertian::new(Box::new(Color::new(0.3, 0.4, 0.3, 1.0)))),
+    ));
+    */
 
     world.add(Sphere::new(
         Point3::new(0.0, -1001.0, 0.0),
@@ -256,9 +290,9 @@ fn render_time_test(width: usize, height: usize,
         assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
 
         let t = 0.5 * (ray.direction.y + 1.0);
-        // Color::new(0.68, 0.80, 0.95).gradient(&Color::new(0.2, 0.4, 0.7), t)
+        Color::new(0.68, 0.80, 0.95, 1.0).gradient(&Color::new(0.2, 0.4, 0.7, 1.0), t)
  
-        Color::new(0.9, 0.9, 0.9, 1.0)
+        // Color::new(0.9, 0.9, 0.9, 1.0)
         // Color::new(0.1, 0.12, 0.3)
     }
 
@@ -397,7 +431,7 @@ fn render_object_test(width: usize, height: usize,
     world.add(rs);
 
     // let color = Color::new(0.8, 0.8, 0.8, 1.0);
-    let color = Box::new(Color::new(0.9, 0.25, 0.1, 1.0));
+    let color = Box::new(Color::new(0.87, 0.25, 0.1, 1.0));
     let mut material = Lambertian::new(color);
     material.settings.phong_factor = 4.0;
     material.settings.phong_exponent = 4;
@@ -418,14 +452,8 @@ fn render_object_test(width: usize, height: usize,
     world.add(Sphere::new(
             Point3::new(0.0, -1000.0, 0.0),
             1000.0,
-            Arc::new(DiffuseMetal::new(1000.0, Color::new(0.08, 0.1, 0.06, 1.0)))
-            /*
-            Arc::new(DiffuseMetal::new(1000.0, Checker::new(
-                Color::new(0.26, 0.3, 0.16, 1.0),
-                Color::new(0.08, 0.1, 0.06, 1.0),
-                )
-            */
-            // Arc::new(Metal::new(Color::new(0.08, 0.1, 0.06, 1.0)))
+            // Arc::new(DiffuseMetal::new(2000.0, Color::new(0.08, 0.1, 0.06, 1.0)))
+            Arc::new(Metal::new(Color::new(0.08, 0.1, 0.06, 1.0)))
     ));
 
     fn background(ray: &Ray) -> Color {
@@ -452,7 +480,7 @@ fn render_object_test(width: usize, height: usize,
 fn render_parser_test(width: usize, height: usize, 
                       target: &mut dyn PainterTarget, controller: &mut dyn PainterController) -> bool {
 
-    let mut scene_data_result = SdlParser::parse("sdl/example.sdl");
+    let scene_data_result = SdlParser::parse("sdl/example.sdl");
 
     if let Err(message) = scene_data_result {
         println!("Could not parse scene data: {}", message);
