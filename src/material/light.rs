@@ -3,18 +3,22 @@ use crate::{
     prelude::*,
     texture::Texture,
 };
+use crate::material::CommonMaterialSettings;
+
 
 #[derive(Debug, Clone)]
 pub struct DiffuseLight<T> {
     texture: T,
     multiplier: f64,
+    settings: CommonMaterialSettings,
 }
 
 impl<T> DiffuseLight<T> {
-    pub const fn new(texture: T) -> Self {
+    pub fn new(texture: T) -> Self {
         Self {
             texture,
             multiplier: 1.0,
+            settings: CommonMaterialSettings::new(),
         }
     }
 
@@ -30,9 +34,7 @@ impl<T: Texture> Material for DiffuseLight<T> {
         Some(<Color as Into<Vec3>>::into(self.texture.color(u, v, point)) * self.multiplier)
     }
 
-    /*
-    fn scattering_pdf(&self, ray: &Ray, rec: &HitRecord<'_>, scattered: &Ray) -> f64 {
-        1.0 / (4.0 * PI)
+    fn settings(&self) -> CommonMaterialSettings {
+        self.settings.clone()
     }
-    */       
 }

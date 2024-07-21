@@ -190,7 +190,7 @@ fn interpolate(
 
 impl Texture for Perlin {
     fn color(&self, _u: f64, _v: f64, point: &Point3) -> Color {
-        Color::new(1.0, 1.0, 1.0)
+        Color::new(1.0, 1.0, 1.0, 1.0)
             * match &self.texture_type {
                 TextureType::Normal => {
                     let p = self.scale * point;

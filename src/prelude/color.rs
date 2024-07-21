@@ -1,111 +1,60 @@
 use {
     crate::{
-        prelude::{clamp, vec3::Point3},
+        prelude::{vec3::Point3},
         texture::Texture,
     },
-    std::{borrow::Cow, ops::Mul},
+    std::ops::Mul,
 };
 
-macro_rules! check0to1 {
-    ($r: ident, $g: ident, $b: ident) => {
-        debug_assert!((0.0_f64..=1.0_f64).contains(&$r), "r = {}", $r);
-        debug_assert!((0.0_f64..=1.0_f64).contains(&$g), "g = {}", $g);
-        debug_assert!((0.0_f64..=1.0_f64).contains(&$b), "b = {}", $b);
-    };
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct RGBFloat {
-    pub r: f64,
-    pub g: f64,
-    pub b: f64,
-}
-
-impl RGBFloat {
-    pub fn new(r: f64, g: f64, b: f64) -> Self {
-        check0to1!(r, g, b);
-        Self { r, g, b }
-    }
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct RGBInt {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
-}
-
-impl RGBInt {
-    pub const fn new(r: u8, g: u8, b: u8) -> Self {
-        Self { r, g, b }
-    }
-}
-
-impl From<&RGBFloat> for RGBInt {
-    fn from(c: &RGBFloat) -> Self {
-        #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
-        // because RGBFloat r g b should be in [0..1]
-        Self::new(
-            (c.r * 255.0) as u8,
-            (c.g * 255.0) as u8,
-            (c.b * 255.0) as u8,
-        )
-    }
-}
-
-impl From<&RGBInt> for RGBFloat {
-    fn from(c: &RGBInt) -> Self {
-        let s = 1.0 / 255.0;
-        Self::new(f64::from(c.r) * s, f64::from(c.g) * s, f64::from(c.b) * s)
-    }
-}
 
 #[derive(Debug, Clone)]
-pub enum Color {
-    Float(RGBFloat),
-    Int(RGBInt),
+pub struct Color {
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+    pub a: f32,
 }
 
 impl Default for Color {
     fn default() -> Self {
-        Self::Float(RGBFloat::default())
+        Color {
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+            a: 0.0,
+        }
     }
 }
 
 impl Color {
     #[must_use]
-    pub const fn new_int(r: u8, g: u8, b: u8) -> Self {
-        Self::Int(RGBInt::new(r, g, b))
-    }
-
-    #[must_use]
-    pub fn new(r: f64, g: f64, b: f64) -> Self {
-        Self::Float(RGBFloat::new(r, g, b))
-    }
-
-    #[must_use]
-    pub fn i(&self) -> Cow<'_, RGBInt> {
-        match self {
-            Self::Float(c) => Cow::Owned(c.into()),
-            Self::Int(c) => Cow::Borrowed(c),
+    pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
+        Color {
+            r,
+            g,
+            b,
+            a,
         }
     }
 
-    #[must_use]
-    pub fn f(&self) -> Cow<'_, RGBFloat> {
-        match self {
-            Self::Float(c) => Cow::Borrowed(c),
-            Self::Int(c) => Cow::Owned(c.into()),
+    pub fn new64(r: f64, g: f64, b: f64, a: f64) -> Self {
+        Color {
+            r: r as f32,
+            g: g as f32,
+            b: b as f32,
+            a: a as f32,
         }
     }
 
     #[must_use]
     pub fn gradient(&self, rhs: &Self, slide: f64) -> Self {
-        let a = (1.0 - slide) * self;
-        let b = slide * rhs;
-        let c1 = a.f();
-        let c2 = b.f();
-        Self::new(c1.r + c2.r, c1.g + c2.g, c1.b + c2.b)
+        let a = slide.max(0.0).min(1.0) as f32;
+        let b = 1.0 - a;
+
+        Self::new(self.r * b + rhs.r * a, 
+                  self.g * b + rhs.g * a,
+                  self.b * b + rhs.b * a,
+                  1.0)
     }
 }
 
@@ -118,9 +67,7 @@ impl Texture for Color {
 impl Mul<&Color> for &Color {
     type Output = Color;
     fn mul(self, rhs: &Color) -> Self::Output {
-        let c1 = self.f();
-        let c2 = rhs.f();
-        Color::new(c1.r * c2.r, c1.g * c2.g, c1.b * c2.b)
+        Color::new(self.r * rhs.r, self.g * rhs.g, self.b * rhs.b, self.a * rhs.a)
     }
 }
 
@@ -145,34 +92,27 @@ impl Mul<Color> for Color {
     }
 }
 
-impl Mul<f64> for &Color {
-    type Output = Color;
-    fn mul(self, rhs: f64) -> Self::Output {
-        let c = self.f();
-        Color::new(
-            clamp(c.r * rhs, 0.0..=1.0),
-            clamp(c.g * rhs, 0.0..=1.0),
-            clamp(c.b * rhs, 0.0..=1.0),
-        )
-    }
-}
-
 impl Mul<f64> for Color {
     type Output = Self;
     fn mul(self, rhs: f64) -> Self::Output {
-        &self * rhs
+        Color::new(
+            self.r * rhs as f32,
+            self.g * rhs as f32,
+            self.b * rhs as f32,
+            self.a
+        )
     }
 }
 
 impl Mul<&Color> for f64 {
     type Output = Color;
     fn mul(self, rhs: &Color) -> Self::Output {
-        rhs * self
+        rhs.clone() * self
     }
 }
 impl Mul<Color> for f64 {
     type Output = Color;
     fn mul(self, rhs: Color) -> Self::Output {
-        &rhs * self
+        rhs * self
     }
 }

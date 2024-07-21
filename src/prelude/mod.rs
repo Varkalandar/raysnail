@@ -14,7 +14,7 @@ pub use {
     random::{Random, SeedRandom, FastRng},
     ray::Ray,
     onb::ONB,
-    pdf::{PDF, CosinePdf, SpherePdf, HittablePdf, MixturePdf, BlinnPhongPdf, ReflectionPdf},
+    pdf::{PDF, CosinePdf, SpherePdf, HittablePdf, MixturePdf, BlinnPhongPdf, ReflectionPdf, CosinePdfExponent},
     std::f64::consts::PI,
     vec3::{Point3, Vec3},
 };

@@ -10,16 +10,19 @@ use {
     },
 };
 
+use std::sync::Arc;
+
+
 #[derive(Clone)]
-pub struct Sphere<M> {
+pub struct Sphere {
     center: Point3,
     radius: f64,
     speed: Vec3,
-    material: M,
+    material: Arc<dyn Material>,
     radius_squared: f64,
 }
 
-impl<M> Debug for Sphere<M> {
+impl Debug for Sphere {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
             "Sphere {{ center: {:?}, radius: {}, speed: {:?} }}",
@@ -28,8 +31,8 @@ impl<M> Debug for Sphere<M> {
     }
 }
 
-impl<M> Sphere<M> {
-    pub fn new(center: Point3, radius: f64, material: M) -> Self {
+impl Sphere {
+    pub fn new(center: Point3, radius: f64, material: Arc<dyn Material>) -> Self {
         Self {
             center,
             radius,
@@ -49,13 +52,13 @@ impl<M> Sphere<M> {
     }
 }
 
-impl<M: Material> Hittable for Sphere<M> {
+impl Hittable for Sphere {
     fn normal(&self, point: &Point3) -> crate::prelude::Vec3 {
         (point - &self.center) / self.radius
     }
 
-    fn material(&self) -> &dyn Material {
-        &self.material
+    fn material(&self) -> Arc<dyn Material> {
+        self.material.clone()
     }
 
     fn uv(&self, point: &Point3) -> (f64, f64) {
@@ -77,7 +80,7 @@ impl<M: Material> Hittable for Sphere<M> {
     // Delta = b^2 - 4ac = 4(DL)^2 - 4 D^2 (L^2 - r2)
     // So, check (DL)^2 - D^2(L^2 - r^2)
     // root is
-    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
         let current_center = self.center_at(ray.departure_time);
         let l = &ray.origin - current_center;
         let half_b = ray.direction.dot(&l);
@@ -105,6 +108,12 @@ impl<M: Material> Hittable for Sphere<M> {
         None
     }
 
+    fn contains(&self, point: &Vec3) -> bool {
+        let r = &self.center - point;
+        let l2 = r.length_squared();
+        l2 < self.radius * self.radius
+    }
+
     fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
         Some(
             if self.speed.x == 0.0 && self.speed.y == 0.0 && self.speed.z == 0.0 {
@@ -130,32 +139,6 @@ impl<M: Material> Hittable for Sphere<M> {
                 start | end
             },
         )
-    }
-
-    /**
-     * This is only called if the object is a light source. It is used to check the probability of a
-     * particular direction to be scattered from this object.
-     */
-    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
-
-        if let Some(_hit) = self.hit(&Ray::new(origin.clone(), direction.clone(), 0.0), &(0.001..f64::INFINITY)) {
-            let cos_theta =
-                (1.0 - self.radius * self.radius / (&self.center - origin).length_squared()).sqrt();
-
-            let solid_angle = 2.0 * PI * (1.0 - cos_theta);
-
-            if solid_angle == 0.0 {
-                return 1e10;
-            }
-
-            println!("Light hit. pdf value={}", 1.0 / solid_angle);
-        
-            return 1.0 / solid_angle;
-        }
-
-        println!("Light miss. pdf value=0.0");
-
-        0.0
     }
 
 

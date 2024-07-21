@@ -15,7 +15,7 @@ use {
 #[must_use]
 pub fn default_background(ray: &Ray) -> Color {
     let t = 0.5 * (ray.direction.y + 1.0);
-    Color::new(1.0, 1.0, 1.0).gradient(&Color::new(0.5, 0.7, 1.0), t)
+    Color::new(1.0, 1.0, 1.0, 1.0).gradient(&Color::new(0.5, 0.7, 1.0, 1.0), t)
 }
 
 pub struct World {
@@ -55,7 +55,7 @@ impl World {
 }
 
 impl Hittable for World {
-    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
         self.bvh.hit(ray, unit_limit)
     }
 
@@ -63,11 +63,7 @@ impl Hittable for World {
         self.bvh.bbox(time_limit)
     }
 
-    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
-        0.0
-    }
-
-    fn random(&self, origin: &Point3, _rng: &mut FastRng) -> Vec3 {
+    fn random(&self, _origin: &Point3, _rng: &mut FastRng) -> Vec3 {
         Vec3::new(1.0, 0.0, 0.0)
     }
 }

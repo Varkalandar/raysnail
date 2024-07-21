@@ -1,32 +1,37 @@
 use std::ops::Range;
+use std::sync::Arc;
+use std::fmt::Formatter;
+use std::fmt::Debug;
 
 use crate::prelude::PI;
 use crate::prelude::Vec3;
 use crate::prelude::Point3;
-use crate::prelude::Color;
 use crate::prelude::AABB;
 use crate::prelude::Ray;
 use crate::prelude::FastRng;
 use crate::hittable::HitRecord;
 use crate::hittable::Hittable;
-use crate::hittable::Sphere;
 use crate::material::Material;
-use crate::material::Lambertian;
 
 
-#[derive(Clone, Debug)]
-pub struct RayMarcher <M> {
+#[derive(Clone)]
+pub struct RayMarcher {
 
-    material: M,
-    sphere: Sphere<Lambertian<Color>>,
+    material: Arc<dyn Material>,
 }
 
+impl Debug for RayMarcher {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "Raymarcher"
+        ))
+    }
+}
 
-impl<M> RayMarcher<M> {
-    pub fn new(material: M) -> Self {
+impl RayMarcher {
+    pub fn new(material: Arc<dyn Material>) -> Self {
         RayMarcher {
             material,
-            sphere: Sphere::new(Vec3::new(0.0, 0.0, 0.0), 1.5, Lambertian::new(Color::new(1.0, 0.0, 1.0))),
         }
     }
 
@@ -51,7 +56,7 @@ impl<M> RayMarcher<M> {
         let df = direction * 0.05;
         let mut v = p.clone();
     
-        for i in 0 .. 200 {
+        for _i in 0 .. 200 {
             // println!("step {}", i);
             if is_inside(&v, 100) {
                 // println!("step {} is inside at {:?}", i, v);
@@ -67,7 +72,7 @@ impl<M> RayMarcher<M> {
 }
 
 
-impl<M: Material> Hittable for RayMarcher<M> {
+impl Hittable for RayMarcher {
     fn normal(&self, pos: &Point3) -> crate::prelude::Vec3 {
      
         let d = 0.01;
@@ -83,8 +88,8 @@ impl<M: Material> Hittable for RayMarcher<M> {
 
     }
 
-    fn material(&self) -> &dyn Material {
-        &self.material
+    fn material(&self) -> Arc<dyn Material> {
+        self.material.clone()
     }
 
     fn uv(&self, point: &Point3) -> (f64, f64) {
@@ -98,7 +103,7 @@ impl<M: Material> Hittable for RayMarcher<M> {
         (u, v)
     }
 
-    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
         
         let ray_direction_length = ray.direction.length();
         let direction = &ray.direction * (1.0 / ray_direction_length);
@@ -161,32 +166,6 @@ impl<M: Material> Hittable for RayMarcher<M> {
 
 
     /**
-     * This is only called if the object is a light source. It is used to check the probability of a
-     * particular direction to be scattered from this object.
-     */
-     fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
-
-        // this is for a sphere actually, maybe it's good enough as approximation?
-        let radius = 1.2;
-
-        if let Some(_hit) = self.hit(&Ray::new(origin.clone(), direction.clone(), 0.0), &(0.001..f64::INFINITY)) {
-    
-            let cos_theta_max =
-                (1.0 - radius * radius / (-origin).length_squared()).sqrt();
-            let solid_angle = 2.0 * PI * (1.0 - cos_theta_max);
-
-            if solid_angle == 0.0 {
-                return 1e10;
-            }
-
-            return 1.0 / solid_angle;
-        }
-
-        0.0
-    }
-
-
-    /**
      * This is only called if the object is a light source. It is used to generate
      * an extra ray towards the light source.
      */
@@ -203,7 +182,7 @@ pub fn is_inside(p: &Vec3, iterations: i32) -> bool {
     let mut z: f64 = 0.0;
     let power: f64 = 8.0;
 
-    for i in 0 .. iterations {
+    for _i in 0 .. iterations {
         //Convert to spherical coordinates
         let mut r: f64 = (x*x + y*y + z*z).sqrt();
         // let mut theta: f64 = (z / r).acos();
@@ -244,7 +223,7 @@ pub fn distance_est(p: Vec3, iterations: i32) -> f64 {
     let mut r: f64 = 0.0;
     let mut dr: f64 = 0.0;
 
-    for i in 0 .. iterations {
+    for _i in 0 .. iterations {
         //Convert to spherical coordinates
         r = (x*x + y*y + z*z).sqrt();
         let mut theta: f64 = (x*x + y*y).sqrt().atan2(z);

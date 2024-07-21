@@ -5,7 +5,7 @@ use {
             collection::{HittableList, BVH},
             medium::ConstantMedium,
             transform::{AARotation, ByYAxis, Translation},
-            AARect, AARectMetrics, Box, Sphere,
+            AARect, AARectMetrics, Box as GeometryBox, Sphere,
         },
         material::{Dielectric, DiffuseLight, Glass, Lambertian, Metal},
         prelude::*,
@@ -16,8 +16,8 @@ use {
 
 use raysnail::material::Material;
 use raysnail::hittable::transform::ByXAxis;
-use crate::BlinnPhong;
-use crate::DiffuseMetal;
+use raysnail::material::BlinnPhong;
+use raysnail::material::DiffuseMetal;
 
 fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, bounce_height: f64, need_speed: bool) {
     let small_ball_radius = 0.2;
@@ -37,26 +37,27 @@ fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, bounce_height
             {
                 let mat = rng.normal();
                 if mat < 0.8 {
-                    let color = Color::new(rng.normal(), rng.normal(), rng.normal());
-                    // let material = Lambertian::new(color);
-                    let material = BlinnPhong::new(0.2, 4.0, color);
+                    let color = Box::new(Color::new64(rng.normal(), rng.normal(), rng.normal(), 1.0));
+                    let material = Arc::new(Lambertian::new(color));
+                    // let material = Arc::new(BlinnPhong::new(0.2, 4.0, color));
                     let mut sphere = Sphere::new(center, small_ball_radius, material);
                     if need_speed {
                         sphere = sphere.with_speed(Vec3::new(0.0, Random::range(0.0..0.5), 0.0));
                     }
                     world.add(sphere);
                 } else if mat < 0.95 {
-                    let color = Color::new(
+                    let color = Color::new64(
                         rng.range(0.5..1.0),
                         rng.range(0.5..1.0),
                         rng.range(0.5..1.0),
+                        1.0,
                     );
                     let fuzz = rng.range(0.0..0.5);
                     if fuzz < 0.1 {
-                        let material = Metal::new(color);                        
+                        let material = Arc::new(Metal::new(color));
                         world.add(Sphere::new(center, small_ball_radius, material));
                     } else {
-                        let material = DiffuseMetal::new(fuzz * 1000.0, color);                        
+                        let material = Arc::new(DiffuseMetal::new(fuzz * 1000.0, color));
                         world.add(Sphere::new(center, small_ball_radius, material));
                     }
 
@@ -64,7 +65,7 @@ fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, bounce_height
                     world.add(Sphere::new(
                         center,
                         small_ball_radius,
-                        Dielectric::new(Color::new(1.0, 1.0, 1.0), 1.5).reflect_curve(Glass {}),
+                        Arc::new(Dielectric::new(Color::new(1.0, 1.0, 1.0, 1.0), 1.5).reflect_curve(Glass {})),
                     ));
                 }
             }
@@ -72,14 +73,14 @@ fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, bounce_height
     }
 }
 
-fn add_box<M: Material + 'static>(world: &mut HittableList, material: M, center: &Vec3, bounce_height: f64, rng: &mut SeedRandom) {
+fn add_box(world: &mut HittableList, material: Arc<dyn Material>, center: &Vec3, bounce_height: f64, rng: &mut SeedRandom) {
     // let size = Vec3::random_range(0.1 .. 0.16);
     let size = Vec3::new(0.12, 0.12, 0.12);
 
     let height = 0.2 + rng.normal() * bounce_height;
 
     let o = 
-        AARotation::<ByXAxis, _>::new(Box::new(-size.clone(), size, material),
+        AARotation::<ByXAxis, _>::new(GeometryBox::new(-size.clone(), size, material),
                                       rng.normal() * 180.0);
 
     let o = 
@@ -108,21 +109,22 @@ fn add_small_boxes(world: &mut HittableList, rng: &mut SeedRandom, bounce_height
             {
                 let mat = rng.normal();
                 if mat < 0.8 {
-                    let color = Color::new(rng.normal(), rng.normal(), rng.normal());
-                    let material = Lambertian::new(color);
+                    let color = Box::new(Color::new64(rng.normal(), rng.normal(), rng.normal(), 1.0));
+                    let material = Arc::new(Lambertian::new(color));
                     add_box(world, material, &center, bounce_height, rng);
                 } else if mat < 0.95 {
-                    let color = Color::new(
+                    let color = Color::new64(
                         rng.range(0.5..1.0),
                         rng.range(0.5..1.0),
                         rng.range(0.5..1.0),
+                        1.0,
                     );
                     // let fuzz = rng.range(0.0..0.5);
                     // let material = Metal::new(color).fuzz(fuzz);
-                    let material = Metal::new(color);
+                    let material = Arc::new(Metal::new(color));
                     add_box(world, material, &center, bounce_height, rng);
                 } else {
-                    let material = Dielectric::new(Color::new(1.0, 1.0, 1.0), 1.5).reflect_curve(Glass {});
+                    let material = Arc::new(Dielectric::new(Color::new(1.0, 1.0, 1.0, 1.0), 1.5).reflect_curve(Glass {}));
                     add_box(world, material, &center, bounce_height, rng);
                 };
             }
@@ -135,21 +137,21 @@ fn add_big_balls(world: &mut HittableList) {
     world.add(Sphere::new(
         Point3::new(0.0, 1.0, 0.0),
         1.0,
-        Dielectric::new(Color::new(1.0, 1.0, 1.0), 1.5).reflect_curve(Glass {}),
+        Arc::new(Dielectric::new(Color::new(1.0, 1.0, 1.0, 1.0), 1.5).reflect_curve(Glass {})),
     ));
     
     world.add(Sphere::new(
         Point3::new(-4.0, 1.0, 0.0),
         1.0,
-        // Lambertian::new(Color::new(0.4, 0.2, 0.1)),
-        BlinnPhong::new(0.2, 4.0, Color::new(0.99, 0.69, 0.2)),
+        Arc::new(Lambertian::new(Box::new(Color::new(0.4, 0.2, 0.1, 1.0)))),
+        // Arc::new(BlinnPhong::new(0.2, 4.0, Color::new(0.99, 0.69, 0.2, 1.0))),
     ));
 
     
     world.add(Sphere::new(
         Point3::new(4.0, 1.0, 0.0),
         1.0,
-        Metal::new(Color::new(0.7, 0.6, 0.5)),
+        Arc::new(Metal::new(Color::new(0.7, 0.6, 0.5, 1.0))),
     ));
     
 }
@@ -162,16 +164,17 @@ pub fn balls_scene(seed: Option<u64>, need_speed: bool, checker: bool) -> Hittab
         list.add(Sphere::new(
             Point3::new(0.0, -1000.0, 0.0),
             1000.0,
-            Lambertian::new(Checker::new(
-                Color::new(0.3, 0.3, 0.3),
-                Color::new(0.1, 0.1, 0.1),
-            )),
+            Arc::new(Lambertian::new(Box::new(Checker::new(
+                Color::new(0.3, 0.3, 0.3, 1.0),
+                Color::new(0.1, 0.1, 0.1, 1.0),
+                10.0,
+            )))),
         ));
     } else {
         list.add(Sphere::new(
             Point3::new(0.0, -1000.0, 0.0),
             1000.0,
-            Lambertian::new(Color::new(0.5, 0.5, 0.5)),
+            Arc::new(Lambertian::new(Box::new(Color::new(0.5, 0.5, 0.5, 1.0)))),
         ));
     };
 
@@ -191,7 +194,7 @@ pub fn balls_scene(seed: Option<u64>, need_speed: bool, checker: bool) -> Hittab
 }
 
 #[must_use]
-pub fn balls_scene_camera(need_shutter_speed: bool) -> Camera {
+pub fn balls_scene_camera(need_shutter_speed: bool) -> CameraBuilder {
     let mut builder = CameraBuilder::default()
         .look_from(Point3::new(13.0, 2.0, 3.0))
         .look_at(Point3::new(0.0, 0.0, 0.0))
@@ -204,18 +207,17 @@ pub fn balls_scene_camera(need_shutter_speed: bool) -> Camera {
         builder = builder.shutter_speed(1.0);
     }
 
-    builder.build()
+    builder
 }
 
 #[must_use]
 pub fn cornell_box_scene(
     carton: bool, carton_rotation: bool, smoke: bool,
 ) -> (Camera, HittableList) {
-    let red = Lambertian::new(Color::new(0.65, 0.05, 0.05));
-    let green = Lambertian::new(Color::new(0.12, 0.45, 0.15));
-    let white = Lambertian::new(Color::new(0.73, 0.73, 0.73));
-    let light =
-        DiffuseLight::new(Color::new(1.0, 1.0, 1.0)).multiplier(if smoke { 7.0 } else { 15.0 });
+    let red = Arc::new(Lambertian::new(Box::new(Color::new(0.65, 0.05, 0.05, 1.0))));
+    let green = Arc::new(Lambertian::new(Box::new(Color::new(0.12, 0.45, 0.15, 1.0))));
+    let white = Arc::new(Lambertian::new(Box::new(Color::new(0.73, 0.73, 0.73, 1.0))));
+    let light = Arc::new(DiffuseLight::new(Color::new(1.0, 1.0, 1.0, 1.0)).multiplier(if smoke { 7.0 } else { 15.0 }));
 
     let mut objects = HittableList::default();
 
@@ -257,7 +259,7 @@ pub fn cornell_box_scene(
         if carton_rotation {
             let box1 = Translation::new(
                 AARotation::<ByYAxis, _>::new(
-                    Box::new(
+                    GeometryBox::new(
                         Point3::new(0.0, 0.0, 0.0),
                         Point3::new(165.0, 165.0, 165.0),
                         white.clone(),
@@ -268,36 +270,36 @@ pub fn cornell_box_scene(
             );
             let box2 = Translation::new(
                 AARotation::<ByYAxis, _>::new(
-                    Box::new(
+                    GeometryBox::new(
                         Point3::new(0.0, 0.0, 0.0),
                         Point3::new(165.0, 330.0, 165.0),
-                        white,
+                        white.clone(),
                     ),
                     15.0,
                 ),
                 Vec3::new(265.0, 0.0, 295.0),
             );
             if smoke {
-                let box1 = ConstantMedium::new(box1, Color::new(1.0, 1.0, 1.0), 0.01);
-                let box2 = ConstantMedium::new(box2, Color::new(0.0, 0.0, 0.0), 0.01);
+                let box1 = ConstantMedium::new(box1, Color::new(1.0, 1.0, 1.0, 1.0), 0.01);
+                let box2 = ConstantMedium::new(box2, Color::new(0.0, 0.0, 0.0, 1.0), 0.01);
                 objects.add(box1).add(box2);
             } else {
                 objects.add(box1).add(box2);
             }
         } else {
-            let box1 = Box::new(
+            let box1 = GeometryBox::new(
                 Point3::new(130.0, 0.0, 65.0),
                 Point3::new(295.0, 165.0, 230.0),
                 white.clone(),
             );
-            let box2 = Box::new(
+            let box2 = GeometryBox::new(
                 Point3::new(265.0, 0.0, 295.0),
                 Point3::new(430.0, 330.0, 460.0),
-                white,
+                white.clone(),
             );
             if smoke {
-                let box1 = ConstantMedium::new(box1, Color::new(1.0, 1.0, 1.0), 0.01);
-                let box2 = ConstantMedium::new(box2, Color::new(0.0, 0.0, 0.0), 0.01);
+                let box1 = ConstantMedium::new(box1, Color::new(1.0, 1.0, 1.0, 1.0), 0.01);
+                let box2 = ConstantMedium::new(box2, Color::new(0.0, 0.0, 0.0, 1.0), 0.01);
                 objects.add(box1).add(box2);
             } else {
                 objects.add(box1).add(box2);
@@ -306,7 +308,6 @@ pub fn cornell_box_scene(
     }
 
     let camera = CameraBuilder::default()
-        .aspect_ratio(1.0)
         .fov(40.0)
         .look_from(Point3::new(278.0, 278.0, -800.0))
         .look_at(Point3::new(278.0, 278.0, 0.0))
@@ -321,7 +322,7 @@ pub fn all_feature_scene(seed: Option<u64>) -> (Camera, HittableList) {
     let mut rng = seed.map(SeedRandom::new).unwrap_or_default();
 
     let mut boxes1 = HittableList::default();
-    let ground = Arc::new(Lambertian::new(Color::new(0.48, 0.83, 0.53)));
+    let ground = Arc::new(Lambertian::new(Box::new(Color::new(0.48, 0.83, 0.53, 1.0))));
     for i in 0..boxes_per_side {
         for j in 0..boxes_per_side {
             let w = 100.0;
@@ -331,10 +332,10 @@ pub fn all_feature_scene(seed: Option<u64>) -> (Camera, HittableList) {
             let x1 = x0 + w;
             let y1 = rng.range(1.0..100.0);
             let z1 = z0 + w;
-            boxes1.add(Box::new(
+            boxes1.add(GeometryBox::new(
                 Point3::new(x0, y0, z0),
                 Point3::new(x1, y1, z1),
-                Arc::clone(&ground),
+                ground.clone(),
             ));
         }
     }
@@ -342,16 +343,16 @@ pub fn all_feature_scene(seed: Option<u64>) -> (Camera, HittableList) {
     let mut objects = HittableList::default();
     objects.add(BVH::new(boxes1, &time_limit));
 
-    let light = DiffuseLight::new(Color::new(1.0, 1.0, 1.0)).multiplier(7.0);
+    let light = DiffuseLight::new(Color::new(1.0, 1.0, 1.0, 1.0)).multiplier(7.0);
     objects.add(AARect::new_xz(
         AARectMetrics::new(554.0, (123.0, 423.0), (147.0, 412.0)),
-        light,
+        Arc::new(light),
     ));
 
     let moving_sphere = Sphere::new(
         Point3::new(400.0, 400.0, 200.0),
         50.0,
-        Lambertian::new(Color::new(0.7, 0.3, 0.1)),
+        Arc::new(Lambertian::new(Box::new(Color::new(0.7, 0.3, 0.1, 1.0)))),
     )
     .with_speed(Vec3::new(30.0, 0.0, 0.0));
     objects.add(moving_sphere);
@@ -359,30 +360,30 @@ pub fn all_feature_scene(seed: Option<u64>) -> (Camera, HittableList) {
     let glass_sphere = Sphere::new(
         Point3::new(260.0, 150.0, 45.0),
         50.0,
-        Dielectric::new(Color::new(1.0, 1.0, 1.0), 1.5).reflect_curve(Glass {}),
+        Arc::new(Dielectric::new(Color::new(1.0, 1.0, 1.0, 1.0), 1.5).reflect_curve(Glass {})),
     );
     objects.add(glass_sphere);
 
     let metal_sphere = Sphere::new(
         Point3::new(0.0, 150.0, 145.0),
         50.0,
-        Metal::new(Color::new(0.8, 0.8, 0.9)), // .fuzz(1.0),
+        Arc::new(Metal::new(Color::new(0.8, 0.8, 0.9, 1.0))), // .fuzz(1.0),
     );
     objects.add(metal_sphere);
 
     let boundary = Sphere::new(
         Point3::new(360.0, 170.0, 145.0),
         70.0,
-        Dielectric::new(Color::new(1.0, 1.0, 1.0), 1.5).reflect_curve(Glass {}),
+        Arc::new(Dielectric::new(Color::new(1.0, 1.0, 1.0, 1.0), 1.5).reflect_curve(Glass {})),
     );
     objects.add(boundary);
     objects.add(ConstantMedium::new(
         Sphere::new(
             Point3::new(360.0, 170.0, 145.0),
             70.0,
-            Lambertian::new(Color::new(1.0, 1.0, 1.0)),
+            Arc::new(Lambertian::new(Box::new(Color::new(1.0, 1.0, 1.0, 1.0)))),
         ),
-        Color::new(0.2, 0.4, 0.9),
+        Color::new(0.2, 0.4, 0.9, 1.0),
         0.2,
     ));
 
@@ -390,29 +391,28 @@ pub fn all_feature_scene(seed: Option<u64>) -> (Camera, HittableList) {
         Sphere::new(
             Point3::new(0.0, 0.0, 0.0),
             5000.0,
-            Dielectric::new(Color::new(1.0, 1.0, 1.0), 1.5).reflect_curve(Glass {}),
+            Arc::new(Dielectric::new(Color::new(1.0, 1.0, 1.0, 1.0), 1.5).reflect_curve(Glass {})),
         ),
-        Color::new(1.0, 1.0, 1.0),
+        Color::new(1.0, 1.0, 1.0, 1.0),
         0.0001,
     ));
 
     objects.add(Sphere::new(
         Point3::new(400.0, 200.0, 400.0),
         100.0,
-        Lambertian::new(Image::new("examples/earth-map.png").unwrap()),
+        Arc::new(Lambertian::new(Box::new(Image::new("examples/earth-map.png").unwrap()))),
     ));
+
+
+    let tex = Box::new(Perlin::new(256, true, &mut FastRng::new()).scale(0.1).smooth(SmoothType::HermitianCubic));
 
     objects.add(Sphere::new(
         Point3::new(220.0, 280.0, 300.0),
         80.0,
-        Lambertian::new(
-            Perlin::new(256, true, &mut FastRng::new())
-                .scale(0.1)
-                .smooth(SmoothType::HermitianCubic),
-        ),
+        Arc::new(Lambertian::new(tex)),
     ));
 
-    let white = Arc::new(Lambertian::new(Color::new(0.73, 0.73, 0.73)));
+    let white = Arc::new(Lambertian::new(Box::new(Color::new(0.73, 0.73, 0.73, 1.0))));
     let mut boxes2 = HittableList::default();
     for _ in 0..1000_usize {
         boxes2.add(Sphere::new(
@@ -422,7 +422,7 @@ pub fn all_feature_scene(seed: Option<u64>) -> (Camera, HittableList) {
                 rng.range(0.0..165.0),
             ),
             10.0,
-            Arc::clone(&white),
+            white.clone(),
         ));
     }
 
@@ -434,7 +434,6 @@ pub fn all_feature_scene(seed: Option<u64>) -> (Camera, HittableList) {
     let camera = CameraBuilder::default()
         .look_from(Point3::new(478.0, 278.0, -600.0))
         .look_at(Point3::new(278.0, 278.0, 0.0))
-        .aspect_ratio(1.0)
         .fov(40.0)
         .shutter_speed(1.0)
         .build();

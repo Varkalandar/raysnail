@@ -6,6 +6,9 @@ use {
     },
     std::ops::Range,
 };
+use std::sync::Arc;
+use std::fmt::Formatter;
+use std::fmt::Debug;
 
 #[derive(Debug, Clone)]
 pub struct AARectMetrics {
@@ -35,16 +38,24 @@ impl AARectMetrics {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct AARect<M> {
+#[derive(Clone)]
+pub struct AARect {
     // 0: a axis, 1: b axis, 2: fixed axis
     axis: (usize, usize, usize),
     metrics: AARectMetrics,
-    material: M,
+    material: Arc<dyn Material>,
 }
 
-impl<M> AARect<M> {
-    pub const fn new_xy(metrics: AARectMetrics, material: M) -> Self {
+impl Debug for AARect {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "AARect"
+        ))
+    }
+}
+
+impl AARect {
+    pub const fn new_xy(metrics: AARectMetrics, material: Arc<dyn Material>) -> Self {
         Self {
             metrics,
             material,
@@ -52,7 +63,7 @@ impl<M> AARect<M> {
         }
     }
 
-    pub const fn new_xz(metrics: AARectMetrics, material: M) -> Self {
+    pub const fn new_xz(metrics: AARectMetrics, material: Arc<dyn Material>) -> Self {
         Self {
             metrics,
             material,
@@ -60,7 +71,7 @@ impl<M> AARect<M> {
         }
     }
 
-    pub const fn new_yz(metrics: AARectMetrics, material: M) -> Self {
+    pub const fn new_yz(metrics: AARectMetrics, material: Arc<dyn Material>) -> Self {
         Self {
             metrics,
             material,
@@ -69,15 +80,15 @@ impl<M> AARect<M> {
     }
 }
 
-impl<M: Material> Hittable for AARect<M> {
+impl Hittable for AARect {
     fn normal(&self, _point: &Point3) -> Vec3 {
         let mut n = Vec3::default();
         n[self.axis.2] = 1.0;
         n
     }
 
-    fn material(&self) -> &dyn Material {
-        &self.material
+    fn material(&self) -> Arc<dyn Material> {
+        self.material.clone()
     }
 
     fn uv(&self, point: &Point3) -> (f64, f64) {
@@ -87,7 +98,7 @@ impl<M: Material> Hittable for AARect<M> {
         )
     }
 
-    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
         let t1 = (self.metrics.k - ray.origin[self.axis.2]) / ray.direction[self.axis.2];
         if !unit_limit.contains(&t1) {
             return None;
@@ -105,7 +116,7 @@ impl<M: Material> Hittable for AARect<M> {
             return None;
         }
 
-        Some(HitRecord::new(ray, self, t1, t1))
+        Some(HitRecord::new(ray, self, t1, f64::MAX))
     }
 
     fn bbox(&self, _time_limit: &Range<f64>) -> Option<AABB> {
@@ -122,24 +133,6 @@ impl<M: Material> Hittable for AARect<M> {
         Some(AABB::new(p0, p1))
     }
 
-    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
-
-        if let Some(hit) = self.hit(&Ray::new(origin.clone(), direction.clone(), 0.0), &(0.001..f64::INFINITY)) {
-
-            let distance_squared = hit.t1 * hit.t1 * direction.length_squared();    
-            let cosine = direction.dot(&hit.normal).abs() / direction.length();
-            
-            if cosine == 0.0 {
-                return 1e10;
-            }
-
-            let area = self.metrics.a_len * self.metrics.b_len;
-            return distance_squared / (cosine * area);
-        }
-
-        0.0
-    }
-
     fn random(&self, origin: &Point3, rng: &mut FastRng) -> Vec3 {
         // axis 2 is distance to the origin
         // axis 0 and 1 are orthoginal 2d vectors to the fixed axis
@@ -151,6 +144,6 @@ impl<M: Material> Hittable for AARect<M> {
         root.x = rng.range(self.metrics.a0, self.metrics.a1);
         root.z = rng.range(self.metrics.b0, self.metrics.b1);
 
-        root
+        origin - root
     }
 }

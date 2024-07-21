@@ -6,12 +6,14 @@ use {
     },
     std::fmt::Debug,
 };
+use crate::material::CommonMaterialSettings;
+
 
 pub trait ReflectProbabilityCurve: Debug + Send + Sync {
     fn reflect_prob(&self, cos_theta: f64, refractive: f64) -> f64;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Glass {}
 
 impl ReflectProbabilityCurve for Glass {
@@ -28,6 +30,7 @@ pub struct Dielectric {
     enter_refractive: f64,
     outer_refractive: f64,
     reflect_curve: Option<Box<dyn ReflectProbabilityCurve>>,
+    settings: CommonMaterialSettings,
 }
 
 impl Dielectric {
@@ -40,6 +43,7 @@ impl Dielectric {
             enter_refractive,
             outer_refractive,
             reflect_curve: None,
+            settings: CommonMaterialSettings::new(),
         }
     }
 
@@ -48,7 +52,7 @@ impl Dielectric {
         self
     }
 
-    fn refract(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<Ray> {
+    fn refract(&self, ray: &Ray, hit: &HitRecord) -> Option<Ray> {
         assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
 
         let cos_theta = (-&ray.direction).dot(&hit.normal);
@@ -76,7 +80,7 @@ impl Dielectric {
 }
 
 impl Material for Dielectric {
-    fn scatter(&self, ray: &Ray, hit: &HitRecord<'_>) -> Option<ScatterRecord> {
+    fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<ScatterRecord> {
         let refract = self
             .refract(ray, &hit)
             .unwrap_or_else(|| reflect(ray, &hit));
@@ -86,5 +90,9 @@ impl Material for Dielectric {
             pdf: Box::new(CosinePdf::new(&hit.normal)), 
             skip_pdf: true,            
         })
+    }
+
+    fn settings(&self) -> CommonMaterialSettings {
+        self.settings.clone()
     }
 }

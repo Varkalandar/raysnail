@@ -1,5 +1,5 @@
 use {
-    crate::prelude::{clamp, Color, FastRng, PI},
+    crate::prelude::{Color, FastRng, PI},
     std::{
         fmt::Display,
         iter::Sum,
@@ -193,6 +193,26 @@ impl Vec3 {
         self / self.length()
     }
 
+    pub fn rotate(&self, axis: i32, cos: f64, sin: f64) -> Self {
+        match axis {
+            0 => Vec3::new(
+                self.x,
+                self.y * cos - self.z * sin,
+                self.y * sin + self.z * cos,
+            ),
+            1 => Vec3::new(
+                self.x * cos + self.z * sin,
+                self.y,
+                -self.x * sin + self.z * cos,
+            ),
+            _ => Vec3::new(
+                self.x * cos - self.y * sin,
+                self.x * sin + self.y * cos,
+                self.z,
+            ),
+        }
+    }
+
     #[inline(always)]
     pub fn mul_add(&self, a: f64, b: &Vec3) -> Self {
         Vec3 {
@@ -211,10 +231,11 @@ impl Vec3 {
             self.y = self.y.sqrt();
             self.z = self.z.sqrt();
         }
-        Color::new(
-            clamp(self.x, 0.0..=1.0),
-            clamp(self.y, 0.0..=1.0),
-            clamp(self.z, 0.0..=1.0),
+        Color::new64(
+            self.x,
+            self.y,
+            self.z,
+            1.0
         )
     }
 }
@@ -366,7 +387,6 @@ impl Mul<&Color> for &Vec3 {
     type Output = Vec3;
     #[inline]
     fn mul(self, rhs: &Color) -> Self::Output {
-        let rhs = rhs.f();
         Vec3::new(
             self.x * rhs.r as f64,
             self.y * rhs.g as f64,
@@ -559,7 +579,6 @@ impl Sum for Vec3 {
 
 impl From<Color> for Vec3 {
     fn from(c: Color) -> Self {
-        let c = c.f();
         Self::new(c.r as f64, c.g as f64, c.b as f64)
     }
 }

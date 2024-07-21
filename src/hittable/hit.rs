@@ -5,11 +5,13 @@ use {
         ops::Range,
     },
 };
+use std::sync::Arc;
 
-pub struct HitRecord<'m> {
+#[derive(Clone)]
+pub struct HitRecord {
     pub point: Point3,
     pub normal: Vec3,
-    pub material: &'m dyn Material,
+    pub material: Arc<dyn Material>,
     pub t1: f64,
     pub t2: f64,
     pub u: f64,
@@ -17,7 +19,7 @@ pub struct HitRecord<'m> {
     pub outside: bool,
 }
 
-impl Debug for HitRecord<'_> {
+impl Debug for HitRecord {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
             "HitRecord {{ t1: {}, t2: {}, hit: {:?}, normal: {:?}, outside: {} }}",
@@ -26,9 +28,9 @@ impl Debug for HitRecord<'_> {
     }
 }
 
-impl<'m> HitRecord<'m> {
-    pub fn new<G: Hittable>(ray: &Ray, object: &'m G, t1: f64, t2: f64) -> Self {
-        let point = ray.position_after(t1);
+impl HitRecord {
+    pub fn new<G: Hittable>(ray: &Ray, object: &G, t1: f64, t2: f64) -> Self {
+        let point = ray.at(t1);
 
         let mut normal = object.normal(&point);
         let outside = ray.direction.dot(&normal) < 0.0;
@@ -49,6 +51,20 @@ impl<'m> HitRecord<'m> {
             outside,
         }
     }
+
+    pub fn with_normal(point: Point3, normal: Vec3, material: Arc<dyn Material>, uv: (f64, f64), t1: f64, t2: f64) -> Self {
+
+        Self {
+            point,
+            normal,
+            material,
+            t1,
+            t2,
+            u: uv.0,
+            v: uv.1,
+            outside: true,
+        }
+    }
 }
 
 #[allow(unused_variables)]
@@ -59,7 +75,7 @@ pub trait Hittable: Send + Sync {
             std::any::type_name::<Self>()
         )
     }
-    fn material(&self) -> &dyn Material {
+    fn material(&self) -> Arc<dyn Material> {
         unimplemented!(
             "{}'s material function should not be called directly",
             std::any::type_name::<Self>()
@@ -72,10 +88,13 @@ pub trait Hittable: Send + Sync {
         )
     }
 
-    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>>;
-    fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB>;
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord>;
 
-    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64;
+    fn contains(&self, point: &Vec3) -> bool {
+        false
+    }    
+
+    fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB>;
 
     /**
      * This is only called if the object is a light source. It is used to generate

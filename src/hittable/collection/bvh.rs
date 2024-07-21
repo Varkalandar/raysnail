@@ -11,8 +11,7 @@ use {
 };
 
 use log::info;
-use rand::thread_rng;
-use rand::RngCore;
+
 
 #[derive(Default)]
 pub struct BVH {
@@ -87,8 +86,8 @@ impl BVH {
         } else {
 
             // try to create most even split
-            let axis = find_best_axis(objects, time_limit);
-
+            // let axis = find_best_axis(objects, time_limit);
+            let axis = Random::range(0..2);
             objects[index.clone()].sort_by(|a, b| {
                 cmp_geometry_by(
                     axis,
@@ -170,7 +169,7 @@ fn find_best_axis(objects: &mut Vec<Option<Box<dyn Hittable>>>, time_limit: &Ran
 
 /// Bounding Volume Hierarchies
 impl Hittable for BVH {
-    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
         let bbox = self.bbox.as_ref()?;
         if !bbox.hit(ray, unit_limit) {
             return None;
@@ -195,11 +194,7 @@ impl Hittable for BVH {
         self.bbox.clone()
     }
 
-    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
-        0.0
-    }
-
-    fn random(&self, origin: &Point3, _rng: &mut FastRng) -> Vec3 {
+    fn random(&self, _origin: &Point3, _rng: &mut FastRng) -> Vec3 {
         Vec3::new(1.0, 0.0, 0.0)
     }
 }

@@ -18,6 +18,7 @@ use sdl2::surface::SurfaceContext;
 use sdl2::video::WindowContext;
 
 use std::time::Duration;
+use std::sync::Arc;
 
 use raysnail::prelude::Ray;
 use raysnail::prelude::Color;
@@ -27,14 +28,17 @@ use raysnail::camera::CameraBuilder;
 
 use raysnail::painter::PainterTarget;
 use raysnail::painter::PainterCommand;
+use raysnail::painter::PainterController;
 use raysnail::material::*;
 use raysnail::hittable::Sphere;
-use raysnail::hittable::Box;
-use raysnail::hittable::AARect;
-use raysnail::hittable::AARectMetrics;
+use raysnail::hittable::Box as GeometryBox;
+use raysnail::hittable::geometry::Quadric;
 use raysnail::hittable::geometry::RayMarcher;
+use raysnail::hittable::geometry::TriangleMesh;
 use raysnail::hittable::collection::HittableList;
+use raysnail::hittable::Intersection;
 use raysnail::texture::Checker;
+use raysnail::sdl_parser::SdlParser;
 
 use rayon::spawn;
 use std::sync::mpsc::sync_channel;
@@ -49,9 +53,9 @@ pub struct Renderer {
 
 impl Renderer {
 
-    pub fn new(window: Window, width: u32) -> Renderer {
+    pub fn new(window: Window) -> Renderer {
         let mut canvas = window.into_canvas().build().map_err(|e| e.to_string()).unwrap();
-        canvas.set_draw_color(SDLColor::RGB(128, 128, 128));
+        canvas.set_draw_color(SDLColor::RGB(64, 64, 64));
         canvas.clear();
 
         Renderer { 
@@ -59,23 +63,15 @@ impl Renderer {
         }
     }
 
-    pub fn flush_line(&mut self, _x: u32, y: i32, colors: &Vec<[u8; 4]>, line: &mut Texture) {
-
-        // let line_width = colors.len() as u32;
-        let mut x = 0;
-
-        for color in colors {                 
-            let r = Rect::new(x, y, 1, 1);
-            // let c: [u8; 3] = [color[0], color[1], color[2]];
-            line.update(Some(r), color, 3).unwrap();
-
-            x += 1;
-        }
+    pub fn flush_line(&mut self, y: usize, colors: &Vec<u8>, line: &mut Texture) {
 
         let (width, height) = self.canvas.output_size().unwrap();
 
+        let r = Rect::new(0, y as i32, width, 1);
+        line.update(Some(r), colors, width as usize * 3).unwrap();
+
         let s = Rect::new(0, 0, width, height);
-        let d = Rect::new(0, 0, width, height);    
+        let d = Rect::new(0, 0, width, height);
         self.canvas.copy(&line, Some(s), Some(d)).unwrap();
     }
 
@@ -85,28 +81,27 @@ impl Renderer {
     }
 }
 
-
 struct PixelQueue {
-    sender: SyncSender<[u8; 4]>,
+    sender: SyncSender<(usize, Vec<[u8; 4]>)>,
+}
+
+impl PainterTarget for PixelQueue {
+    fn register_pixels(&self, y: usize, pixels: &Vec<[u8; 4]>) {
+        // println!("Got {} pixels", pixels.len());
+
+        let status = self.sender.send((y, pixels.clone()));
+
+        if status.is_err() {
+        }
+    }
+}
+
+struct RenderPainterController {
     command_receiver: Receiver<PainterCommand>,
 }
 
-
-impl PainterTarget for PixelQueue {
-    fn register_pixels(&mut self, pixels: &Vec<[u8; 4]>) -> PainterCommand {
-        println!("Got {} pixels", pixels.len());
-
-        for pixel in pixels {
-            // let pix = [pixel.0, pixel.1, pixel.2, 255];
-            let status = self.sender.send(*pixel);
-
-            if status.is_err() {
-                // let error = status.err().unwrap();
-                // println!("PainterTarget could not send pixels: {:?}", error.to_string());
-                break;
-            }
-        }
-
+impl PainterController for RenderPainterController {
+    fn receive_command(&self) -> PainterCommand {
         let status = self.command_receiver.try_recv();
         let mut result = PainterCommand::None;
 
@@ -119,51 +114,49 @@ impl PainterTarget for PixelQueue {
     }
 }
 
-
 pub fn main() -> Result<(), String> {
 
-    let (sender, receiver) = sync_channel::<[u8; 4]>(1 << 16);
+    let (sender, receiver) = sync_channel::<(usize, Vec<[u8; 4]>)>(1 << 16);
     let (command_sender, command_receiver) = sync_channel::<PainterCommand>(256);
 
-    let mut queue = PixelQueue {sender, command_receiver};
+    let mut queue = PixelQueue {sender};
+    let mut controller = RenderPainterController {command_receiver};
 
-    spawn(|| boot_sdl(1067, 600, receiver, command_sender));
+    let width:usize = 1000;
+    let height:usize = 600;
 
-    render_ball_scene(&mut queue);
-    // render_time_test(&mut queue);
+    spawn(move || boot_sdl(width, height, receiver, command_sender));
+
+    // render_ball_scene(width, height, &mut queue, &mut controller);
+    render_time_test(width, height, &mut queue, &mut controller);
+    // render_raymarching_test(width, height, &mut queue, &mut controller);
+    // render_object_test(width, height, &mut queue, &mut controller);
+    // render_parser_test(width, height, &mut queue, &mut controller);
 
     Ok(())
 }
 
 
-fn boot_sdl(width: u32, height: u32, receiver: Receiver<[u8; 4]>, command_sender: SyncSender<PainterCommand>) {
+fn boot_sdl(width: usize, height: usize, receiver: Receiver<(usize, Vec<[u8; 4]>)>, command_sender: SyncSender<PainterCommand>) {
     common::init_log("info");
 
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
-
     let window = video_subsystem
-        .window("rust-sdl2 demo: Video", width, height)
+        .window("Raysnail Render Preview", width as u32, height as u32)
         .position_centered()
         .opengl()
         .build()
         .map_err(|e| e.to_string()).unwrap();
 
-    // let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
+    let mut renderer = Renderer::new(window);
+    let mut pixels: Vec<u8> = Vec::with_capacity(width * 3);
 
-    let mut renderer = Renderer::new(window, width);
-    let mut x = 0;
-    let mut y = 0;
-    let mut pixels: Vec<[u8; 4]> = Vec::new();
-
-
-    let creator = 
-        renderer.canvas.texture_creator();
+    let creator = renderer.canvas.texture_creator();
     let mut line =
         creator 
-        .create_texture(PixelFormatEnum::RGB24, TextureAccess::Static, width, height).unwrap();
-        // .create_texture(None, TextureAccess::Static, width, 1).unwrap();
+        .create_texture(PixelFormatEnum::RGB24, TextureAccess::Streaming, width as u32, height as u32).unwrap();
 
     println!("Color mod={:?}", line.color_mod());
     println!("query={:?}", line.query());
@@ -182,23 +175,29 @@ fn boot_sdl(width: u32, height: u32, receiver: Receiver<[u8; 4]>, command_sender
             }
         }
 
-        let data = receiver.recv();
+        let data_result = receiver.recv();
 
-        if data.is_ok() {
-            pixels.push(data.unwrap());
-            x += 1;
+        if data_result.is_ok() {
+            let (y, data) = data_result.unwrap();
 
-            if x >= width {
-                renderer.flush_line(0, y, &pixels, &mut line);
-                x = 0;
-                y += 1;
-                renderer.present();
-                pixels.clear();
+            for pixel in data {
+                pixels.push(pixel[0]);
+                pixels.push(pixel[1]);
+                pixels.push(pixel[2]);
             }
+
+            renderer.flush_line(y, &pixels, &mut line);
+
+            renderer.present();
+            pixels.clear();
         } 
         else {
-            let error = data.err().unwrap();
-            println!("Receiving window could not read pixels: {:?}", error.to_string());        
+            // let error = data_result.err().unwrap();
+
+            // there don't seem to be any temporary errors, so the only thing
+            // left to do is to quit the loop
+
+            break;
         }
     }
 
@@ -208,57 +207,101 @@ fn boot_sdl(width: u32, height: u32, receiver: Receiver<[u8; 4]>, command_sender
 }
 
 
-fn render_time_test(target: &mut dyn PainterTarget) {
+fn render_time_test(width: usize, height: usize, 
+                    target: &mut dyn PainterTarget, controller: &mut dyn PainterController) {
     
     let builder = CameraBuilder::default()
-        .look_from(Point3::new(13.0, 2.0, 3.0) * 0.5)
+        .look_from(Point3::new(5.0, 2.0, 3.0))
         .look_at(Point3::new(0.0, 0.0, 0.0))
-        .fov(15.0)
+        .fov(50.0)
         .aperture(0.01)
-        .focus(10.0);
+        .focus(10.0)
+        .width(width)
+        .height(height);
 
     let camera = builder.build();    
 
     let mut world = HittableList::default();
     let mut lights = HittableList::default();
-/*
-    let rs = 
-        AARect::new_xz(AARectMetrics::new(200.0, (-15.0, 15.0), (-15.0, 15.0)),
-            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(200.0));
-*/
 
     let rs = 
         Sphere::new(Vec3::new(50.0, 200.0, 200.0), 
             12.0, 
-            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(2.0)
+            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8, 1.0)).multiplier(2.0))
         );
 
     lights.add(rs.clone());
     world.add(rs);
 
+    /*
     world.add(Sphere::new(
         Point3::new(0.0, 0.0, 0.0),
         1.0,
-        BlinnPhong::new(0.5, 4.0, Color::new(0.99, 0.69, 0.2)),
+        Arc::new(BlinnPhong::new(0.5, 4.0, Color::new(0.99, 0.69, 0.2, 1.0))),
         // Lambertian::new(Color::new(0.99, 0.69, 0.2)),
         // DiffuseMetal::new(200.0, Color::new(0.99, 0.69, 0.2)),
     ));
+    */
+
+    world.add(Intersection::new(
+        Box::new(Quadric::new(1.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0,
+                     Arc::new(Lambertian::new(Box::new(Color::new(0.3, 0.7, 0.2, 1.0)))))),
+        Box::new(GeometryBox::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0),
+                         Arc::new(Lambertian::new(Box::new(Color::new(0.7, 0.3, 0.2, 1.0)))))),
+        )             
+    );
 
 /*
-    let color = Color::new(0.99, 0.8, 0.2);
-    // let material = Lambertian::new(color);
-    let material = BlinnPhong::new(0.5, 4.0, color);
-    // let material = Metal::new(color);
-    world.add(RayMarcher::new(material));
-*/    
+    world.add(GeometryBox::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0),
+        Arc::new(Lambertian::new(Box::new(Color::new(0.8, 0.4, 0.3, 1.0))))));
+*/
+/*
+    world.add(Sphere::new(Point3::new(0.0, 0.0, 0.0), 1.35, 
+        Arc::new(Lambertian::new(Box::new(Color::new(0.4, 0.8, 0.3, 1.0))))));
+*/
 
-    world.add(Sphere::new(
-        Point3::new(0.0, -1001.0, 0.0),
-        1000.0,
-        Lambertian::new(Checker::new(
-            Color::new(0.3, 0.3, 0.3),
-            Color::new(0.1, 0.1, 0.1),
-        ))
+/*
+    world.add(Intersection::new(
+        Box::new(Sphere::new(Point3::new(0.0, 0.0, 0.0), 1.35, 
+                    Arc::new(Lambertian::new(Box::new(Color::new(0.1, 0.2, 0.7, 1.0)))))),
+        Box::new(GeometryBox::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0),
+                        Arc::new(Lambertian::new(Box::new(Color::new(0.8, 0.6, 0.3, 1.0)))))),
+        )             
+    );
+*/
+
+    /*
+    // Cone Y
+    //                     A    B    C    D    E    F    G    H    I    J 
+    world.add(Quadric::new(1.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0,
+        // Arc::new(Lambertian::new(Box::new(Color::new(0.3, 0.3, 0.3, 1.0)))),
+        Arc::new(Dielectric::new(Color::new(0.3, 0.5, 0.8, 1.0), 0.9)),
+    ));
+    */
+
+    /*
+    // Cone Z
+    //                     A    B    C    D    E    F    G    H    I    J 
+    world.add(Quadric::new(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0,
+        Arc::new(Lambertian::new(Box::new(Color::new(0.3, 0.3, 0.3, 1.0)))),
+    ));
+    */
+    /*
+    // Cylinder Z
+    //                     A    B    C    D    E    F    G    H    I    J 
+    world.add(Quadric::new(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, -1.0,
+        Arc::new(Lambertian::new(Box::new(Color::new(0.3, 0.4, 0.3, 1.0)))),
+    ));
+    */
+
+    world.add(GeometryBox::new(
+        Vec3::new(-1000.0, -2.0, -1000.0),
+        Vec3::new(1000.0, -1.0, 1000.0),
+        Arc::new(Lambertian::new(Box::new(Checker::new(
+            Color::new(0.3, 0.3, 0.3, 1.0),
+            Color::new(0.1, 0.1, 0.1, 1.0),
+            3.0,
+        ))))
     ));
 
     fn background(ray: &Ray) -> Color {
@@ -266,47 +309,242 @@ fn render_time_test(target: &mut dyn PainterTarget) {
         assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
 
         let t = 0.5 * (ray.direction.y + 1.0);
-        // Color::new(0.68, 0.80, 0.95).gradient(&Color::new(0.2, 0.4, 0.7), t)
+        Color::new(0.68, 0.80, 0.95, 1.0).gradient(&Color::new(0.2, 0.4, 0.7, 1.0), t)
  
-        Color::new(0.9, 0.9, 0.9)
+        // Color::new(0.9, 0.9, 0.9, 1.0)
         // Color::new(0.1, 0.12, 0.3)
     }
 
     camera
         .take_photo_with_lights(world, lights)
         .background(background)
-        .height(600)
-        .samples(5)
-        //.samples(257)
+        .samples(65)
         .depth(8)
-        .shot_to_target(Some("rtow_13_1.ppm"), target)
+        .shot_to_target(Some("rtow_13_1.ppm"), target, controller)
         .unwrap();
 }
 
 
-fn render_ball_scene(target: &mut dyn PainterTarget) {
+fn render_raymarching_test(width: usize, height: usize, 
+                           target: &mut dyn PainterTarget, controller: &mut dyn PainterController) {
+    
+    let builder = CameraBuilder::default()
+        .look_from(Point3::new(13.0, -1.7, 3.0) * 0.7)
+        .look_at(Point3::new(0.0, -0.4, 0.0))
+        .fov(20.0)
+        .aperture(0.01)
+        .focus(10.0)
+        .width(width)
+        .height(height);
+
+    let camera = builder.build();    
+
+    let mut world = HittableList::default();
+    let mut lights = HittableList::default();
+
+    let rs = 
+        Sphere::new(Vec3::new(300.0, 400.0, 100.0), 
+            12.0, 
+            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8, 1.0)).multiplier(1.5))
+        );
+
+    lights.add(rs.clone());
+    world.add(rs);
+
+    // let color = Color::new(0.8, 0.8, 0.8, 1.0);
+    let color = Box::new(Color::new(0.5, 0.5, 0.5, 1.0));
+    let mut material = Lambertian::new(color);
+    material.settings.phong_factor = 4.0;
+    material.settings.phong_exponent = 2;
+    // let material = BlinnPhong::new(0.5, 4.0, color);
+    // let material = Metal::new(color);
+    world.add(RayMarcher::new(Arc::new(material)));
+
+    world.add(Sphere::new(
+        Point3::new(0.0, -1002.0, 0.0),
+        1000.0,
+        Arc::new(DiffuseMetal::new(800.0, Checker::new(
+            Color::new(0.26, 0.3, 0.16, 1.0),
+            Color::new(0.1, 0.1, 0.1, 1.0),
+            10.0,
+        )))
+    ));
+
+    fn background(ray: &Ray) -> Color {
+
+        // assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
+
+        let t = 0.5 * (ray.direction.y + 1.0);
+        Color::new(0.68, 0.80, 0.95, 1.0).gradient(&Color::new(0.2, 0.4, 0.7, 1.0), t)
+ 
+        // Color::new(0.9, 0.9, 0.9)
+        // Color::new(0.06, 0.06, 0.25)
+    }
+
+    camera
+        .take_photo_with_lights(world, lights)
+        .background(background)
+        .samples(122)
+        .depth(8)
+        .shot_to_target(Some("raymarching.ppm"), target, controller)
+        .unwrap();
+}
+
+
+fn render_ball_scene(width: usize, height: usize, 
+                     target: &mut dyn PainterTarget, controller: &mut dyn PainterController) {
 
     // Change `7` to another number to generate different scene
     // Or use `None` to use random seed
     let (camera, mut world) = common::ray_tracing_in_one_weekend::final_scene(Some(7));
     
+    let camera = camera.width(width);
+    let camera = camera.height(height);
+
     let mut lights = HittableList::default();
 
     let rs = 
         Sphere::new(Vec3::new(200.0, 400.0, 200.0), 
             12.0, 
-            DiffuseLight::new(Color::new(1.0, 0.9, 0.8)).multiplier(1.5)
+            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8, 1.0)).multiplier(1.5))
         );
 
     lights.add(rs.clone());
     world.add(rs);
 
     camera
+        .build()
         .take_photo_with_lights(world, lights)
-        .height(600)
         .samples(122)
         //.samples(257)
         .depth(8)
-        .shot_to_target(Some("rtow_13_1.ppm"), target)
+        .shot_to_target(Some("rtow_13_1.ppm"), target, controller)
         .unwrap();
+}
+
+
+fn render_object_test(width: usize, height: usize, 
+    target: &mut dyn PainterTarget, controller: &mut dyn PainterController) {
+
+    let builder = CameraBuilder::default()
+        .look_from(Point3::new(13.0, 1.5, 3.0) * 1.0)
+        .look_at(Point3::new(0.0, 0.3, 0.0))
+        .fov(20.0)
+        .aperture(0.01)
+        .focus(10.0)
+        .width(width)
+        .height(height);
+
+    let camera = builder.build();    
+
+    let mut world = HittableList::default();
+    let mut lights = HittableList::default();
+
+    let rs = 
+        Sphere::new(Vec3::new(300.0, 400.0, 100.0), 
+            12.0, 
+            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8, 1.0)).multiplier(1.5))
+        );
+
+    lights.add(rs.clone());
+    world.add(rs);
+
+    // let color = Color::new(0.8, 0.8, 0.8, 1.0);
+    let color = Box::new(Color::new(0.87, 0.25, 0.1, 1.0));
+    let mut material = Lambertian::new(color);
+    material.settings.phong_factor = 4.0;
+    material.settings.phong_exponent = 4;
+
+    let mesh = TriangleMesh::load(
+        "objects/dragon.obj",
+        0.2, // scale: f64,
+        Vec3::new(0.0, 0.0, 0.0), // offset: Vec3,
+        120.0, // rotation_angle: f64,
+        1, // axis: i32,
+        Arc::new(material),
+    );
+
+    for tri in mesh.triangles {
+        world.add(tri);
+    }
+
+    world.add(Sphere::new(
+            Point3::new(0.0, -1000.0, 0.0),
+            1000.0,
+            // Arc::new(DiffuseMetal::new(2000.0, Color::new(0.08, 0.1, 0.06, 1.0)))
+            Arc::new(Metal::new(Color::new(0.08, 0.1, 0.06, 1.0)))
+    ));
+
+    fn background(ray: &Ray) -> Color {
+
+    // assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
+
+    let t = 0.5 * (ray.direction.y + 1.0);
+    Color::new(0.68, 0.80, 0.95, 1.0).gradient(&Color::new(0.2, 0.4, 0.7, 1.0), t)
+
+    // Color::new(0.9, 0.9, 0.9, 1.0)
+    // Color::new(0.06, 0.06, 0.25, 1.0)
+    }
+
+    camera
+        .take_photo_with_lights(world, lights)
+        .background(background)
+        .samples(122)
+        .depth(8)
+        .shot_to_target(Some("raymarching.ppm"), target, controller)
+        .unwrap();
+}
+
+
+fn render_parser_test(width: usize, height: usize, 
+                      target: &mut dyn PainterTarget, controller: &mut dyn PainterController) -> bool {
+
+    let scene_data_result = SdlParser::parse("sdl/example.sdl");
+
+    if let Err(message) = scene_data_result {
+        println!("Could not parse scene data: {}", message);
+        return false;
+    } 
+
+    let mut scene_data = scene_data_result.unwrap();
+    let camera_data = &scene_data.camera.unwrap();
+
+    let builder = CameraBuilder::default()
+        .look_from(camera_data.location.clone())
+        .look_at(camera_data.look_at.clone())
+        .fov(camera_data.fov_angle)
+        .aperture(0.01)
+        .focus(10.0)
+        .width(width)
+        .height(height);
+
+    let camera = builder.build();    
+
+    let mut lights = HittableList::default();
+
+    for light in scene_data.lights {
+        let rs = 
+            Sphere::new(light.location, 
+                12.0, 
+                Arc::new(DiffuseLight::new(light.color).multiplier(1.7))
+            );
+
+        lights.add(rs.clone());
+        scene_data.hittables.add(rs);
+    }
+
+    fn background(ray: &Ray) -> Color {
+        let t = (ray.direction.y + 1.0) * 0.5;  // norm to range 0..1
+        Color::new(0.3, 0.4, 0.5, 1.0).gradient(&Color::new(0.7, 0.89, 1.0, 1.0), t)
+    }
+
+    camera
+        .take_photo_with_lights(scene_data.hittables, lights)
+        .background(background)
+        .samples(122)
+        .depth(8)
+        .shot_to_target(Some("sample_scene.ppm"), target, controller)
+        .unwrap();
+
+    true
 }

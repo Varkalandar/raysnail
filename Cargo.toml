@@ -1,6 +1,6 @@
 [package]
 name = "raysnail"
-version = "0.1.0"
+version = "0.1.2"
 authors = ["7sDream <i@7sdre.am>", "Varkalandar"]
 edition = "2018"
 description = "Yet another simple and pure software ray tracing renderer"
@@ -21,6 +21,8 @@ num_cpus = "1.13"
 once_cell = "1.7"
 sdl2 = "0.35"
 vecmath ="1.0"
+tobj = "4.0"
+clap = { version = "4.5.9", features = ["derive", "cargo"] }
 
 [dependencies.image]
 version = "0.23"

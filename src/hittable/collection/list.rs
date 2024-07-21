@@ -44,60 +44,28 @@ impl HittableList {
         self.objects
     }
 
-    pub fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
-        let weight = 1.0 / self.objects.len() as f64;
-        let mut sum = 0.0;
-
-        for object in &self.objects {
-            sum += weight * object.pdf_value(origin, direction);
-        }
-
-        sum
-    }
-
     pub fn random(&self, origin: &Point3, rng: &mut FastRng) -> Vec3 {
         let size = self.objects.len();
         return self.objects[rng.irange(0, size)].random(origin, rng);
     }    
-}
 
+    pub fn hit(&self, r: &Ray, unit_limit: &Range<f64>) -> Vec<HitRecord> {
 
-impl Hittable for HittableList {
-    fn hit(&self, r: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord<'_>> {
-
-        let mut best_hit = None;
-        let mut best_t = 0.0;
+        let mut hits = Vec::new();
 
         for object in &self.objects {
             let hit_opt = object.hit(r, unit_limit);
 
             if hit_opt.is_some() {
                 let hit = hit_opt.unwrap();
-
-                if best_hit.is_none() {
-                    best_t = hit.t1;
-                    best_hit = Some(hit);
-                }
-                else {
-                    if hit.t1 < best_t {
-                        best_t = hit.t1;
-                        best_hit = Some(hit);
-                    }
-                }
+                hits.push(hit);
             }        
         }
 
-        if best_hit.is_some() {
-            let best = best_hit.unwrap();
-            // println!("{}", best.material.name());
-
-            return Some(best)
-        }
-
-        None
+        hits
     }
 
-    fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
+    pub fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
         if self.objects.is_empty() {
             return None;
         }
@@ -111,12 +79,4 @@ impl Hittable for HittableList {
 
         result
     }
-    
-    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
-        0.0
-    }
-
-    fn random(&self, origin: &Point3, _rng: &mut FastRng) -> Vec3 {
-        Vec3::new(1.0, 0.0, 0.0)
-    }    
 }
