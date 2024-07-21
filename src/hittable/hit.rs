@@ -7,6 +7,7 @@ use {
 };
 use std::sync::Arc;
 
+#[derive(Clone)]
 pub struct HitRecord {
     pub point: Point3,
     pub normal: Vec3,
@@ -51,8 +52,7 @@ impl HitRecord {
         }
     }
 
-    pub fn with_normal(ray: &Ray, normal: Vec3, material: Arc<dyn Material>, uv: (f64, f64), t1: f64, t2: f64) -> Self {
-        let point = ray.at(t1);
+    pub fn with_normal(point: Point3, normal: Vec3, material: Arc<dyn Material>, uv: (f64, f64), t1: f64, t2: f64) -> Self {
 
         Self {
             point,
@@ -89,6 +89,11 @@ pub trait Hittable: Send + Sync {
     }
 
     fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord>;
+
+    fn contains(&self, point: &Vec3) -> bool {
+        false
+    }    
+
     fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB>;
 
     /**

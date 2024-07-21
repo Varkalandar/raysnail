@@ -181,6 +181,12 @@ impl Hittable for Quadric {
         None
     }
 
+    fn contains(&self, point: &Vec3) -> bool
+    {
+        return (point.x * (self.qa * point.x + self.qb * point.y + self.qd) +
+                point.y * (self.qe * point.y + self.qf * point.z + self.qg) +
+                point.z * (self.qh * point.z + self.qc * point.x + self.qi) + self.qj) <= 0.0;
+    }    
 
     fn bbox(&self, _time_limit: &Range<f64>) -> Option<AABB> {
         Some(AABB::new(

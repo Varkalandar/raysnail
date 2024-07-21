@@ -48,45 +48,24 @@ impl HittableList {
         let size = self.objects.len();
         return self.objects[rng.irange(0, size)].random(origin, rng);
     }    
-}
 
+    pub fn hit(&self, r: &Ray, unit_limit: &Range<f64>) -> Vec<HitRecord> {
 
-impl Hittable for HittableList {
-    fn hit(&self, r: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
-
-        let mut best_hit = None;
-        let mut best_t = 0.0;
+        let mut hits = Vec::new();
 
         for object in &self.objects {
             let hit_opt = object.hit(r, unit_limit);
 
             if hit_opt.is_some() {
                 let hit = hit_opt.unwrap();
-
-                if best_hit.is_none() {
-                    best_t = hit.t1;
-                    best_hit = Some(hit);
-                }
-                else {
-                    if hit.t1 < best_t {
-                        best_t = hit.t1;
-                        best_hit = Some(hit);
-                    }
-                }
+                hits.push(hit);
             }        
         }
 
-        if best_hit.is_some() {
-            let best = best_hit.unwrap();
-            // println!("{}", best.material.name());
-
-            return Some(best)
-        }
-
-        None
+        hits
     }
 
-    fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
+    pub fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
         if self.objects.is_empty() {
             return None;
         }
@@ -100,8 +79,4 @@ impl Hittable for HittableList {
 
         result
     }
-
-    fn random(&self, _origin: &Point3, _rng: &mut FastRng) -> Vec3 {
-        Vec3::new(1.0, 0.0, 0.0)
-    }    
 }

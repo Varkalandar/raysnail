@@ -211,7 +211,7 @@ fn render_time_test(width: usize, height: usize,
                     target: &mut dyn PainterTarget, controller: &mut dyn PainterController) {
     
     let builder = CameraBuilder::default()
-        .look_from(Point3::new(13.0, 2.0, 3.0))
+        .look_from(Point3::new(5.0, 2.0, 3.0))
         .look_at(Point3::new(0.0, 0.0, 0.0))
         .fov(50.0)
         .aperture(0.01)
@@ -243,12 +243,41 @@ fn render_time_test(width: usize, height: usize,
     ));
     */
 
+    world.add(Intersection::new(
+        Box::new(Quadric::new(1.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0,
+                     Arc::new(Lambertian::new(Box::new(Color::new(0.3, 0.7, 0.2, 1.0)))))),
+        Box::new(GeometryBox::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0),
+                         Arc::new(Lambertian::new(Box::new(Color::new(0.7, 0.3, 0.2, 1.0)))))),
+        )             
+    );
+
+/*
+    world.add(GeometryBox::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0),
+        Arc::new(Lambertian::new(Box::new(Color::new(0.8, 0.4, 0.3, 1.0))))));
+*/
+/*
+    world.add(Sphere::new(Point3::new(0.0, 0.0, 0.0), 1.35, 
+        Arc::new(Lambertian::new(Box::new(Color::new(0.4, 0.8, 0.3, 1.0))))));
+*/
+
+/*
+    world.add(Intersection::new(
+        Box::new(Sphere::new(Point3::new(0.0, 0.0, 0.0), 1.35, 
+                    Arc::new(Lambertian::new(Box::new(Color::new(0.1, 0.2, 0.7, 1.0)))))),
+        Box::new(GeometryBox::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0),
+                        Arc::new(Lambertian::new(Box::new(Color::new(0.8, 0.6, 0.3, 1.0)))))),
+        )             
+    );
+*/
+
+    /*
     // Cone Y
     //                     A    B    C    D    E    F    G    H    I    J 
     world.add(Quadric::new(1.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0,
         // Arc::new(Lambertian::new(Box::new(Color::new(0.3, 0.3, 0.3, 1.0)))),
         Arc::new(Dielectric::new(Color::new(0.3, 0.5, 0.8, 1.0), 0.9)),
     ));
+    */
 
     /*
     // Cone Z
@@ -265,13 +294,13 @@ fn render_time_test(width: usize, height: usize,
     ));
     */
 
-    world.add(Sphere::new(
-        Point3::new(0.0, -1001.0, 0.0),
-        1000.0,
+    world.add(GeometryBox::new(
+        Vec3::new(-1000.0, -2.0, -1000.0),
+        Vec3::new(1000.0, -1.0, 1000.0),
         Arc::new(Lambertian::new(Box::new(Checker::new(
             Color::new(0.3, 0.3, 0.3, 1.0),
             Color::new(0.1, 0.1, 0.1, 1.0),
-            10.0,
+            3.0,
         ))))
     ));
 
@@ -289,7 +318,7 @@ fn render_time_test(width: usize, height: usize,
     camera
         .take_photo_with_lights(world, lights)
         .background(background)
-        .samples(12)
+        .samples(65)
         .depth(8)
         .shot_to_target(Some("rtow_13_1.ppm"), target, controller)
         .unwrap();

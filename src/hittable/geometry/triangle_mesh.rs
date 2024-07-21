@@ -115,11 +115,13 @@ impl Hittable for Triangle {
             let normal =
             &self.normal0 * (1.0 - beta - gamma) + &self.normal1 * beta + &self.normal2 * gamma;
 
+            let point = ray.at(t);
+
             Some(HitRecord::with_normal(
-                ray,
+                point.clone(),
                 normal,
                 self.material(),
-                self.uv(&ray.at(t)),
+                self.uv(&point),
                 t,
                 f64::MAX,
             ))

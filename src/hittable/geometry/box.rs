@@ -123,8 +123,37 @@ impl Hittable for Box {
     }
 
     fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
-        self.faces.hit(ray, unit_limit)
+        let mut hits = self.faces.hit(ray, unit_limit);
+
+        assert!(hits.len() < 3);
+
+        if hits.len() == 1 {
+            // ray must have started inside the box, should we record this somewhere?
+            return Some(hits.remove(0));
+        } else if hits.len() == 2 {
+            let h1 = &hits[0];
+            let h2 = &hits[1];
+
+            if h1.t1 < h2.t1 {
+                return Some(HitRecord::with_normal(h1.point.clone(), h1.normal.clone(), h1.material.clone(), 
+                                                   (h1.u, h1.v), h1.t1, h2.t1));
+            }
+            else {
+                return Some(HitRecord::with_normal(h2.point.clone(), h2.normal.clone(), h2.material.clone(), 
+                                                   (h2.u, h2.v), h2.t1, h1.t1));
+            }
+        }
+
+        None
     }
+
+    fn contains(&self, point: &Vec3) -> bool
+    {
+        point.x >= self.point_min.x && point.x <= self.point_max.x &&
+        point.y >= self.point_min.y && point.y <= self.point_max.y &&
+        point.z >= self.point_min.z && point.z <= self.point_max.z
+    }    
+
 
     fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
         self.faces.bbox(time_limit)

@@ -108,6 +108,12 @@ impl Hittable for Sphere {
         None
     }
 
+    fn contains(&self, point: &Vec3) -> bool {
+        let r = &self.center - point;
+        let l2 = r.length_squared();
+        l2 < self.radius * self.radius
+    }
+
     fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
         Some(
             if self.speed.x == 0.0 && self.speed.y == 0.0 && self.speed.z == 0.0 {
