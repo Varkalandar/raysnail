@@ -6,22 +6,18 @@ use std::fmt::Debug;
 use crate::prelude::PI;
 use crate::prelude::Vec3;
 use crate::prelude::Point3;
-use crate::prelude::Color;
 use crate::prelude::AABB;
 use crate::prelude::Ray;
 use crate::prelude::FastRng;
 use crate::hittable::HitRecord;
 use crate::hittable::Hittable;
-use crate::hittable::Sphere;
 use crate::material::Material;
-use crate::material::Lambertian;
 
 
 #[derive(Clone)]
 pub struct RayMarcher {
 
     material: Arc<dyn Material>,
-    sphere: Sphere,
 }
 
 impl Debug for RayMarcher {
@@ -36,7 +32,6 @@ impl RayMarcher {
     pub fn new(material: Arc<dyn Material>) -> Self {
         RayMarcher {
             material,
-            sphere: Sphere::new(Vec3::new(0.0, 0.0, 0.0), 1.5, Arc::new(Lambertian::new(Box::new(Color::new(1.0, 0.0, 1.0, 1.0))))),
         }
     }
 
@@ -61,7 +56,7 @@ impl RayMarcher {
         let df = direction * 0.05;
         let mut v = p.clone();
     
-        for i in 0 .. 200 {
+        for _i in 0 .. 200 {
             // println!("step {}", i);
             if is_inside(&v, 100) {
                 // println!("step {} is inside at {:?}", i, v);
@@ -187,7 +182,7 @@ pub fn is_inside(p: &Vec3, iterations: i32) -> bool {
     let mut z: f64 = 0.0;
     let power: f64 = 8.0;
 
-    for i in 0 .. iterations {
+    for _i in 0 .. iterations {
         //Convert to spherical coordinates
         let mut r: f64 = (x*x + y*y + z*z).sqrt();
         // let mut theta: f64 = (z / r).acos();
@@ -228,7 +223,7 @@ pub fn distance_est(p: Vec3, iterations: i32) -> f64 {
     let mut r: f64 = 0.0;
     let mut dr: f64 = 0.0;
 
-    for i in 0 .. iterations {
+    for _i in 0 .. iterations {
         //Convert to spherical coordinates
         r = (x*x + y*y + z*z).sqrt();
         let mut theta: f64 = (x*x + y*y).sqrt().atan2(z);

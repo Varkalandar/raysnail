@@ -101,7 +101,7 @@ impl Hittable for HittableList {
         result
     }
 
-    fn random(&self, origin: &Point3, _rng: &mut FastRng) -> Vec3 {
+    fn random(&self, _origin: &Point3, _rng: &mut FastRng) -> Vec3 {
         Vec3::new(1.0, 0.0, 0.0)
     }    
 }

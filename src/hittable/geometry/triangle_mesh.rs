@@ -77,7 +77,7 @@ impl Hittable for Triangle {
         self.material.clone()
     }
 
-    fn uv(&self, point: &Point3) -> (f64, f64) {
+    fn uv(&self, _point: &Point3) -> (f64, f64) {
         (0.0, 0.0)
     }
 
@@ -128,7 +128,7 @@ impl Hittable for Triangle {
         }
     }
 
-    fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
+    fn bbox(&self, _time_limit: &Range<f64>) -> Option<AABB> {
         Some(self.bounding_box.clone())
     }
 
@@ -144,7 +144,6 @@ impl Hittable for Triangle {
 
 pub struct TriangleMesh {
     pub triangles: Vec<Triangle>,
-    material: Arc<dyn Material>,
 }
 
 impl Debug for TriangleMesh {
@@ -266,7 +265,6 @@ impl TriangleMesh {
 
         Self { 
             triangles, 
-            material,
         }
     }
 

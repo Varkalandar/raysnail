@@ -1,5 +1,5 @@
 use {
-    crate::prelude::{clamp, Color, FastRng, PI},
+    crate::prelude::{Color, FastRng, PI},
     std::{
         fmt::Display,
         iter::Sum,

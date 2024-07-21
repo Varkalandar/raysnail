@@ -211,7 +211,7 @@ fn render_time_test(width: usize, height: usize,
                     target: &mut dyn PainterTarget, controller: &mut dyn PainterController) {
     
     let builder = CameraBuilder::default()
-        .look_from(Point3::new(13.0, 1.5, 3.0) * 0.3)
+        .look_from(Point3::new(13.0, 2.0, 3.0))
         .look_at(Point3::new(0.0, 0.0, 0.0))
         .fov(50.0)
         .aperture(0.01)
@@ -243,22 +243,12 @@ fn render_time_test(width: usize, height: usize,
     ));
     */
 
-
     // Cone Y
     //                     A    B    C    D    E    F    G    H    I    J 
-    let cone = Box::new(Quadric::new(1.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0,
-        // Arc::new(Metal::new(Color::new(0.3, 0.3, 0.3, 1.0))),
-        Arc::new(Lambertian::new(Box::new(Color::new(0.4, 0.5, 0.3, 1.0)))),
+    world.add(Quadric::new(1.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0,
+        // Arc::new(Lambertian::new(Box::new(Color::new(0.3, 0.3, 0.3, 1.0)))),
+        Arc::new(Dielectric::new(Color::new(0.3, 0.5, 0.8, 1.0), 0.9)),
     ));
-
-    let gbox = Box::new(GeometryBox::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0),
-        Arc::new(Lambertian::new(Box::new(Color::new(0.4, 0.5, 0.3, 1.0)))),
-    ));
-
-
-    world.add(Intersection::new(cone, gbox));
-
-
 
     /*
     // Cone Z
@@ -299,7 +289,7 @@ fn render_time_test(width: usize, height: usize,
     camera
         .take_photo_with_lights(world, lights)
         .background(background)
-        .samples(122)
+        .samples(12)
         .depth(8)
         .shot_to_target(Some("rtow_13_1.ppm"), target, controller)
         .unwrap();

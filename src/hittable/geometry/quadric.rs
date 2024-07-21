@@ -103,7 +103,7 @@ impl Hittable for Quadric {
         self.material.clone()
     }
 
-    fn uv(&self, point: &Point3) -> (f64, f64) {
+    fn uv(&self, _point: &Point3) -> (f64, f64) {
         let u = 0.0;
         let v = 0.0;
         (u, v)
