@@ -5,6 +5,7 @@ mod ray;
 mod vec3;
 mod onb;
 mod pdf;
+mod transform;
 
 use std::ops::{Bound, RangeBounds};
 
@@ -17,6 +18,7 @@ pub use {
     pdf::{PDF, CosinePdf, SpherePdf, HittablePdf, MixturePdf, BlinnPhongPdf, ReflectionPdf, CosinePdfExponent},
     std::f64::consts::PI,
     vec3::{Point3, Vec3},
+    transform::{Transform, TransformStack},
 };
 
 #[must_use]

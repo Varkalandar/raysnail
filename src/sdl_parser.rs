@@ -5,6 +5,8 @@ use std::collections::HashMap;
 
 use crate::prelude::Vec3;
 use crate::prelude::Color;
+use crate::prelude::Transform;
+use crate::prelude::TransformStack;
 use crate::hittable::Sphere;
 use crate::hittable::Box as GeometryBox;
 use crate::hittable::collection::HittableList;
@@ -97,6 +99,9 @@ enum Symbol {
     ParenClose,
     Comma,
 
+    Translate,
+    Rotate,
+
     Texture,
     Pigment,
     Finish,
@@ -162,6 +167,9 @@ fn build_symbol_map() -> HashMap<String, Symbol> {
     map.insert("rgb".to_string(), Symbol::Rgb);
     map.insert("checker".to_string(), Symbol::Checker);
     map.insert("angle".to_string(), Symbol::Angle);
+
+    map.insert("translate".to_string(), Symbol::Translate);
+    map.insert("rotate".to_string(), Symbol::Rotate);
 
     map.insert("+".to_string(), Symbol::Plus);
     map.insert("-".to_string(), Symbol::Minus);
@@ -446,7 +454,7 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
             let r = parse_expression(input).unwrap();   
 
             let material =
-                if let Some(material) = parse_object_modifiers(input) {
+                if let Some(material) = parse_texture(input) {
                     material
                 }
                 else {
@@ -481,16 +489,22 @@ fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
             expect(input, Symbol::Comma);
             let v2 = parse_vector(input).unwrap();
 
-            let material =
-                if let Some(material) = parse_object_modifiers(input) {
-                    material
+            let mut material: Arc<dyn Material> = Arc::new(Lambertian::new(Box::new(Color::new(1.0, 1.0, 1.0, 1.0))));
+            let mut tf_stack = TransformStack::new();
+
+            loop {
+                if let Some(mat) = parse_texture(input) {
+                    material = mat;
+                }
+                else if let Some(transform) = parse_object_modifiers(input) {
+                    tf_stack.push(transform);
                 }
                 else {
-                    println!("Line {}, parse_box: found no texture, using default diffuse white", input.current_line());
-                    Arc::new(Lambertian::new(Box::new(Color::new(1.0, 1.0, 1.0, 1.0))))
-                };
+                    break;
+                }
+            }
 
-            let gbox = GeometryBox::new(v1, v2, material);
+            let gbox = GeometryBox::with_tf(v1, v2, material, tf_stack);
 
             println!("parse_box: ok -> {:?}", gbox);
             scene.hittables.add(gbox);
@@ -507,9 +521,14 @@ fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
     false
 }
 
-fn parse_object_modifiers(input: &mut Input) -> Option<Arc<dyn Material>> {
+fn parse_object_modifiers(input: &mut Input) -> Option<Transform> {
 
-    parse_texture(input)
+    if let Some(v) = parse_translate(input) {
+        println!("parse_object_modifiers: translate ok");
+        return Some(Transform::translate(v));
+    }
+
+    None
 }
 
 fn parse_texture(input: &mut Input) -> Option<Arc<dyn Material>> {
@@ -576,6 +595,24 @@ fn parse_checker(input: &mut Input) -> Option<(Color, Color)> {
     }
     None
 }
+
+
+fn parse_translate(input: &mut Input) -> Option<Vec3> {
+
+    println!("parse_translate: called");
+
+    if expect(input, Symbol::Translate) {
+        if let Some(v) = parse_vector(input) {
+            return Some(v);
+        }
+        else {
+            println!("Line {}, parse_translate: expected vector, found '{}'", input.current_line(), input.current_text());
+        }
+    }
+
+    None
+}
+
 
 fn parse_color(input: &mut Input) -> Option<Color> {
     if expect_quiet(input, Symbol::Color) {
