@@ -56,45 +56,59 @@ impl Hittable for Difference {
         
         let hit_plus = self.plus.hit(ray, unit_limit);
         let hit_minus = self.minus.hit(ray, unit_limit);
-    
-        /*
-        if hit1.is_some() && hit2.is_some() {
-            let hit1 = hit1.unwrap();
-            let hit2 = hit2.unwrap();
+        
+        if hit_plus.is_some() {
+            
+            if hit_minus.is_some() {
+                let hit_plus = hit_plus.unwrap();
+                let hit_minus = hit_minus.unwrap();
 
-            // sort the hits and objects
-            let hits;
-            let objs;
+                if hit_plus.t1 < hit_minus.t1 {
+                    // visible object was hit first
+                    // but there are strange cases if the ray starts in just this object
 
-            if hit1.t1 < hit2.t1 {
-                hits = [&hit1, &hit2];
-                objs = [&self.o1, &self.o2];
-            }
-            else {
-                hits = [&hit2, &hit1];
-                objs = [&self.o2, &self.o1];
-            }
+                    if !self.minus.contains(&hit_plus.point) {
+                        return Some(hit_plus);
+                    }
+                }
+                else {
+                    // the back hit of the invisible object could be it
 
+                    if hit_minus.t2 < hit_plus.t1 {
+                        // negative object if fully in front of positive object
+                        return Some(hit_plus);
+                    }
+                    else if hit_minus.t2 < hit_plus.t2 {
+                        let p = ray.at(hit_minus.t2);
+                        let n = self.minus.normal(&p);
 
-            if objs[1].contains(&hits[0].point) {
-                // hit[0] is on the nearest surface and inside the farer object
-                // we can use it directly
-                return Some(hits[0].clone());
-            }
-            else {
-                // hit[0] was not inside the farer object, so we must check
-                // the second hit
-                if objs[0].contains(&hits[1].point) {
-                    return Some(hits[1].clone());
+                        // println!("p={:?}" , p);
+
+                        return Some(HitRecord::with_normal(p.clone(), 
+                                                        -n, // Vec3::new(-1.0, 0.0, 0.0), 
+                                                        self.minus.material().clone(), 
+                                                        (0.0, 0.0), // (hit_minus.u, hit_minus.v), 
+                                                        hit_minus.t2, 
+                                                        hit_plus.t2));
+                    }
                 }
             }
+            else {
+                // we can use this directly, ray hit only the positive object
+                return hit_plus;
+            }
         }
-*/
         None
     }
 
+
+    fn contains(&self, point: &Vec3) -> bool {
+        self.plus.contains(point) && !self.minus.contains(point)
+    }
+
+
     fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
-        Some(self.o1.bbox(time_limit).unwrap() | self.o2.bbox(time_limit).unwrap())
+        self.plus.bbox(time_limit)
     }
 
     /**
@@ -105,6 +119,4 @@ impl Hittable for Difference {
 
         self.plus.random(origin, rng)
     }
-
-
 }

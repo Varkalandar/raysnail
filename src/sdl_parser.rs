@@ -12,6 +12,7 @@ use crate::hittable::transform::TfFacade;
 use crate::hittable::Sphere;
 use crate::hittable::Box as GeometryBox;
 use crate::hittable::collection::HittableList;
+use crate::hittable::csg::Difference;
 use crate::material::Material;
 use crate::material::Lambertian;
 use crate::texture::Checker;
@@ -26,6 +27,15 @@ pub struct SceneData {
     pub lights: Vec<LightData>,
 }
 
+impl SceneData {
+    pub fn new() -> Self {
+        SceneData {
+            camera: None,
+            hittables: HittableList::default(),
+            lights: Vec::new(),
+        }        
+    }
+}
 
 #[derive(Debug)]
 pub struct CameraData {
@@ -86,6 +96,8 @@ enum Symbol {
     Box,
     Light,
 
+    Intersection,
+    Difference,
 
     Plus,
     Minus,
@@ -132,11 +144,7 @@ impl SdlParser {
             symbol: Symbol::None,
         };
 
-        let mut scene = SceneData {
-            camera: None,
-            hittables: HittableList::default(),
-            lights: Vec::new(),
-        };
+        let mut scene = SceneData::new();
 
         if !parse_root(&mut input, &mut scene) {
             return Err("Parse error".to_string());
@@ -155,6 +163,9 @@ fn build_symbol_map() -> HashMap<String, Symbol> {
     map.insert("{".to_string(), Symbol::BlockOpen);
     map.insert("}".to_string(), Symbol::BlockClose);
     
+    map.insert("intersection".to_string(), Symbol::Intersection);
+    map.insert("difference".to_string(), Symbol::Difference);
+
     map.insert("<".to_string(), Symbol::VectorOpen);
     map.insert(">".to_string(), Symbol::VectorClose);
     map.insert(",".to_string(), Symbol::Comma);
@@ -314,31 +325,47 @@ fn parse_root(input: &mut Input, scene: &mut SceneData) -> bool {
 
     nextsym(input);
 
-    parse_statement(input, scene)
+    parse_statement_list(input, scene)
 }
 
-fn parse_statement(input: &mut Input, scene: &mut SceneData) -> bool {
+
+fn parse_statement_list(input: &mut Input, scene: &mut SceneData) -> bool {
+
+    println!("Line {}, parse_statement_list called", input.current_line());
+
     while input.pos < input.tokens.len() {
-
-        println!("Line {}, parse_statement: '{}'", input.current_line(), input.current_text());
-
-        if parse_camera(input, scene) {
-        }
-        else if parse_light(input, scene) {
-        }
-        else if parse_sphere(input, scene) {
-        }
-        else if parse_box(input, scene) {
-        }
-        else if input.symbol == Symbol::Eof {
-            println!("EOF, stop parsing");
-            break;
-        }
-        else {
-            println!("Line {}, Invalid statement found: {}", input.current_line(), input.current_text());
+        if !parse_statement(input, scene) {
+            // something went wrong
             return false;
         }
     }
+
+    true
+}
+
+fn parse_statement(input: &mut Input, scene: &mut SceneData) -> bool {
+
+    println!("Line {}, parse_statement: '{}'", input.current_line(), input.current_text());
+
+    if parse_camera(input, scene) {
+    }
+    else if parse_light(input, scene) {
+    }
+    else if parse_sphere(input, scene) {
+    }
+    else if parse_box(input, scene) {
+    }
+    else if parse_difference(input, scene) {
+    }
+    else if input.symbol == Symbol::Eof {
+        println!("EOF, stop parsing");
+        return false;
+    }
+    else {
+        println!("Line {}, Invalid statement found: {}", input.current_line(), input.current_text());
+        return false;
+    }
+    println!("Line {}, statement done: {}", input.current_line(), input.current_text());
 
     true
 }
@@ -523,6 +550,66 @@ fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
 
     false
 }
+
+
+fn parse_difference(input: &mut Input, scene: &mut SceneData) -> bool {
+
+    println!("Line {}, parse_difference: called, current symbol is {:?}", input.current_line(), input.current_text());
+
+    if expect_quiet(input, Symbol::Difference) {
+        if expect(input, Symbol::BlockOpen) {
+
+            let mut sub = SceneData::new();
+
+            println!("parse_difference: looking for first statement");
+
+            // we need two objects for a difference, how to deal with cameras?
+            if parse_statement(input, &mut sub) {
+
+                println!("parse_difference: parsed first statement");
+
+                if parse_statement(input, &mut sub) {
+                    let mut objects = sub.hittables.into_objects();
+
+                    println!("parse_difference: parsed second statement, now checking objects");
+
+                    if objects.len() == 2  {
+                        let minus = objects.remove(1);
+                        let plus = objects.remove(0);
+
+                        let diff = Difference::new(plus, minus);
+
+                        scene.hittables.add(diff);
+
+                        println!("Line {}, parse_difference -> ok", input.current_line());
+
+                        expect(input, Symbol::BlockClose);
+
+                        return true;
+                    }
+                    else {
+                        println!("Line {}, parse_difference: need two objects for a difference, found {}", input.current_line(), objects.len());
+                    }
+                }
+                else {
+                    println!("Line {}, parse_difference: statement expected, found {}", input.current_line(), input.current_text());
+                }    
+            }
+            else {
+                println!("Line {}, parse_difference: first statement expected, found {}", input.current_line(), input.current_text());
+            }
+        }
+        else {
+            println!("Line {}, parse_difference: expected {{, found {}", input.current_line(), input.current_text());
+        }
+    }
+
+    false
+}
+
+
+
+
 
 fn parse_object_modifiers(input: &mut Input) -> Option<Transform> {
 

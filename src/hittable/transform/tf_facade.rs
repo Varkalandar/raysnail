@@ -52,16 +52,6 @@ impl<T: Hittable> Hittable for TfFacade<T> {
             })
     }
 
-    /*
-    fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
-        self.object
-            .bbox(time_limit)
-            .map(|bbox| {
-                AABB::new(self.stack.tf_pos(&bbox.min()),
-                          self.stack.tf_pos(&bbox.max()))
-            })
-    }
-    */
 
     fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
         self.bbox_cache
