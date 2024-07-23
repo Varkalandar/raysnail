@@ -14,49 +14,38 @@ pub struct Box {
     point_max: Point3,
     material: Arc<dyn Material>,
     faces: HittableList,
-
-    tf_stack: TransformStack,
 }
 
 impl Debug for Box {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
-            "Box {{ min: {:?}, max: {:?}, tf_stack: {} }}",
-            self.point_min, self.point_max, self.tf_stack.len(),
+            "Box {{ min: {:?}, max: {:?} }}",
+            self.point_min, self.point_max,
         ))
     }
 }
-/*
+
 impl Clone for Box {
     fn clone(&self) -> Self {
         Self::new_inner(
             self.point_min.clone(),
             self.point_max.clone(),
             Arc::clone(&self.material),
-            self.tf_stack,
         )
     }
 }
-*/
+
 impl Box {
     #[allow(clippy::needless_pass_by_value)] // for api consistency
     pub fn new(p0: Point3, p1: Point3, material: Arc<dyn Material>) -> Self {
         let point_min = Point3::new_min(&p0, &p1);
         let point_max = Point3::new_max(&p0, &p1);
         let shared_material = material;
-        Self::new_inner(point_min, point_max, shared_material, TransformStack::new())
+        Self::new_inner(point_min, point_max, shared_material)
     }
-
-    pub fn with_tf(p0: Point3, p1: Point3, material: Arc<dyn Material>, tf_stack: TransformStack) -> Self {
-        let point_min = Point3::new_min(&p0, &p1);
-        let point_max = Point3::new_max(&p0, &p1);
-        let shared_material = material;
-        Self::new_inner(point_min, point_max, shared_material, tf_stack)
-    }
-
 
     #[allow(clippy::too_many_lines)]
-    fn new_inner(point_min: Point3, point_max: Point3, material: Arc<dyn Material>, tf_stack: TransformStack) -> Self {
+    fn new_inner(point_min: Point3, point_max: Point3, material: Arc<dyn Material>) -> Self {
         let mut faces = HittableList::default();
         faces
             .add(AARect::new_xy(
@@ -119,7 +108,6 @@ impl Box {
             point_max,
             material,
             faces,
-            tf_stack,
         }
     }
 }
@@ -134,10 +122,7 @@ impl Hittable for Box {
         self.material.clone()
     }
 
-    fn hit(&self, ray_in: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
-
-        let ray = Ray::new(self.tf_stack.inv_tf_pos(&ray_in.origin), ray_in.direction.clone(), ray_in.departure_time);
-
+    fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
 
         let mut hits = self.faces.hit(&ray, unit_limit);
 
@@ -151,11 +136,11 @@ impl Hittable for Box {
             let h2 = &hits[1];
 
             if h1.t1 < h2.t1 {
-                return Some(HitRecord::with_normal(self.tf_stack.tf_pos(&h1.point), h1.normal.clone(), h1.material.clone(), 
+                return Some(HitRecord::with_normal(h1.point.clone(), h1.normal.clone(), h1.material.clone(), 
                                                    (h1.u, h1.v), h1.t1, h2.t1));
             }
             else {
-                return Some(HitRecord::with_normal(self.tf_stack.tf_pos(&h2.point), h2.normal.clone(), h2.material.clone(), 
+                return Some(HitRecord::with_normal(h2.point.clone(), h2.normal.clone(), h2.material.clone(), 
                                                    (h2.u, h2.v), h2.t1, h1.t1));
             }
         }

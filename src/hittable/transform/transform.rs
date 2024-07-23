@@ -33,7 +33,26 @@ impl Transform {
 
         t
     }
-    
+
+    pub fn rotate_by_y_axis(theta: f64) -> Self {
+
+        let sin = theta.sin();
+        let cos = theta.cos();
+
+        let mut m = mat4_id();
+
+        m[0][0] = cos;
+        m[0][2] = sin;
+        m[2][0] = -sin;
+        m[2][2] = cos;
+
+        let inv = mat4_inv(m);
+
+        let t = Transform {matrix: m, inverse: inv};
+
+        t
+    }
+
 }
 
 

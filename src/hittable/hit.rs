@@ -92,7 +92,7 @@ pub trait Hittable: Send + Sync {
 
     fn contains(&self, point: &Vec3) -> bool {
         false
-    }    
+    }
 
     fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB>;
 

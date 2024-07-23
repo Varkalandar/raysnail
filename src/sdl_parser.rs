@@ -5,8 +5,9 @@ use std::collections::HashMap;
 
 use crate::prelude::Vec3;
 use crate::prelude::Color;
-use crate::prelude::Transform;
-use crate::prelude::TransformStack;
+use crate::hittable::transform::Transform;
+use crate::hittable::transform::TransformStack;
+use crate::hittable::transform::TfFacade;
 use crate::hittable::Sphere;
 use crate::hittable::Box as GeometryBox;
 use crate::hittable::collection::HittableList;
@@ -504,10 +505,11 @@ fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
                 }
             }
 
-            let gbox = GeometryBox::with_tf(v1, v2, material, tf_stack);
-
+            let gbox = GeometryBox::new(v1, v2, material);
             println!("parse_box: ok -> {:?}", gbox);
-            scene.hittables.add(gbox);
+
+            let object = TfFacade::new(gbox, tf_stack);
+            scene.hittables.add(object);
 
             expect(input, Symbol::BlockClose);
 

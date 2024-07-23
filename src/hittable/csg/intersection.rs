@@ -1,5 +1,4 @@
 use std::ops::Range;
-use std::sync::Arc;
 use std::fmt::Formatter;
 use std::fmt::Debug;
 
@@ -8,7 +7,6 @@ use crate::prelude::Vec3;
 use crate::prelude::AABB;
 use crate::prelude::Ray;
 use crate::prelude::Point3;
-use crate::material::Material;
 use crate::hittable::HitRecord;
 use crate::hittable::Hittable;
 
@@ -90,6 +88,10 @@ impl Hittable for Intersection {
         }
 
         None
+    }
+
+    fn contains(&self, point: &Vec3) -> bool {
+        self.o1.contains(point) && self.o2.contains(point)
     }
 
     fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
