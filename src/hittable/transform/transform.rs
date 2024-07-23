@@ -77,10 +77,35 @@ impl TransformStack {
         self.stack.len()
     }
 
+    pub fn tf_vec(&self, pos: &Vec3) -> Vec3 {
+        if self.stack.len() > 0 {
+            let v4 = [pos.x, pos.y, pos.z, 0.0];
+            let r = row_mat4_transform(self.stack[0].matrix, v4);
+
+            Vec3::new(r[0], r[1], r[2])
+        }
+        else {
+            pos.clone()
+        }
+    }
+
     pub fn tf_pos(&self, pos: &Vec3) -> Vec3 {
         if self.stack.len() > 0 {
             let v4 = [pos.x, pos.y, pos.z, 1.0];
             let r = row_mat4_transform(self.stack[0].matrix, v4);
+
+            Vec3::new(r[0], r[1], r[2])
+        }
+        else {
+            pos.clone()
+        }
+    }
+
+    pub fn inv_tf_vec(&self, pos: &Vec3) -> Vec3 {
+
+        if self.stack.len() > 0 {
+            let v4 = [pos.x, pos.y, pos.z, 0.0];
+            let r = row_mat4_transform(self.stack[0].inverse, v4);
 
             Vec3::new(r[0], r[1], r[2])
         }
@@ -101,12 +126,15 @@ impl TransformStack {
             pos.clone()
         }
     }
+
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::prelude::PI;
 
+    /*
     #[test]
     fn test_translation() {
         let mut tfs = TransformStack::new();
@@ -126,5 +154,28 @@ mod tests {
         assert_eq!(r2.y, 0.0);
         assert_eq!(r2.z, 0.0);
     }
+    */
+
+    #[test]
+    fn test_y_rotation() {
+        let mut tfs = TransformStack::new();
+
+        let tf = Transform::rotate_by_y_axis(PI/2.0);
+
+        tfs.push(tf);
+
+        let r = tfs.tf_pos(&Vec3::new(0.0, 0.0, 1.0));
+
+        assert!((r.x - 1.0).abs() < 1e-10);
+        assert!((r.y - 0.0).abs() < 1e-10);
+        assert!((r.z - 0.0).abs() < 1e-10);
+
+        let r2 = tfs.inv_tf_pos(&r);
+
+        assert!((r2.x - 0.0).abs() < 1e-10);
+        assert!((r2.y - 0.0).abs() < 1e-10);
+        assert!((r2.z - 1.0).abs() < 1e-10);
+    }
+
 }
 

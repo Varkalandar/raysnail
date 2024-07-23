@@ -5,6 +5,7 @@ use std::collections::HashMap;
 
 use crate::prelude::Vec3;
 use crate::prelude::Color;
+use crate::prelude::PI;
 use crate::hittable::transform::Transform;
 use crate::hittable::transform::TransformStack;
 use crate::hittable::transform::TfFacade;
@@ -529,6 +530,11 @@ fn parse_object_modifiers(input: &mut Input) -> Option<Transform> {
         println!("parse_object_modifiers: translate ok");
         return Some(Transform::translate(v));
     }
+    else if let Some(v) = parse_rotate(input) {
+        println!("parse_object_modifiers: rotate ok {:?}", v);
+        return Some(Transform::rotate_by_y_axis(v.y * PI / 180.0));
+        // return Some(Transform::rotate_by_y_axis(0.0));
+    }
 
     None
 }
@@ -603,12 +609,29 @@ fn parse_translate(input: &mut Input) -> Option<Vec3> {
 
     println!("parse_translate: called");
 
-    if expect(input, Symbol::Translate) {
+    if expect_quiet(input, Symbol::Translate) {
         if let Some(v) = parse_vector(input) {
             return Some(v);
         }
         else {
             println!("Line {}, parse_translate: expected vector, found '{}'", input.current_line(), input.current_text());
+        }
+    }
+
+    None
+}
+
+
+fn parse_rotate(input: &mut Input) -> Option<Vec3> {
+
+    println!("parse_rotate: called");
+
+    if expect_quiet(input, Symbol::Rotate) {
+        if let Some(v) = parse_vector(input) {
+            return Some(v);
+        }
+        else {
+            println!("Line {}, parse_rotate: expected vector, found '{}'", input.current_line(), input.current_text());
         }
     }
 
