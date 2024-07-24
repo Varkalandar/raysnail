@@ -152,7 +152,11 @@ impl Hittable for RayMarcher {
         None
     }
 
-    
+    fn contains(&self, point: &Vec3) -> bool
+    {
+        is_inside(point, 100)
+    }
+
     fn bbox(&self, _time_limit: &Range<f64>) -> Option<AABB> {
         let center = Vec3::new(0.0, 0.0, 0.0);
         let radius = 1.3;

@@ -242,7 +242,7 @@ fn render_time_test(width: usize, height: usize,
         // DiffuseMetal::new(200.0, Color::new(0.99, 0.69, 0.2)),
     ));
     */
-
+/*
     world.add(Intersection::new(
         Box::new(Quadric::new(1.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0,
                      Arc::new(Lambertian::new(Box::new(Color::new(0.3, 0.7, 0.2, 1.0)))))),
@@ -250,6 +250,7 @@ fn render_time_test(width: usize, height: usize,
                          Arc::new(Lambertian::new(Box::new(Color::new(0.7, 0.3, 0.2, 1.0)))))),
         )             
     );
+*/
 
 /*
     world.add(GeometryBox::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0),
@@ -260,7 +261,7 @@ fn render_time_test(width: usize, height: usize,
         Arc::new(Lambertian::new(Box::new(Color::new(0.4, 0.8, 0.3, 1.0))))));
 */
 
-/*
+
     world.add(Intersection::new(
         Box::new(Sphere::new(Point3::new(0.0, 0.0, 0.0), 1.35, 
                     Arc::new(Lambertian::new(Box::new(Color::new(0.1, 0.2, 0.7, 1.0)))))),
@@ -268,7 +269,6 @@ fn render_time_test(width: usize, height: usize,
                         Arc::new(Lambertian::new(Box::new(Color::new(0.8, 0.6, 0.3, 1.0)))))),
         )             
     );
-*/
 
     /*
     // Cone Y

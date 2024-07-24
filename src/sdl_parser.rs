@@ -13,6 +13,7 @@ use crate::hittable::Sphere;
 use crate::hittable::Box as GeometryBox;
 use crate::hittable::collection::HittableList;
 use crate::hittable::csg::Difference;
+use crate::hittable::Intersection;
 use crate::material::Material;
 use crate::material::Lambertian;
 use crate::texture::Checker;
@@ -357,6 +358,8 @@ fn parse_statement(input: &mut Input, scene: &mut SceneData) -> bool {
     }
     else if parse_difference(input, scene) {
     }
+    else if parse_intersection(input, scene) {
+    }
     else if input.symbol == Symbol::Eof {
         println!("EOF, stop parsing");
         return false;
@@ -559,17 +562,17 @@ fn parse_difference(input: &mut Input, scene: &mut SceneData) -> bool {
     if expect_quiet(input, Symbol::Difference) {
         if expect(input, Symbol::BlockOpen) {
 
-            let mut sub = SceneData::new();
+            let mut list = SceneData::new();
 
             println!("parse_difference: looking for first statement");
 
             // we need two objects for a difference, how to deal with cameras?
-            if parse_statement(input, &mut sub) {
+            if parse_statement(input, &mut list) {
 
                 println!("parse_difference: parsed first statement");
 
-                if parse_statement(input, &mut sub) {
-                    let mut objects = sub.hittables.into_objects();
+                if parse_statement(input, &mut list) {
+                    let mut objects = list.hittables.into_objects();
 
                     println!("parse_difference: parsed second statement, now checking objects");
 
@@ -608,7 +611,63 @@ fn parse_difference(input: &mut Input, scene: &mut SceneData) -> bool {
 }
 
 
+fn parse_intersection(input: &mut Input, scene: &mut SceneData) -> bool {
 
+    println!("Line {}, parse_intersection: called, current symbol is {:?}", input.current_line(), input.current_text());
+
+    if expect_quiet(input, Symbol::Intersection) {
+        if expect(input, Symbol::BlockOpen) {
+
+            let mut list = SceneData::new();
+
+            println!("parse_intersection: looking for first statement");
+
+            // we need two objects for a difference, how to deal with cameras?
+            if parse_statement(input, &mut list) {
+
+                println!("parse_intersection: parsed first statement");
+
+                if parse_statement(input, &mut list) {
+                    let mut objects = list.hittables.into_objects();
+
+                    println!("parse_intersection: parsed second statement, now checking objects");
+
+                    if objects.len() == 2  {
+                        let o2 = objects.remove(1);
+                        let o1 = objects.remove(0);
+
+                        let intersection = Intersection::new(o1, o2);
+
+                        scene.hittables.add(intersection);
+
+                        // scene.hittables.add_ref(o1);
+                        // scene.hittables.add_ref(o2);
+
+                        println!("Line {}, parse_intersection -> ok", input.current_line());
+
+                        expect(input, Symbol::BlockClose);
+
+                        return true;
+                    }
+                    else {
+                        println!("Line {}, parse_intersection: need two objects for a difference, found {}", input.current_line(), objects.len());
+                    }
+                }
+                else {
+                    println!("Line {}, parse_intersection: statement expected, found {}", input.current_line(), input.current_text());
+                }    
+            }
+            else {
+                println!("Line {}, parse_intersection: first statement expected, found {}", input.current_line(), input.current_text());
+            }
+        }
+        else {
+            println!("Line {}, parse_intersection: expected {{, found {}", input.current_line(), input.current_text());
+        }
+    }
+
+    false
+}
 
 
 fn parse_object_modifiers(input: &mut Input) -> Option<Transform> {

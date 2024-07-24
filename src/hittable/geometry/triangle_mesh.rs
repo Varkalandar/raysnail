@@ -130,6 +130,11 @@ impl Hittable for Triangle {
         }
     }
 
+    fn contains(&self, point: &Vec3) -> bool
+    {
+        false
+    }
+
     fn bbox(&self, _time_limit: &Range<f64>) -> Option<AABB> {
         Some(self.bounding_box.clone())
     }

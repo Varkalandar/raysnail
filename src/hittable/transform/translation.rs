@@ -30,6 +30,14 @@ impl<T: Hittable> Hittable for Translation<T> {
         })
     }
 
+    fn contains(&self, point: &Vec3) -> bool
+    {
+        unimplemented!(
+            "{}'s constains function is not yet implemented",
+            std::any::type_name::<Self>()
+        )
+    }
+
     fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
         self.object
             .bbox(time_limit)

@@ -19,6 +19,7 @@ pub struct Intersection {
 impl Debug for Intersection {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
+            // "Intersection\no1={{ {:?} }}\no2={{ {:?} }}", self.o1, self.o2),
             "Intersection",
         ))
     }
@@ -74,12 +75,12 @@ impl Hittable for Intersection {
 
 
             if objs[1].contains(&hits[0].point) {
-                // hit[0] is on the nearest surface and inside the farer object
+                // hit[0] is on the nearest surface and inside the farther object
                 // we can use it directly
                 return Some(hits[0].clone());
             }
             else {
-                // hit[0] was not inside the farer object, so we must check
+                // hit[0] was not inside the farther object, so we must check
                 // the second hit
                 if objs[0].contains(&hits[1].point) {
                     return Some(hits[1].clone());

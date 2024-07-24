@@ -87,6 +87,10 @@ impl<T: Hittable> Hittable for TfFacade<T> {
             .clone()
     }
 
+    fn contains(&self, point: &Vec3) -> bool
+    {
+        self.object.contains(&self.stack.inv_tf_pos(point))
+    }
 
     fn random(&self, origin: &Point3, rng: &mut FastRng) -> Vec3 {
         let r = self.object.random(&self.stack.inv_tf_pos(origin), rng);

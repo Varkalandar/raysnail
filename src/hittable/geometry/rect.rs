@@ -119,6 +119,11 @@ impl Hittable for AARect {
         Some(HitRecord::new(ray, self, t1, f64::MAX))
     }
 
+    fn contains(&self, point: &Vec3) -> bool
+    {
+        false
+    }
+
     fn bbox(&self, _time_limit: &Range<f64>) -> Option<AABB> {
         let mut p0 = Point3::default();
         p0[self.axis.0] = self.metrics.a0;

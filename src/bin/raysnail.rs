@@ -172,9 +172,9 @@ fn boot_sdl(width: usize, height: usize, receiver: Receiver<(usize, Vec<[u8; 4]>
         }
     }
 
-    let status = command_sender.send(PainterCommand::Quit);
+    let _status = command_sender.send(PainterCommand::Quit);
 
-    println!("Sending Quit to render engine. Status={:?}", status);
+    println!("Sending Quit to render engine.");
 }
 
 fn parse_and_render(width: usize, height: usize, samples: usize, filename: &str,

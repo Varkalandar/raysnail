@@ -59,6 +59,11 @@ impl Hittable for World {
         self.bvh.hit(ray, unit_limit)
     }
 
+    fn contains(&self, point: &Vec3) -> bool
+    {
+        self.bvh.contains(point)
+    }
+
     fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
         self.bvh.bbox(time_limit)
     }

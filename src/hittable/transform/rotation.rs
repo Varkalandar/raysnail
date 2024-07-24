@@ -83,6 +83,14 @@ impl<Axis: RotationByAxis, T: Hittable> Hittable for AARotation<Axis, T> {
         })
     }
 
+    fn contains(&self, point: &Vec3) -> bool
+    {
+        unimplemented!(
+            "{}'s constains function is not yet implemented",
+            std::any::type_name::<Self>()
+        )
+    }
+
     #[allow(clippy::cast_precision_loss)] // 0, 1 is small enough
     fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
         self.bbox_cache

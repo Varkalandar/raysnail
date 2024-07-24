@@ -90,9 +90,7 @@ pub trait Hittable: Send + Sync {
 
     fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord>;
 
-    fn contains(&self, point: &Vec3) -> bool {
-        false
-    }
+    fn contains(&self, point: &Vec3) -> bool;
 
     fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB>;
 

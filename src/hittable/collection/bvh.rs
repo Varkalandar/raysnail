@@ -190,6 +190,14 @@ impl Hittable for BVH {
         hit_right.or(hit_left)
     }
 
+    fn contains(&self, point: &Vec3) -> bool
+    {
+        unimplemented!(
+            "{}'s constains function is not yet implemented",
+            std::any::type_name::<Self>()
+        )
+    }
+
     fn bbox(&self, _time_limit: &Range<f64>) -> Option<AABB> {
         self.bbox.clone()
     }
