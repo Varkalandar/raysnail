@@ -6,6 +6,8 @@ use crate::{
 };
 use crate::material::CommonMaterialSettings;
 
+use std::fmt::Formatter;
+use std::fmt::Debug;
 
 #[inline]
 fn reflect(ray: &Ray, hit: &HitRecord) -> Ray {
@@ -17,20 +19,27 @@ fn reflect(ray: &Ray, hit: &HitRecord) -> Ray {
 }
 
 
-#[derive(Debug, Clone)]
-pub struct DiffuseMetal<T: Texture> {
-    texture: T,
+pub struct DiffuseMetal {
+    texture: Box<dyn Texture>,
     exponent: f64,
     settings: CommonMaterialSettings,
 }
 
-impl<T: Texture> DiffuseMetal<T> {
+impl Debug for DiffuseMetal {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "DiffuseMetal",
+        ))
+    }
+}
+
+impl DiffuseMetal {
     
     /**
      * Smaller exponent values are more diffuse. Can go up to several hundred
      */
     #[must_use]
-    pub fn new(exponent: f64, texture: T) -> Self {
+    pub fn new(exponent: f64, texture: Box<dyn Texture>) -> Self {
         Self {
             exponent,
             texture,
@@ -40,7 +49,7 @@ impl<T: Texture> DiffuseMetal<T> {
 }
 
 
-impl<T: Texture> Material for DiffuseMetal<T> {
+impl Material for DiffuseMetal {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<ScatterRecord> {
         let color = self.texture.color(hit.u, hit.v, &hit.point);
         let reflected = reflect(ray, &hit);
@@ -63,15 +72,22 @@ impl<T: Texture> Material for DiffuseMetal<T> {
 }
 
 
-#[derive(Debug, Clone)]
-pub struct Metal<T: Texture> {
-    texture: T,
+pub struct Metal {
+    texture: Box<dyn Texture>,
     settings: CommonMaterialSettings,
 }
 
-impl<T: Texture> Metal<T> {
+impl Debug for Metal {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "Metal",
+        ))
+    }
+}
+
+impl Metal {
     #[must_use]
-    pub fn new(texture: T) -> Self {
+    pub fn new(texture: Box<dyn Texture>) -> Self {
         Self {
             texture,
             settings: CommonMaterialSettings::new(),
@@ -79,7 +95,7 @@ impl<T: Texture> Metal<T> {
     }
 }
 
-impl<T: Texture> Material for Metal<T> {
+impl Material for Metal {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<ScatterRecord> {
         let color = self.texture.color(hit.u, hit.v, &hit.point);
         let reflected = reflect(ray, &hit);

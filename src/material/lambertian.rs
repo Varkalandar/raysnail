@@ -10,7 +10,6 @@ use crate::{
 use crate::material::CommonMaterialSettings;
 
 
-// #[derive(Debug, Clone)]
 pub struct Lambertian {
     texture: Box<dyn Texture>,
     pub settings: CommonMaterialSettings,
