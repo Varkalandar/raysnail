@@ -18,6 +18,7 @@ use crate::material::Material;
 use crate::material::Lambertian;
 use crate::material::Metal;
 use crate::material::DiffuseMetal;
+use crate::material::MixedMaterial;
 use crate::texture::Checker;
 use crate::texture::Texture;
 
@@ -125,6 +126,7 @@ enum Symbol {
     Surface,
 
     Metallic,
+    Reflection,
     Color,
     Rgb,
     Angle,
@@ -185,6 +187,7 @@ fn build_symbol_map() -> HashMap<String, Symbol> {
     map.insert("finish".to_string(), Symbol::Finish);
     map.insert("surface".to_string(), Symbol::Surface);
 
+    map.insert("reflection".to_string(), Symbol::Reflection);
     map.insert("metallic".to_string(), Symbol::Metallic);
     map.insert("color".to_string(), Symbol::Color);
     map.insert("rgb".to_string(), Symbol::Rgb);
@@ -501,7 +504,7 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
                 }
                 else {
                     println!("Line {}, parse_sphere: found no texture, using default diffuse white", input.current_line());
-                    Arc::new(Lambertian::new(Box::new(Color::new(1.0, 1.0, 1.0, 1.0))))
+                    Arc::new(Lambertian::new(Arc::new(Color::new(1.0, 1.0, 1.0, 1.0))))
                 };
 
             let sphere = Sphere::new(v, r, material);
@@ -531,7 +534,7 @@ fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
             expect(input, Symbol::Comma);
             let v2 = parse_vector(input).unwrap();
 
-            let mut material: Arc<dyn Material> = Arc::new(Lambertian::new(Box::new(Color::new(1.0, 1.0, 1.0, 1.0))));
+            let mut material: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::new(Color::new(1.0, 1.0, 1.0, 1.0))));
             let mut tf_stack = TransformStack::new();
 
             loop {
@@ -705,10 +708,10 @@ fn parse_texture(input: &mut Input) -> Option<Arc<dyn Material>> {
                     texture
                 } else {
                     println!("Line {}, parse_texture: no pigment found, using default white", input.current_line());
-                    Box::new(Color::new(1.0, 1.0, 1.0, 1.0))
+                    Arc::new(Color::new(1.0, 1.0, 1.0, 1.0))
                 };
 
-            let material = parse_surface(input, texture);
+            let mut material = parse_finish(input, texture);
 
             expect(input, Symbol::BlockClose);
 
@@ -719,7 +722,7 @@ fn parse_texture(input: &mut Input) -> Option<Arc<dyn Material>> {
     None
 }
 
-fn parse_pigment(input: &mut Input) -> Option<Box<dyn Texture>> {
+fn parse_pigment(input: &mut Input) -> Option<Arc<dyn Texture>> {
 
     if expect(input, Symbol::Pigment) {
         if expect(input, Symbol::BlockOpen) {
@@ -727,11 +730,11 @@ fn parse_pigment(input: &mut Input) -> Option<Box<dyn Texture>> {
                 expect_quiet(input, Symbol::Rgb);   // should this be made mandatory?
 
                 expect(input, Symbol::BlockClose);
-                return Some(Box::new(color));
+                return Some(Arc::new(color));
             }
             else if let Some(colors) = parse_checker(input) {
                 expect(input, Symbol::BlockClose);
-                return Some(Box::new(Checker::new(colors.0, colors.1, 2.0)));
+                return Some(Arc::new(Checker::new(colors.0, colors.1, 2.0)));
             }
         }
     }
@@ -740,9 +743,29 @@ fn parse_pigment(input: &mut Input) -> Option<Box<dyn Texture>> {
 }
 
 
-fn parse_surface(input: &mut Input, texture: Box<dyn Texture>) -> Option<Arc<dyn Material>> {
+fn parse_finish(input: &mut Input, texture: Arc<dyn Texture>) -> Option<Arc<dyn Material>> {
 
-    if expect(input, Symbol::Surface) {
+    if expect(input, Symbol::Finish) {
+        if expect(input, Symbol::BlockOpen) {
+
+            let mut material: Arc<dyn Material> = Arc::new(Lambertian::new(texture.clone()));
+
+            if expect_quiet(input, Symbol::Reflection) {
+                let v = parse_float(input).unwrap();
+
+                let metal = Arc::new(Metal::new(texture));
+
+                println!("Line {}, parse_finish: using mixed material, reflection={}",
+                         input.current_line(), v);
+                
+                material = Arc::new(MixedMaterial::new(metal, material, v));
+            }
+            
+            expect(input, Symbol::BlockClose);
+            return Some(material);
+        }
+    }
+    else if expect(input, Symbol::Surface) {
         if expect(input, Symbol::BlockOpen) {
 
             let material: Arc<dyn Material> =
@@ -769,6 +792,39 @@ fn parse_surface(input: &mut Input, texture: Box<dyn Texture>) -> Option<Arc<dyn
 
     // Lambertian is default
     Some(Arc::new(Lambertian::new(texture)))
+}
+
+
+fn parse_surface(input: &mut Input, texture: Arc<dyn Texture>) -> Option<Arc<dyn Material>> {
+
+    if expect(input, Symbol::Surface) {
+        if expect(input, Symbol::BlockOpen) {
+
+            let material: Arc<dyn Material> =
+                if expect_quiet(input, Symbol::Metallic) {
+
+                    if expect_quiet(input, Symbol::Diffuse) {
+                        println!("Line {}, parse_surface: using diffuse metal", input.current_line());
+                        let v = parse_float(input).unwrap();
+                        Arc::new(DiffuseMetal::new(v, texture))
+                    }
+                    else {
+                        println!("Line {}, parse_surface: using specular metal", input.current_line());
+                        Arc::new(Metal::new(texture))
+                    }
+                }
+                else {
+                    Arc::new(Lambertian::new(texture))
+                };
+            
+            expect(input, Symbol::BlockClose);
+            return Some(material);
+        }
+
+        // Lambertian is default
+        return Some(Arc::new(Lambertian::new(texture)));
+    }
+    None
 }
 
 

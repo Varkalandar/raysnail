@@ -11,6 +11,7 @@ pub(crate) mod lambertian;
 pub(crate) mod light;
 pub(crate) mod metal;
 pub(crate) mod blinn_phong;
+pub(crate) mod mixed_material;
 
 pub use {
     dielectric::{Dielectric, Glass},
@@ -19,6 +20,7 @@ pub use {
     light::DiffuseLight,
     metal::{Metal, DiffuseMetal},
     blinn_phong::BlinnPhong,
+    mixed_material::MixedMaterial,
 };
 
 

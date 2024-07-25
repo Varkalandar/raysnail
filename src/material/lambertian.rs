@@ -1,5 +1,6 @@
 use std::fmt::Formatter;
 use std::fmt::Debug;
+use std::sync::Arc;
 
 use crate::{
     hittable::HitRecord,
@@ -11,7 +12,7 @@ use crate::material::CommonMaterialSettings;
 
 
 pub struct Lambertian {
-    texture: Box<dyn Texture>,
+    texture: Arc<dyn Texture>,
     pub settings: CommonMaterialSettings,
 }
 
@@ -25,7 +26,7 @@ impl Debug for Lambertian {
 
 impl Lambertian {
     #[must_use]
-    pub fn new(texture: Box<dyn Texture>) -> Self {
+    pub fn new(texture: Arc<dyn Texture>) -> Self {
         Self {
             texture,
             settings: CommonMaterialSettings::new(),

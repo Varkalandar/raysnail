@@ -8,6 +8,7 @@ use crate::material::CommonMaterialSettings;
 
 use std::fmt::Formatter;
 use std::fmt::Debug;
+use std::sync::Arc;
 
 #[inline]
 fn reflect(ray: &Ray, hit: &HitRecord) -> Ray {
@@ -20,7 +21,7 @@ fn reflect(ray: &Ray, hit: &HitRecord) -> Ray {
 
 
 pub struct DiffuseMetal {
-    texture: Box<dyn Texture>,
+    texture: Arc<dyn Texture>,
     exponent: f64,
     settings: CommonMaterialSettings,
 }
@@ -39,7 +40,7 @@ impl DiffuseMetal {
      * Smaller exponent values are more diffuse. Can go up to several hundred
      */
     #[must_use]
-    pub fn new(exponent: f64, texture: Box<dyn Texture>) -> Self {
+    pub fn new(exponent: f64, texture: Arc<dyn Texture>) -> Self {
         Self {
             exponent,
             texture,
@@ -73,7 +74,7 @@ impl Material for DiffuseMetal {
 
 
 pub struct Metal {
-    texture: Box<dyn Texture>,
+    texture: Arc<dyn Texture>,
     settings: CommonMaterialSettings,
 }
 
@@ -87,7 +88,7 @@ impl Debug for Metal {
 
 impl Metal {
     #[must_use]
-    pub fn new(texture: Box<dyn Texture>) -> Self {
+    pub fn new(texture: Arc<dyn Texture>) -> Self {
         Self {
             texture,
             settings: CommonMaterialSettings::new(),
