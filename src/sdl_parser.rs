@@ -541,11 +541,16 @@ fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
                 if let Some(mat) = parse_texture(input) {
                     material = mat;
                 }
-                else if let Some(transform) = parse_object_modifiers(input) {
-                    tf_stack.push(transform);
-                }
                 else {
-                    break;
+                    let stack = parse_object_modifiers(input);
+                    if stack.len() > 0 {
+                        for transform in stack {
+                            tf_stack.push(transform);
+                        } 
+                    }
+                    else {
+                        break;
+                    }
                 }
             }
 
@@ -683,19 +688,36 @@ fn parse_intersection(input: &mut Input, scene: &mut SceneData) -> bool {
 }
 
 
-fn parse_object_modifiers(input: &mut Input) -> Option<Transform> {
+fn parse_object_modifiers(input: &mut Input) -> Vec<Transform> {
 
-    if let Some(v) = parse_translate(input) {
-        println!("parse_object_modifiers: translate ok");
-        return Some(Transform::translate(v));
-    }
-    else if let Some(v) = parse_rotate(input) {
-        println!("parse_object_modifiers: rotate ok {:?}", v);
-        return Some(Transform::rotate_by_y_axis(v.y * PI / 180.0));
-        // return Some(Transform::rotate_by_y_axis(0.0));
+    let mut stack = Vec::new();
+
+    loop {
+        if let Some(v) = parse_translate(input) {
+            println!("parse_object_modifiers: translate ok");
+            stack.push(Transform::translate(v));
+        }
+        else if let Some(v) = parse_rotate(input) {
+            println!("parse_object_modifiers: rotate ok {:?}", v);
+
+            if v.x != 0.0 {
+                stack.push(Transform::rotate_by_x_axis(v.x * PI / 180.0));
+            }
+
+            if v.y != 0.0 {
+                stack.push(Transform::rotate_by_y_axis(v.y * PI / 180.0));
+            }
+
+            if v.z != 0.0 {
+                stack.push(Transform::rotate_by_z_axis(v.z * PI / 180.0));
+            }
+        }
+        else {
+            break;
+        }
     }
 
-    None
+    stack
 }
 
 fn parse_texture(input: &mut Input) -> Option<Arc<dyn Material>> {

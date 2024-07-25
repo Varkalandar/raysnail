@@ -39,14 +39,14 @@ impl<T: Hittable> Hittable for TfFacade<T> {
 
     fn hit(&self, ray_in: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
     
-        let ray = Ray::new(self.stack.inv_tf_pos(&ray_in.origin), 
-                           self.stack.inv_tf_vec(&ray_in.direction), 
+        let ray = Ray::new(self.stack.inverse(&ray_in.origin, 1.0), 
+                           self.stack.inverse(&ray_in.direction, 0.0), 
                            ray_in.departure_time);
 
         self.object
             .hit(&ray, unit_limit)
             .map(|mut hit| {
-                hit.point = self.stack.tf_pos(&hit.point);
+                hit.point = self.stack.forward(&hit.point, 1.0);
 
                 hit
             })
@@ -71,7 +71,7 @@ impl<T: Hittable> Hittable for TfFacade<T> {
                                 let z =
                                     (k as f64).mul_add(bbox.max().z, (1 - k) as f64 * bbox.min().z);
 
-                                let tf_point = self.stack.tf_pos(&Point3::new(x, y, z));
+                                let tf_point = self.stack.forward(&Point3::new(x, y, z), 1.0);
 
                                 for c in 0..3 {
                                     point_min[c] = point_min[c].min(tf_point[c]);
@@ -89,11 +89,11 @@ impl<T: Hittable> Hittable for TfFacade<T> {
 
     fn contains(&self, point: &Vec3) -> bool
     {
-        self.object.contains(&self.stack.inv_tf_pos(point))
+        self.object.contains(&self.stack.inverse(point, 1.0))
     }
 
     fn random(&self, origin: &Point3, rng: &mut FastRng) -> Vec3 {
-        let r = self.object.random(&self.stack.inv_tf_pos(origin), rng);
+        let r = self.object.random(&self.stack.inverse(origin, 1.0), rng);
         r
     }
 }

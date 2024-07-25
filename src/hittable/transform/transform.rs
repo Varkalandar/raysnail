@@ -34,6 +34,25 @@ impl Transform {
         t
     }
 
+    pub fn rotate_by_x_axis(theta: f64) -> Self {
+
+        let sin = theta.sin();
+        let cos = theta.cos();
+
+        let mut m = mat4_id();
+
+        m[1][1] = cos;
+        m[1][2] = sin;
+        m[2][1] = -sin;
+        m[2][2] = cos;
+
+        let inv = mat4_inv(m);
+
+        let t = Transform {matrix: m, inverse: inv};
+
+        t
+    }
+
     pub fn rotate_by_y_axis(theta: f64) -> Self {
 
         let sin = theta.sin();
@@ -53,6 +72,24 @@ impl Transform {
         t
     }
 
+    pub fn rotate_by_z_axis(theta: f64) -> Self {
+
+        let sin = theta.sin();
+        let cos = theta.cos();
+
+        let mut m = mat4_id();
+
+        m[0][0] = cos;
+        m[0][1] = sin;
+        m[1][0] = -sin;
+        m[1][1] = cos;
+
+        let inv = mat4_inv(m);
+
+        let t = Transform {matrix: m, inverse: inv};
+
+        t
+    }
 }
 
 
@@ -77,56 +114,31 @@ impl TransformStack {
         self.stack.len()
     }
 
-    pub fn tf_vec(&self, pos: &Vec3) -> Vec3 {
-        if self.stack.len() > 0 {
-            let v4 = [pos.x, pos.y, pos.z, 0.0];
-            let r = row_mat4_transform(self.stack[0].matrix, v4);
+    pub fn forward(&self, pos: &Vec3, w: f64) -> Vec3 {
+        let mut result = pos.clone();
 
-            Vec3::new(r[0], r[1], r[2])
+        for transform in &self.stack {
+            let v4 = [result.x, result.y, result.z, w];
+            let r = row_mat4_transform(transform.matrix, v4);
+
+            result = Vec3::new(r[0], r[1], r[2])
         }
-        else {
-            pos.clone()
-        }
+
+        result
     }
 
-    pub fn tf_pos(&self, pos: &Vec3) -> Vec3 {
-        if self.stack.len() > 0 {
-            let v4 = [pos.x, pos.y, pos.z, 1.0];
-            let r = row_mat4_transform(self.stack[0].matrix, v4);
+    pub fn inverse(&self, pos: &Vec3, w: f64) -> Vec3 {
+        let mut result = pos.clone();
 
-            Vec3::new(r[0], r[1], r[2])
+        for transform in self.stack.iter().rev() {
+            let v4 = [result.x, result.y, result.z, w];
+            let r = row_mat4_transform(transform.inverse, v4);
+
+            result = Vec3::new(r[0], r[1], r[2])
         }
-        else {
-            pos.clone()
-        }
+
+        result
     }
-
-    pub fn inv_tf_vec(&self, pos: &Vec3) -> Vec3 {
-
-        if self.stack.len() > 0 {
-            let v4 = [pos.x, pos.y, pos.z, 0.0];
-            let r = row_mat4_transform(self.stack[0].inverse, v4);
-
-            Vec3::new(r[0], r[1], r[2])
-        }
-        else {
-            pos.clone()
-        }
-    }
-
-    pub fn inv_tf_pos(&self, pos: &Vec3) -> Vec3 {
-
-        if self.stack.len() > 0 {
-            let v4 = [pos.x, pos.y, pos.z, 1.0];
-            let r = row_mat4_transform(self.stack[0].inverse, v4);
-
-            Vec3::new(r[0], r[1], r[2])
-        }
-        else {
-            pos.clone()
-        }
-    }
-
 }
 
 #[cfg(test)]
