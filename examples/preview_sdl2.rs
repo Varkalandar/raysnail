@@ -245,28 +245,28 @@ fn render_time_test(width: usize, height: usize,
 /*
     world.add(Intersection::new(
         Box::new(Quadric::new(1.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0,
-                     Arc::new(Lambertian::new(Box::new(Color::new(0.3, 0.7, 0.2, 1.0)))))),
+                     Arc::new(Lambertian::new(Arc::new(Color::new(0.3, 0.7, 0.2, 1.0)))))),
         Box::new(GeometryBox::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0),
-                         Arc::new(Lambertian::new(Box::new(Color::new(0.7, 0.3, 0.2, 1.0)))))),
+                         Arc::new(Lambertian::new(Arc::new(Color::new(0.7, 0.3, 0.2, 1.0)))))),
         )             
     );
 */
 
 /*
     world.add(GeometryBox::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0),
-        Arc::new(Lambertian::new(Box::new(Color::new(0.8, 0.4, 0.3, 1.0))))));
+        Arc::new(Lambertian::new(Arc::new(Color::new(0.8, 0.4, 0.3, 1.0))))));
 */
 /*
     world.add(Sphere::new(Point3::new(0.0, 0.0, 0.0), 1.35, 
-        Arc::new(Lambertian::new(Box::new(Color::new(0.4, 0.8, 0.3, 1.0))))));
+        Arc::new(Lambertian::new(Arc::new(Color::new(0.4, 0.8, 0.3, 1.0))))));
 */
 
 
     world.add(Intersection::new(
         Box::new(Sphere::new(Point3::new(0.0, 0.0, 0.0), 1.35, 
-                    Arc::new(Lambertian::new(Box::new(Color::new(0.1, 0.2, 0.7, 1.0)))))),
+                    Arc::new(Lambertian::new(Arc::new(Color::new(0.1, 0.2, 0.7, 1.0)))))),
         Box::new(GeometryBox::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0),
-                        Arc::new(Lambertian::new(Box::new(Color::new(0.8, 0.6, 0.3, 1.0)))))),
+                        Arc::new(Lambertian::new(Arc::new(Color::new(0.8, 0.6, 0.3, 1.0)))))),
         )             
     );
 
@@ -274,7 +274,7 @@ fn render_time_test(width: usize, height: usize,
     // Cone Y
     //                     A    B    C    D    E    F    G    H    I    J 
     world.add(Quadric::new(1.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0,
-        // Arc::new(Lambertian::new(Box::new(Color::new(0.3, 0.3, 0.3, 1.0)))),
+        // Arc::new(Lambertian::new(Arc::new(Color::new(0.3, 0.3, 0.3, 1.0)))),
         Arc::new(Dielectric::new(Color::new(0.3, 0.5, 0.8, 1.0), 0.9)),
     ));
     */
@@ -283,21 +283,21 @@ fn render_time_test(width: usize, height: usize,
     // Cone Z
     //                     A    B    C    D    E    F    G    H    I    J 
     world.add(Quadric::new(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0,
-        Arc::new(Lambertian::new(Box::new(Color::new(0.3, 0.3, 0.3, 1.0)))),
+        Arc::new(Lambertian::new(Arc::new(Color::new(0.3, 0.3, 0.3, 1.0)))),
     ));
     */
     /*
     // Cylinder Z
     //                     A    B    C    D    E    F    G    H    I    J 
     world.add(Quadric::new(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, -1.0,
-        Arc::new(Lambertian::new(Box::new(Color::new(0.3, 0.4, 0.3, 1.0)))),
+        Arc::new(Lambertian::new(Arc::new(Color::new(0.3, 0.4, 0.3, 1.0)))),
     ));
     */
 
     world.add(GeometryBox::new(
         Vec3::new(-1000.0, -2.0, -1000.0),
         Vec3::new(1000.0, -1.0, 1000.0),
-        Arc::new(Lambertian::new(Box::new(Checker::new(
+        Arc::new(Lambertian::new(Arc::new(Checker::new(
             Color::new(0.3, 0.3, 0.3, 1.0),
             Color::new(0.1, 0.1, 0.1, 1.0),
             3.0,
@@ -352,7 +352,7 @@ fn render_raymarching_test(width: usize, height: usize,
     world.add(rs);
 
     // let color = Color::new(0.8, 0.8, 0.8, 1.0);
-    let color = Box::new(Color::new(0.5, 0.5, 0.5, 1.0));
+    let color = Arc::new(Color::new(0.5, 0.5, 0.5, 1.0));
     let mut material = Lambertian::new(color);
     material.settings.phong_factor = 4.0;
     material.settings.phong_exponent = 2;
@@ -363,11 +363,11 @@ fn render_raymarching_test(width: usize, height: usize,
     world.add(Sphere::new(
         Point3::new(0.0, -1002.0, 0.0),
         1000.0,
-        Arc::new(DiffuseMetal::new(800.0, Checker::new(
+        Arc::new(DiffuseMetal::new(800.0, Arc::new(Checker::new(
             Color::new(0.26, 0.3, 0.16, 1.0),
             Color::new(0.1, 0.1, 0.1, 1.0),
             10.0,
-        )))
+        ))))
     ));
 
     fn background(ray: &Ray) -> Color {
@@ -450,7 +450,7 @@ fn render_object_test(width: usize, height: usize,
     world.add(rs);
 
     // let color = Color::new(0.8, 0.8, 0.8, 1.0);
-    let color = Box::new(Color::new(0.87, 0.25, 0.1, 1.0));
+    let color = Arc::new(Color::new(0.87, 0.25, 0.1, 1.0));
     let mut material = Lambertian::new(color);
     material.settings.phong_factor = 4.0;
     material.settings.phong_exponent = 4;
@@ -472,7 +472,7 @@ fn render_object_test(width: usize, height: usize,
             Point3::new(0.0, -1000.0, 0.0),
             1000.0,
             // Arc::new(DiffuseMetal::new(2000.0, Color::new(0.08, 0.1, 0.06, 1.0)))
-            Arc::new(Metal::new(Color::new(0.08, 0.1, 0.06, 1.0)))
+            Arc::new(Metal::new(Arc::new(Color::new(0.08, 0.1, 0.06, 1.0))))
     ));
 
     fn background(ray: &Ray) -> Color {
