@@ -10,23 +10,23 @@ use std::fmt::Formatter;
 use std::fmt::Debug;
 use once_cell::sync::OnceCell;
 
-pub struct TfFacade<T> {
-    object: T,
+pub struct TfFacade {
+    object: Box<dyn Hittable>,
     stack: TransformStack,
     bbox_cache: OnceCell<Option<AABB>>,
 }
 
-impl<T: std::fmt::Debug> Debug for TfFacade<T> {
+impl Debug for TfFacade {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
-            "TfFacade {{ object: {:?}, tf_stack: {} }}",
-            self.object, self.stack.len(),
+            "TfFacade {{ object: ?, tf_stack: {} }}",
+            self.stack.len(),
         ))
     }
 }
 
-impl<T> TfFacade<T> {
-    pub const fn new(object: T, stack: TransformStack) -> Self {
+impl TfFacade {
+    pub const fn new(object: Box<dyn Hittable>, stack: TransformStack) -> Self {
         Self { 
             object,
             stack,
@@ -35,7 +35,7 @@ impl<T> TfFacade<T> {
     }
 }
 
-impl<T: Hittable> Hittable for TfFacade<T> {
+impl Hittable for TfFacade {
 
     fn hit(&self, ray_in: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {
     

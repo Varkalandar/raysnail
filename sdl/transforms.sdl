@@ -5,8 +5,8 @@
 //
 
 camera {
-	location <6.0, 1.0, 2.5>  // the location of the camera
-	look_at <0, -0.8, 0>      // where the camera is aimed at
+	location <6.0, 1.2, 2.5>  // the location of the camera
+	look_at <0, -0.3, 0>      // where the camera is aimed at
 	angle 50
 }
 

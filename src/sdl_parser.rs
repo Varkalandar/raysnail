@@ -6,6 +6,8 @@ use std::collections::HashMap;
 use crate::prelude::Vec3;
 use crate::prelude::Color;
 use crate::prelude::PI;
+
+use crate::hittable::Hittable;
 use crate::hittable::transform::Transform;
 use crate::hittable::transform::TransformStack;
 use crate::hittable::transform::TfFacade;
@@ -14,11 +16,13 @@ use crate::hittable::Box as GeometryBox;
 use crate::hittable::collection::HittableList;
 use crate::hittable::csg::Difference;
 use crate::hittable::Intersection;
+
 use crate::material::Material;
 use crate::material::Lambertian;
 use crate::material::Metal;
 use crate::material::DiffuseMetal;
 use crate::material::MixedMaterial;
+
 use crate::texture::Checker;
 use crate::texture::Texture;
 
@@ -507,10 +511,13 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
                     Arc::new(Lambertian::new(Arc::new(Color::new(1.0, 1.0, 1.0, 1.0))))
                 };
 
-            let sphere = Sphere::new(v, r, material);
+            let sphere = Box::new(Sphere::new(v, r, material));
+
+            let stack = parse_object_modifiers(input);
 
             println!("parse_sphere: ok -> {:?}", sphere);
-            scene.hittables.add(sphere);
+
+            scene.hittables.add_ref(build_transform_facade(stack, sphere));
 
             expect(input, Symbol::BlockClose);
 
@@ -535,30 +542,18 @@ fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
             let v2 = parse_vector(input).unwrap();
 
             let mut material: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::new(Color::new(1.0, 1.0, 1.0, 1.0))));
-            let mut tf_stack = TransformStack::new();
+            let mut stack = TransformStack::new();
 
-            loop {
-                if let Some(mat) = parse_texture(input) {
-                    material = mat;
-                }
-                else {
-                    let stack = parse_object_modifiers(input);
-                    if stack.len() > 0 {
-                        for transform in stack {
-                            tf_stack.push(transform);
-                        } 
-                    }
-                    else {
-                        break;
-                    }
-                }
+            if let Some(mat) = parse_texture(input) {
+                material = mat;
             }
 
-            let gbox = GeometryBox::new(v1, v2, material);
+            stack = parse_object_modifiers(input);
+
+            let gbox = Box::new(GeometryBox::new(v1, v2, material));
             println!("parse_box: ok -> {:?}", gbox);
 
-            let object = TfFacade::new(gbox, tf_stack);
-            scene.hittables.add(object);
+            scene.hittables.add_ref(build_transform_facade(stack, gbox));
 
             expect(input, Symbol::BlockClose);
 
@@ -598,9 +593,11 @@ fn parse_difference(input: &mut Input, scene: &mut SceneData) -> bool {
                         let minus = objects.remove(1);
                         let plus = objects.remove(0);
 
-                        let diff = Difference::new(plus, minus);
+                        let difference = Box::new(Difference::new(plus, minus));
 
-                        scene.hittables.add(diff);
+                        let stack = parse_object_modifiers(input);
+
+                        scene.hittables.add_ref(build_transform_facade(stack, difference));
 
                         println!("Line {}, parse_difference -> ok", input.current_line());
 
@@ -654,12 +651,11 @@ fn parse_intersection(input: &mut Input, scene: &mut SceneData) -> bool {
                         let o2 = objects.remove(1);
                         let o1 = objects.remove(0);
 
-                        let intersection = Intersection::new(o1, o2);
+                        let intersection = Box::new(Intersection::new(o1, o2));
 
-                        scene.hittables.add(intersection);
-
-                        // scene.hittables.add_ref(o1);
-                        // scene.hittables.add_ref(o2);
+                        let stack = parse_object_modifiers(input);
+            
+                        scene.hittables.add_ref(build_transform_facade(stack, intersection));
 
                         println!("Line {}, parse_intersection -> ok", input.current_line());
 
@@ -688,9 +684,19 @@ fn parse_intersection(input: &mut Input, scene: &mut SceneData) -> bool {
 }
 
 
-fn parse_object_modifiers(input: &mut Input) -> Vec<Transform> {
+fn build_transform_facade(stack: TransformStack, hittable: Box<dyn Hittable>) ->  Box<dyn Hittable> {
 
-    let mut stack = Vec::new();
+    if stack.len() > 0 {
+        return Box::new(TfFacade::new(hittable, stack))
+    }
+
+    hittable
+}
+
+
+fn parse_object_modifiers(input: &mut Input) -> TransformStack {
+
+    let mut stack = TransformStack::new();
 
     loop {
         if let Some(v) = parse_translate(input) {
