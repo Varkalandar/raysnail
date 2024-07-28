@@ -90,6 +90,23 @@ impl Transform {
 
         t
     }
+
+
+    pub fn scale(t: Vec3) -> Self {
+        let mut m = mat4_id();
+
+        m[0][0] = t.x;
+        m[1][1] = t.y;
+        m[2][2] = t.z;
+        m[3][3] = 1.0;
+
+        let inv = mat4_inv(m);
+
+        let t = Transform {matrix: m, inverse: inv};
+
+        t
+    }
+
 }
 
 

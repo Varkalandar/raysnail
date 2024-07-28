@@ -123,6 +123,7 @@ enum Symbol {
 
     Translate,
     Rotate,
+    Scale,
 
     Texture,
     Pigment,
@@ -201,6 +202,7 @@ fn build_symbol_map() -> HashMap<String, Symbol> {
 
     map.insert("translate".to_string(), Symbol::Translate);
     map.insert("rotate".to_string(), Symbol::Rotate);
+    map.insert("scale".to_string(), Symbol::Scale);
 
     map.insert("+".to_string(), Symbol::Plus);
     map.insert("-".to_string(), Symbol::Minus);
@@ -718,6 +720,10 @@ fn parse_object_modifiers(input: &mut Input) -> TransformStack {
                 stack.push(Transform::rotate_by_z_axis(v.z * PI / 180.0));
             }
         }
+        else if let Some(v) = parse_scale(input) {
+            println!("parse_object_modifiers: scale ok {:?}", v);
+            stack.push(Transform::scale(v));
+        }
         else {
             break;
         }
@@ -905,6 +911,26 @@ fn parse_rotate(input: &mut Input) -> Option<Vec3> {
         }
         else {
             println!("Line {}, parse_rotate: expected vector, found '{}'", input.current_line(), input.current_text());
+        }
+    }
+
+    None
+}
+
+
+fn parse_scale(input: &mut Input) -> Option<Vec3> {
+
+    println!("parse_scale: called");
+
+    if expect_quiet(input, Symbol::Scale) {
+        if let Some(v) = parse_vector(input) {
+            return Some(v);
+        }
+        else if let Some(v) = parse_float(input) {
+            return Some(Vec3::new(v, v, v));
+        }
+        else {
+            println!("Line {}, parse_scale: expected float or vector, found '{}'", input.current_line(), input.current_text());
         }
     }
 
