@@ -52,4 +52,11 @@ impl Material for Lambertian {
     fn settings(&self) -> CommonMaterialSettings {
         self.settings.clone()
     }
+
+    fn set(&mut self, settings: CommonMaterialSettings) {
+
+        println!("lambertian.set(), settings={{phong: {}, phong_size: {}}}", settings.phong_factor, settings.phong_exponent);
+
+        self.settings = settings;
+    }
 }

@@ -95,4 +95,8 @@ impl Material for Dielectric {
     fn settings(&self) -> CommonMaterialSettings {
         self.settings.clone()
     }
+
+    fn set(&mut self, settings: CommonMaterialSettings) {
+        self.settings = settings;
+    }
 }

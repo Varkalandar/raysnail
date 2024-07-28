@@ -45,7 +45,7 @@ pub struct CommonMaterialSettings {
 }
 
 impl CommonMaterialSettings {
-    fn new() -> CommonMaterialSettings {
+    pub fn new() -> CommonMaterialSettings {
         CommonMaterialSettings {
             phong_factor: 0.0,
             phong_exponent: 1,
@@ -65,6 +65,10 @@ pub trait Material: Send + Sync {
     }
 
     fn settings(&self) -> CommonMaterialSettings;
+
+    fn set(&mut self, settings: CommonMaterialSettings) {
+
+    }
 }
 
 

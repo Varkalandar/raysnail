@@ -70,6 +70,10 @@ impl Material for DiffuseMetal {
     fn settings(&self) -> CommonMaterialSettings {
         self.settings.clone()
     }
+
+    fn set(&mut self, settings: CommonMaterialSettings) {
+        self.settings = settings;
+    }
 }
 
 
@@ -115,5 +119,9 @@ impl Material for Metal {
 
     fn settings(&self) -> CommonMaterialSettings {
         self.settings.clone()
+    }
+
+    fn set(&mut self, settings: CommonMaterialSettings) {
+        self.settings = settings;
     }
 }

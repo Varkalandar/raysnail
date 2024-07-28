@@ -18,6 +18,7 @@ use crate::hittable::csg::Difference;
 use crate::hittable::Intersection;
 
 use crate::material::Material;
+use crate::material::CommonMaterialSettings;
 use crate::material::Lambertian;
 use crate::material::Metal;
 use crate::material::DiffuseMetal;
@@ -136,6 +137,8 @@ enum Symbol {
     Rgb,
     Angle,
     Diffuse,
+    Phong,
+    PhongSize,
 
     Checker,
     
@@ -199,6 +202,8 @@ fn build_symbol_map() -> HashMap<String, Symbol> {
     map.insert("checker".to_string(), Symbol::Checker);
     map.insert("angle".to_string(), Symbol::Angle);
     map.insert("diffuse".to_string(), Symbol::Diffuse);
+    map.insert("phong".to_string(), Symbol::Phong);
+    map.insert("phong_size".to_string(), Symbol::PhongSize);
 
     map.insert("translate".to_string(), Symbol::Translate);
     map.insert("rotate".to_string(), Symbol::Rotate);
@@ -782,20 +787,46 @@ fn parse_finish(input: &mut Input, texture: Arc<dyn Texture>) -> Option<Arc<dyn 
     if expect(input, Symbol::Finish) {
         if expect(input, Symbol::BlockOpen) {
 
-            let mut material: Arc<dyn Material> = Arc::new(Lambertian::new(texture.clone()));
+            let mut phong = 0.0;
+            let mut phong_size = 40.0;
+            let mut reflection = 0.0;
 
-            if expect_quiet(input, Symbol::Reflection) {
-                let v = parse_float(input).unwrap();
-
-                let metal = Arc::new(Metal::new(texture));
-
-                println!("Line {}, parse_finish: using mixed material, reflection={}",
-                         input.current_line(), v);
-                
-                material = Arc::new(MixedMaterial::new(metal, material, v));
+            loop {
+                if expect_quiet(input, Symbol::Reflection) {
+                    reflection = parse_float(input).unwrap();
+                }
+                else if expect_quiet(input, Symbol::Phong) {
+                    phong = parse_float(input).unwrap();
+                }
+                else if expect_quiet(input, Symbol::PhongSize) {
+                    phong_size = parse_float(input).unwrap();
+                }
+                else {
+                    break;
+                }
             }
-            
             expect(input, Symbol::BlockClose);
+
+            let material: Arc<dyn Material> =
+                if reflection == 0.0 {
+                    let mut lambertian = Lambertian::new(texture);
+                    lambertian.set(settings(phong, phong_size));
+
+                    Arc::new(lambertian)
+                }
+                else {
+                    let mut lambertian = Lambertian::new(texture.clone());
+                    lambertian.set(settings(phong, phong_size));
+
+                    let mut metal = Metal::new(texture);
+                    metal.set(settings(phong, phong_size));
+
+                    println!("Line {}, parse_finish: using mixed material, reflection={}",
+                            input.current_line(), reflection);
+
+                    Arc::new(MixedMaterial::new(Arc::new(metal), Arc::new(lambertian), reflection))
+                };
+
             return Some(material);
         }
     }
@@ -828,6 +859,17 @@ fn parse_finish(input: &mut Input, texture: Arc<dyn Texture>) -> Option<Arc<dyn 
     Some(Arc::new(Lambertian::new(texture)))
 }
 
+
+fn settings(phong_factor: f64, phong_exponent: f64) -> CommonMaterialSettings {
+    let mut settings = CommonMaterialSettings::new();
+    
+    if phong_factor > 0.0 {
+        settings.phong_factor = phong_factor * 4.0;
+        settings.phong_exponent = (phong_exponent * 0.1) as i32;
+    }
+
+    settings
+}
 
 fn parse_surface(input: &mut Input, texture: Arc<dyn Texture>) -> Option<Arc<dyn Material>> {
 

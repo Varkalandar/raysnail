@@ -20,9 +20,8 @@ sphere {
 	<0, 0, 0>, 1
 
 	texture {
-		pigment {
-			color rgb <0.7, 0.3, 0.1>
-		}
+		pigment { color rgb <0.7, 0.3, 0.1> }
+		finish { phong 0.2 phong_size 40 }
 	}
 
 	scale <0.666, 1, 0.5>
