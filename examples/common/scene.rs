@@ -4,7 +4,6 @@ use {
         hittable::{
             collection::{HittableList, BVH},
             medium::ConstantMedium,
-            transform::{AARotation, ByYAxis, Translation},
             AARect, AARectMetrics, Box as GeometryBox, Sphere,
         },
         material::{Dielectric, DiffuseLight, Glass, Lambertian, Metal},
@@ -15,9 +14,11 @@ use {
 };
 
 use raysnail::material::Material;
-use raysnail::hittable::transform::ByXAxis;
 use raysnail::material::BlinnPhong;
 use raysnail::material::DiffuseMetal;
+use raysnail::hittable::transform::Transform;
+use raysnail::hittable::transform::TransformStack;
+use raysnail::hittable::transform::TfFacade;
 
 fn add_small_balls(world: &mut HittableList, rng: &mut SeedRandom, bounce_height: f64, need_speed: bool) {
     let small_ball_radius = 0.2;
@@ -79,6 +80,14 @@ fn add_box(world: &mut HittableList, material: Arc<dyn Material>, center: &Vec3,
 
     let height = 0.2 + rng.normal() * bounce_height;
 
+    let mut tf_stack = TransformStack::new();
+
+    tf_stack.push(Transform::rotate_by_x_axis(rng.normal() * 180.0));
+    tf_stack.push(Transform::rotate_by_y_axis(rng.normal() * 180.0));
+    tf_stack.push(Transform::translate(Vec3::new(center.x, height, center.z)));
+    world.add(TfFacade::new(Box::new(GeometryBox::new(-size.clone(), size, material)), tf_stack));
+
+    /*
     let o = 
         AARotation::<ByXAxis, _>::new(GeometryBox::new(-size.clone(), size, material),
                                       rng.normal() * 180.0);
@@ -90,6 +99,7 @@ fn add_box(world: &mut HittableList, material: Arc<dyn Material>, center: &Vec3,
         Translation::new(o, Vec3::new(center.x, height, center.z));
 
     world.add(o);
+    */
 }
 
 fn add_small_boxes(world: &mut HittableList, rng: &mut SeedRandom, bounce_height: f64) {
@@ -257,6 +267,25 @@ pub fn cornell_box_scene(
 
     if carton {
         if carton_rotation {
+            let mut tf_stack = TransformStack::new();
+            tf_stack.push(Transform::rotate_by_y_axis(-18.0));
+            tf_stack.push(Transform::translate(Vec3::new(130.0, 0.0, 65.0)));
+            let box1 = TfFacade::new(Box::new(
+                GeometryBox::new(
+                    Point3::new(0.0, 0.0, 0.0),
+                    Point3::new(165.0, 165.0, 165.0),
+                    white.clone())), tf_stack);
+
+            let mut tf_stack = TransformStack::new();
+            tf_stack.push(Transform::rotate_by_y_axis(15.0));
+            tf_stack.push(Transform::translate(Vec3::new(265.0, 0.0, 295.0)));
+            let box2 = TfFacade::new(Box::new(
+                GeometryBox::new(
+                    Point3::new(0.0, 0.0, 0.0),
+                    Point3::new(165.0, 330.0, 165.0),
+                    white.clone())), tf_stack);
+        
+/*
             let box1 = Translation::new(
                 AARotation::<ByYAxis, _>::new(
                     GeometryBox::new(
@@ -279,6 +308,7 @@ pub fn cornell_box_scene(
                 ),
                 Vec3::new(265.0, 0.0, 295.0),
             );
+*/            
             if smoke {
                 let box1 = ConstantMedium::new(box1, Color::new(1.0, 1.0, 1.0, 1.0), 0.01);
                 let box2 = ConstantMedium::new(box2, Color::new(0.0, 0.0, 0.0, 1.0), 0.01);
@@ -426,10 +456,19 @@ pub fn all_feature_scene(seed: Option<u64>) -> (Camera, HittableList) {
         ));
     }
 
+    {
+        let mut tf_stack = TransformStack::new();
+        tf_stack.push(Transform::rotate_by_y_axis(15.0));
+        tf_stack.push(Transform::translate(Vec3::new(-100.0, 270.0, 395.0)));
+        let rotation = TfFacade::new(Box::new(BVH::new(boxes2, &time_limit)), tf_stack);
+    }
+
+    /*
     objects.add(Translation::new(
         AARotation::<ByYAxis, _>::new(BVH::new(boxes2, &time_limit), 15.0),
         Vec3::new(-100.0, 270.0, 395.0),
     ));
+    */
 
     let camera = CameraBuilder::default()
         .look_from(Point3::new(478.0, 278.0, -600.0))
