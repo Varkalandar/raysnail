@@ -13,6 +13,7 @@ use crate::hittable::transform::TransformStack;
 use crate::hittable::transform::TfFacade;
 use crate::hittable::Sphere;
 use crate::hittable::Box as GeometryBox;
+use crate::hittable::geometry::Quadric;
 use crate::hittable::collection::HittableList;
 use crate::hittable::csg::Difference;
 use crate::hittable::Intersection;
@@ -103,6 +104,7 @@ enum Symbol {
     LookAt,
     Sphere,
     Box,
+    Quadric,
     Light,
 
     Intersection,
@@ -188,6 +190,7 @@ fn build_symbol_map() -> HashMap<String, Symbol> {
     map.insert(",".to_string(), Symbol::Comma);
     map.insert("sphere".to_string(), Symbol::Sphere);
     map.insert("box".to_string(), Symbol::Box);
+    map.insert("quadric".to_string(), Symbol::Quadric);
     map.insert("light".to_string(), Symbol::Light);
 
     map.insert("texture".to_string(), Symbol::Texture);
@@ -380,6 +383,8 @@ fn parse_statement(input: &mut Input, scene: &mut SceneData) -> bool {
     }
     else if parse_box(input, scene) {
     }
+    else if parse_quadric(input, scene) {
+    }
     else if parse_difference(input, scene) {
     }
     else if parse_intersection(input, scene) {
@@ -538,6 +543,7 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
     false
 }
 
+
 fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
 
     println!("Line {}, parse_box: called, current symbol is {:?}", input.current_line(), input.current_text());
@@ -561,6 +567,49 @@ fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
             println!("parse_box: ok -> {:?}", gbox);
 
             scene.hittables.add_ref(build_transform_facade(stack, gbox));
+
+            expect(input, Symbol::BlockClose);
+
+            return true;
+        }
+        else {
+            println!("Line {}, parse_box: expected {{, found {}", input.current_line(), input.current_text());
+        }
+    }
+
+    false
+}
+
+
+fn parse_quadric(input: &mut Input, scene: &mut SceneData) -> bool {
+
+    println!("Line {}, parse_quadric: called, current symbol is {:?}", input.current_line(), input.current_text());
+
+    if expect_quiet(input, Symbol::Quadric) {
+        if expect(input, Symbol::BlockOpen) {
+            let v1 = parse_vector(input).unwrap();
+            expect(input, Symbol::Comma);
+            let v2 = parse_vector(input).unwrap();
+            expect(input, Symbol::Comma);
+            let v3 = parse_vector(input).unwrap();
+            expect(input, Symbol::Comma);
+            let j = parse_expression(input).unwrap();
+
+            let mut material: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::new(Color::new(1.0, 1.0, 1.0, 1.0))));
+
+            if let Some(mat) = parse_texture(input) {
+                material = mat;
+            }
+
+            let mut stack = parse_object_modifiers(input);
+
+            let quadric = 
+                Quadric::new(v1.x, v2.x, v2.y, v3.x, v1.y, v2.z, v3.y, v1.z, v3.z, j,
+                             material);
+
+            println!("parse_quadric: ok -> {:?}", quadric);
+
+            scene.hittables.add_ref(build_transform_facade(stack, Box::new(quadric)));
 
             expect(input, Symbol::BlockClose);
 

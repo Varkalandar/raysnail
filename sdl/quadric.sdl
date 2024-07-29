@@ -1,0 +1,111 @@
+//
+// quadric.sdl
+// 
+// Example file for quadric shapes (displayed as intersections
+// with the unit cube)
+//
+
+camera {
+	location <10.0, 2.0, 4.0>  // the location of the camera
+	look_at <0, -0.5, 1.0>     // where the camera is aimed at
+	angle 40
+}
+
+light {
+	<50.0, 200.0, 200.0>,
+	color rgb <1, 0.9, 0.7>
+}
+
+//
+// quadric parabolid along y axis
+//
+intersection {
+	quadric {
+		<1,  0,  1>, <0,  0,  0>, <0, -1,  0>, 0
+		texture { pigment { color rgb <0.8, 0.7, 0.5> } }
+	}
+	box {
+		<-1, -1, -1>,
+		<1, 1, 1>
+		texture { pigment { color rgb <0.8, 0.7, 0.5> } }
+	}
+	translate <1, -1, 4>
+}
+
+//
+// quadric cone along y axis
+//
+intersection {
+	quadric {
+		<1.0, -1.0, 1.0>, <0, 0, 0>, <0, 0, 0>, 0
+		texture { pigment { color rgb <0.7, 0.8, 0.5> } }
+	}
+	box {
+		<-1, -1, -1>,
+		<1, 1, 1>
+		texture { pigment { color rgb <0.7, 0.8, 0.5> } }
+	}
+	translate <-1, 0, 2>
+}
+
+//
+// quadric cylinder along y axis
+//
+intersection {
+
+	quadric {
+		<1.0, 0, 1.0>, <0, 0, 0>, <0, 0, 0>, -1.0
+
+		texture { pigment { color rgb <0.5, 0.8, 0.7> } }
+	}
+	box {
+		<-1, -1, -1>,
+		<1, 1, 1>
+
+		texture { pigment { color rgb <0.5, 0.8, 0.7> } }
+	}
+
+	translate <1, 0, 0>
+}
+
+
+//
+// quadric hyperboloid along y axis
+//
+intersection {
+
+	quadric {
+		<1.0, -1.0, 1.0>, <0, 0, 0>, <0, 0, 0>, -1.0
+		texture { pigment { color rgb <0.4, 0.6, 0.8> } }
+	}
+	box {
+		<-2, -1, -2>,
+		<2, 1, 2>
+		texture { pigment { color rgb <0.4, 0.6, 0.8> } }
+	}
+
+	translate <-1, 0, -4>
+}
+
+
+box {
+	<-3.5, -1.2, -8>,
+	<3.5, -1, 6>
+
+	texture {
+		pigment {
+			checker
+			color rgb <0.3, 0.3, 0.3>,
+			color rgb <0.01, 0.01, 0.01>
+		}
+	}
+}
+
+
+sphere {
+	<0, -10002, 0>, 10000
+
+	texture {
+		pigment { color rgb <0.07, 0.06, 0.05> }
+	}
+}
