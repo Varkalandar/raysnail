@@ -20,6 +20,9 @@ I want to implement at least partial support for the [PovRay] scene definition l
 
 As a fan of 3D fractals I'd like to implement some fractal rendering code. At the moment there is a crude implmentation of the mandelbulb, which renders only very low quality, but it can serve as a proof of concept that iut is possible to use the raysnail code to render 3D fractals. Maybe it requires a different frontend though.
 
+Please check the Wiki for a full list of features and plans:
+https://github.com/Varkalandar/raysnail/wiki
+
 ## Run
 
 If you have installed Rust and Cargo, an easy way to run the raysnail is this command: 
