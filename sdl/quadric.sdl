@@ -22,13 +22,13 @@ light {
 intersection {
 	quadric {
 		<1,  0,  1>, <0,  0,  0>, <0, -1,  0>, 0
-		texture { pigment { color rgb <0.8, 0.7, 0.5> } }
 	}
 	box {
 		<-1, -1, -1>,
 		<1, 1, 1>
-		texture { pigment { color rgb <0.8, 0.7, 0.5> } }
 	}
+
+	texture { pigment { color rgb <0.8, 0.7, 0.5> } }
 	translate <1, -1, 4>
 }
 
@@ -38,13 +38,13 @@ intersection {
 intersection {
 	quadric {
 		<1.0, -1.0, 1.0>, <0, 0, 0>, <0, 0, 0>, 0
-		texture { pigment { color rgb <0.7, 0.8, 0.5> } }
 	}
 	box {
 		<-1, -1, -1>,
 		<1, 1, 1>
-		texture { pigment { color rgb <0.7, 0.8, 0.5> } }
 	}
+
+	texture { pigment { color rgb <0.7, 0.8, 0.5> } }
 	translate <-1, 0, 2>
 }
 
@@ -55,16 +55,13 @@ intersection {
 
 	quadric {
 		<1.0, 0, 1.0>, <0, 0, 0>, <0, 0, 0>, -1.0
-
-		texture { pigment { color rgb <0.5, 0.8, 0.7> } }
 	}
 	box {
 		<-1, -1, -1>,
 		<1, 1, 1>
-
-		texture { pigment { color rgb <0.5, 0.8, 0.7> } }
 	}
 
+	texture { pigment { color rgb <0.5, 0.8, 0.7> } }
 	translate <1, 0, 0>
 }
 
@@ -76,14 +73,13 @@ intersection {
 
 	quadric {
 		<1.0, -1.0, 1.0>, <0, 0, 0>, <0, 0, 0>, -1.0
-		texture { pigment { color rgb <0.4, 0.6, 0.8> } }
 	}
 	box {
 		<-2, -1, -2>,
 		<2, 1, 2>
-		texture { pigment { color rgb <0.4, 0.6, 0.8> } }
 	}
 
+	texture { pigment { color rgb <0.4, 0.6, 0.8> } }
 	translate <-1, 0, -4>
 }
 

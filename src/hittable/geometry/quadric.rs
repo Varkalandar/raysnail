@@ -30,7 +30,7 @@ pub struct Quadric {
     qi: f64,
     qj: f64,
 
-    material: Arc<dyn Material>,
+    material: Option<Arc<dyn Material>>,
 }
 
 impl Debug for Quadric {
@@ -53,7 +53,7 @@ impl Quadric {
            qh: f64,
            qi: f64,
            qj: f64,
-            material: Arc<dyn Material>
+           material: Option<Arc<dyn Material>>
     ) -> Self {
         Quadric {
             qa, qb, qc, qd, qe, qf, qg, qh, qi, qj, material            
@@ -100,7 +100,7 @@ impl Hittable for Quadric {
     }
 
     fn material(&self) -> Option<Arc<dyn Material>> {
-        Some(self.material.clone())
+        self.material.clone()
     }
 
     fn uv(&self, _point: &Point3) -> (f64, f64) {

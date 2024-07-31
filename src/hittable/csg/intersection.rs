@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use std::ops::Range;
 use std::fmt::Formatter;
 use std::fmt::Debug;
@@ -9,11 +11,12 @@ use crate::prelude::Ray;
 use crate::prelude::Point3;
 use crate::hittable::HitRecord;
 use crate::hittable::Hittable;
-
+use crate::material::Material;
 
 pub struct Intersection {
     o1: Box<dyn Hittable>, 
-    o2: Box<dyn Hittable>
+    o2: Box<dyn Hittable>,
+    material: Option<Arc<dyn Material>>,
 }
 
 impl Debug for Intersection {
@@ -27,10 +30,11 @@ impl Debug for Intersection {
 
 
 impl Intersection {
-    pub fn new(o1: Box<dyn Hittable>, o2: Box<dyn Hittable>) -> Self {
+    pub fn new(o1: Box<dyn Hittable>, o2: Box<dyn Hittable>, material: Option<Arc<dyn Material>>) -> Self {
         Intersection {
             o1,
             o2,
+            material,
         }
     }
 }
@@ -77,13 +81,13 @@ impl Hittable for Intersection {
             if objs[1].contains(&hits[0].point) {
                 // hit[0] is on the nearest surface and inside the farther object
                 // we can use it directly
-                return Some(hits[0].clone());
+                return Some(hits[0].set_material_if_none(self.material.clone()));
             }
             else {
                 // hit[0] was not inside the farther object, so we must check
                 // the second hit
                 if objs[0].contains(&hits[1].point) {
-                    return Some(hits[1].clone());
+                    return Some(hits[1].set_material_if_none(self.material.clone()));
                 }
             }
         }

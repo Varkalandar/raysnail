@@ -594,12 +594,7 @@ fn parse_quadric(input: &mut Input, scene: &mut SceneData) -> bool {
             expect(input, Symbol::Comma);
             let j = parse_expression(input).unwrap();
 
-            let mut material: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::new(Color::new(1.0, 1.0, 1.0, 1.0))));
-
-            if let Some(mat) = parse_texture(input) {
-                material = mat;
-            }
-
+            let material = parse_texture(input);
             let stack = parse_object_modifiers(input);
 
             let quadric = 
@@ -706,10 +701,11 @@ fn parse_intersection(input: &mut Input, scene: &mut SceneData) -> bool {
                         let o2 = objects.remove(1);
                         let o1 = objects.remove(0);
 
-                        let intersection = Box::new(Intersection::new(o1, o2));
-
+                        let material = parse_texture(input);
                         let stack = parse_object_modifiers(input);
-            
+
+                        let intersection = Box::new(Intersection::new(o1, o2, material));
+
                         scene.hittables.add_ref(build_transform_facade(stack, intersection));
 
                         println!("Line {}, parse_intersection -> ok", input.current_line());
@@ -801,6 +797,8 @@ fn parse_texture(input: &mut Input) -> Option<Arc<dyn Material>> {
             let material = parse_finish(input, texture);
 
             expect(input, Symbol::BlockClose);
+
+            println!("Line {}, parse_texture -> ok", input.current_line());
 
             return material;
         }

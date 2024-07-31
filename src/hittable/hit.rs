@@ -65,6 +65,16 @@ impl HitRecord {
             outside: true,
         }
     }
+
+    pub fn set_material_if_none(&self, material: Option<Arc<dyn Material>>) -> Self {
+        let mut hit = self.clone();
+
+        if hit.material.is_none() {
+            hit.material = material;
+        }
+
+        hit
+    }
 }
 
 #[allow(unused_variables)]
