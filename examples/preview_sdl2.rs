@@ -227,7 +227,7 @@ fn render_time_test(width: usize, height: usize,
     let rs = 
         Sphere::new(Vec3::new(50.0, 200.0, 200.0), 
             12.0, 
-            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8, 1.0)).multiplier(2.0))
+            Some(Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8, 1.0)).multiplier(2.0)))
         );
 
     lights.add(rs.clone());
@@ -264,9 +264,10 @@ fn render_time_test(width: usize, height: usize,
 
     world.add(Intersection::new(
         Box::new(Sphere::new(Point3::new(0.0, 0.0, 0.0), 1.35, 
-                    Arc::new(Lambertian::new(Arc::new(Color::new(0.1, 0.2, 0.7, 1.0)))))),
+                 Some(Arc::new(Lambertian::new(Arc::new(Color::new(0.1, 0.2, 0.7, 1.0))))))),
         Box::new(GeometryBox::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0),
-                        Arc::new(Lambertian::new(Arc::new(Color::new(0.8, 0.6, 0.3, 1.0)))))),
+                 Some(Arc::new(Lambertian::new(Arc::new(Color::new(0.8, 0.6, 0.3, 1.0))))))),
+        None
         )             
     );
 
@@ -297,11 +298,11 @@ fn render_time_test(width: usize, height: usize,
     world.add(GeometryBox::new(
         Vec3::new(-1000.0, -2.0, -1000.0),
         Vec3::new(1000.0, -1.0, 1000.0),
-        Arc::new(Lambertian::new(Arc::new(Checker::new(
+        Some(Arc::new(Lambertian::new(Arc::new(Checker::new(
             Color::new(0.3, 0.3, 0.3, 1.0),
             Color::new(0.1, 0.1, 0.1, 1.0),
             3.0,
-        ))))
+        )))))
     ));
 
     fn background(ray: &Ray) -> Color {
@@ -345,7 +346,7 @@ fn render_raymarching_test(width: usize, height: usize,
     let rs = 
         Sphere::new(Vec3::new(300.0, 400.0, 100.0), 
             12.0, 
-            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8, 1.0)).multiplier(1.5))
+            Some(Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8, 1.0)).multiplier(1.5)))
         );
 
     lights.add(rs.clone());
@@ -358,16 +359,16 @@ fn render_raymarching_test(width: usize, height: usize,
     material.settings.phong_exponent = 2;
     // let material = BlinnPhong::new(0.5, 4.0, color);
     // let material = Metal::new(color);
-    world.add(RayMarcher::new(Arc::new(material)));
+    world.add(RayMarcher::new(Some(Arc::new(material))));
 
     world.add(Sphere::new(
         Point3::new(0.0, -1002.0, 0.0),
         1000.0,
-        Arc::new(DiffuseMetal::new(800.0, Arc::new(Checker::new(
+        Some(Arc::new(DiffuseMetal::new(800.0, Arc::new(Checker::new(
             Color::new(0.26, 0.3, 0.16, 1.0),
             Color::new(0.1, 0.1, 0.1, 1.0),
             10.0,
-        ))))
+        )))))
     ));
 
     fn background(ray: &Ray) -> Color {
@@ -406,7 +407,7 @@ fn render_ball_scene(width: usize, height: usize,
     let rs = 
         Sphere::new(Vec3::new(200.0, 400.0, 200.0), 
             12.0, 
-            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8, 1.0)).multiplier(1.5))
+            Some(Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8, 1.0)).multiplier(1.5)))
         );
 
     lights.add(rs.clone());
@@ -443,7 +444,7 @@ fn render_object_test(width: usize, height: usize,
     let rs = 
         Sphere::new(Vec3::new(300.0, 400.0, 100.0), 
             12.0, 
-            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8, 1.0)).multiplier(1.5))
+            Some(Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.8, 1.0)).multiplier(1.5)))
         );
 
     lights.add(rs.clone());
@@ -461,7 +462,7 @@ fn render_object_test(width: usize, height: usize,
         Vec3::new(0.0, 0.0, 0.0), // offset: Vec3,
         120.0, // rotation_angle: f64,
         1, // axis: i32,
-        Arc::new(material),
+        Some(Arc::new(material)),
     );
 
     for tri in mesh.triangles {
@@ -472,7 +473,7 @@ fn render_object_test(width: usize, height: usize,
             Point3::new(0.0, -1000.0, 0.0),
             1000.0,
             // Arc::new(DiffuseMetal::new(2000.0, Color::new(0.08, 0.1, 0.06, 1.0)))
-            Arc::new(Metal::new(Arc::new(Color::new(0.08, 0.1, 0.06, 1.0))))
+            Some(Arc::new(Metal::new(Arc::new(Color::new(0.08, 0.1, 0.06, 1.0)))))
     ));
 
     fn background(ray: &Ray) -> Color {
@@ -526,7 +527,7 @@ fn render_parser_test(width: usize, height: usize,
         let rs = 
             Sphere::new(light.location, 
                 12.0, 
-                Arc::new(DiffuseLight::new(light.color).multiplier(1.7))
+                Some(Arc::new(DiffuseLight::new(light.color).multiplier(1.7)))
             );
 
         lights.add(rs.clone());

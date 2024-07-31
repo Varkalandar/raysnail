@@ -207,7 +207,7 @@ fn parse_and_render(width: usize, height: usize, samples: usize, filename: &str,
         let rs = 
             Sphere::new(light.location, 
                 12.0, 
-                Arc::new(DiffuseLight::new(light.color).multiplier(1.7))
+                Some(Arc::new(DiffuseLight::new(light.color).multiplier(1.7)))
             );
 
         lights.add(rs.clone());

@@ -26,7 +26,7 @@ pub struct Triangle {
     pub e: f64,
     pub f: f64,
     bounding_box: AABB,
-    material: Arc<dyn Material>,
+    material: Option<Arc<dyn Material>>,
 }
 
 impl Debug for Triangle {
@@ -39,7 +39,7 @@ impl Debug for Triangle {
 }
 
 impl Triangle {
-    pub fn new(p0: Vec3, p1: Vec3, p2: Vec3, material: Arc<dyn Material>) -> Self {
+    pub fn new(p0: Vec3, p1: Vec3, p2: Vec3, material: Option<Arc<dyn Material>>) -> Self {
         let minimum = Vec3::new_min(&(Vec3::new_min(&p0, &p1)), &p2);
         let maximum = Vec3::new_max(&(Vec3::new_max(&p0, &p1)), &p2);
         let bounding_box = AABB::new(minimum, maximum);
@@ -74,7 +74,7 @@ impl Triangle {
 impl Hittable for Triangle {
 
     fn material(&self) -> Option<Arc<dyn Material>> {
-        Some(self.material.clone())
+        self.material.clone()
     }
 
     fn uv(&self, _point: &Point3) -> (f64, f64) {
@@ -169,7 +169,7 @@ impl TriangleMesh {
         offset: Vec3,
         rotation_angle: f64,
         axis: i32,
-        material: Arc<dyn Material>,
+        material: Option<Arc<dyn Material>>,
     ) -> Self {
 
         let object = tobj::load_obj(

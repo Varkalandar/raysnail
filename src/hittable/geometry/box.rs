@@ -12,7 +12,7 @@ use std::fmt::Debug;
 pub struct Box {
     point_min: Point3,
     point_max: Point3,
-    material: Arc<dyn Material>,
+    material: Option<Arc<dyn Material>>,
     faces: HittableList,
 }
 
@@ -30,14 +30,14 @@ impl Clone for Box {
         Self::new_inner(
             self.point_min.clone(),
             self.point_max.clone(),
-            Arc::clone(&self.material),
+            self.material.clone(),
         )
     }
 }
 
 impl Box {
     #[allow(clippy::needless_pass_by_value)] // for api consistency
-    pub fn new(p0: Point3, p1: Point3, material: Arc<dyn Material>) -> Self {
+    pub fn new(p0: Point3, p1: Point3, material: Option<Arc<dyn Material>>) -> Self {
         let point_min = Point3::new_min(&p0, &p1);
         let point_max = Point3::new_max(&p0, &p1);
         let shared_material = material;
@@ -45,7 +45,7 @@ impl Box {
     }
 
     #[allow(clippy::too_many_lines)]
-    fn new_inner(point_min: Point3, point_max: Point3, material: Arc<dyn Material>) -> Self {
+    fn new_inner(point_min: Point3, point_max: Point3, material: Option<Arc<dyn Material>>) -> Self {
         let mut faces = HittableList::default();
         faces
             .add(AARect::new_xy(
@@ -55,7 +55,7 @@ impl Box {
                     (point_min.x, point_max.x),
                     (point_min.y, point_max.y),
                 ),
-                Arc::clone(&material),
+                material.clone(),
             ))
             .add(AARect::new_xy(
                 // front
@@ -64,7 +64,7 @@ impl Box {
                     (point_min.x, point_max.x),
                     (point_min.y, point_max.y),
                 ),
-                Arc::clone(&material),
+                material.clone(),
             ))
             .add(AARect::new_yz(
                 // left
@@ -73,7 +73,7 @@ impl Box {
                     (point_min.y, point_max.y),
                     (point_min.z, point_max.z),
                 ),
-                Arc::clone(&material),
+                material.clone(),
             ))
             .add(AARect::new_yz(
                 // right
@@ -82,7 +82,7 @@ impl Box {
                     (point_min.y, point_max.y),
                     (point_min.z, point_max.z),
                 ),
-                Arc::clone(&material),
+                material.clone(),
             ))
             .add(AARect::new_xz(
                 // down
@@ -91,7 +91,7 @@ impl Box {
                     (point_min.x, point_max.x),
                     (point_min.z, point_max.z),
                 ),
-                Arc::clone(&material),
+                material.clone(),
             ))
             .add(AARect::new_xz(
                 // up
@@ -100,7 +100,7 @@ impl Box {
                     (point_min.x, point_max.x),
                     (point_min.z, point_max.z),
                 ),
-                Arc::clone(&material),
+                material.clone(),
             ));
 
         Self {
@@ -119,7 +119,7 @@ impl Hittable for Box {
     }
 
     fn material(&self) -> Option<Arc<dyn Material>> {
-        Some(self.material.clone())
+        self.material.clone()
     }
 
     fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {

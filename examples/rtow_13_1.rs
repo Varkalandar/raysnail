@@ -23,7 +23,7 @@ fn main() {
     let rs = 
         Sphere::new(Vec3::new(300.0, 400.0, 100.0), 
             12.0, 
-            Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.7)).multiplier(1.5))
+            Some(Arc::new(DiffuseLight::new(Color::new(1.0, 0.9, 0.7, 1.0)).multiplier(1.5)))
         );
 
     lights.add(rs.clone());

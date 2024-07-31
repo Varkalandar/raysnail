@@ -17,7 +17,7 @@ use crate::material::Material;
 #[derive(Clone)]
 pub struct RayMarcher {
 
-    material: Arc<dyn Material>,
+    material: Option<Arc<dyn Material>>,
 }
 
 impl Debug for RayMarcher {
@@ -29,7 +29,7 @@ impl Debug for RayMarcher {
 }
 
 impl RayMarcher {
-    pub fn new(material: Arc<dyn Material>) -> Self {
+    pub fn new(material: Option<Arc<dyn Material>>) -> Self {
         RayMarcher {
             material,
         }
@@ -89,7 +89,7 @@ impl Hittable for RayMarcher {
     }
 
     fn material(&self) -> Option<Arc<dyn Material>> {
-        Some(self.material.clone())
+        self.material.clone()
     }
 
     fn uv(&self, point: &Point3) -> (f64, f64) {

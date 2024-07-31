@@ -514,18 +514,10 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
             expect(input, Symbol::Comma);
             let r = parse_expression(input).unwrap();   
 
-            let material =
-                if let Some(material) = parse_texture(input) {
-                    material
-                }
-                else {
-                    println!("Line {}, parse_sphere: found no texture, using default diffuse white", input.current_line());
-                    Arc::new(Lambertian::new(Arc::new(Color::new(1.0, 1.0, 1.0, 1.0))))
-                };
+            let material = parse_texture(input);
+            let stack = parse_object_modifiers(input);
 
             let sphere = Box::new(Sphere::new(v, r, material));
-
-            let stack = parse_object_modifiers(input);
 
             println!("parse_sphere: ok -> {:?}", sphere);
 
@@ -554,12 +546,7 @@ fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
             expect(input, Symbol::Comma);
             let v2 = parse_vector(input).unwrap();
 
-            let mut material: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::new(Color::new(1.0, 1.0, 1.0, 1.0))));
-
-            if let Some(mat) = parse_texture(input) {
-                material = mat;
-            }
-
+            let material = parse_texture(input);
             let stack = parse_object_modifiers(input);
 
             let gbox = Box::new(GeometryBox::new(v1, v2, material));

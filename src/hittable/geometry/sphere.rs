@@ -18,7 +18,7 @@ pub struct Sphere {
     center: Point3,
     radius: f64,
     speed: Vec3,
-    material: Arc<dyn Material>,
+    material: Option<Arc<dyn Material>>,
     radius_squared: f64,
 }
 
@@ -32,7 +32,7 @@ impl Debug for Sphere {
 }
 
 impl Sphere {
-    pub fn new(center: Point3, radius: f64, material: Arc<dyn Material>) -> Self {
+    pub fn new(center: Point3, radius: f64, material: Option<Arc<dyn Material>>) -> Self {
         Self {
             center,
             radius,
@@ -58,7 +58,7 @@ impl Hittable for Sphere {
     }
 
     fn material(&self) -> Option<Arc<dyn Material>> {
-        Some(self.material.clone())
+        self.material.clone()
     }
 
     fn uv(&self, point: &Point3) -> (f64, f64) {

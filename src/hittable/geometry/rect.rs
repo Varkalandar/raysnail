@@ -43,7 +43,7 @@ pub struct AARect {
     // 0: a axis, 1: b axis, 2: fixed axis
     axis: (usize, usize, usize),
     metrics: AARectMetrics,
-    material: Arc<dyn Material>,
+    material: Option<Arc<dyn Material>>,
 }
 
 impl Debug for AARect {
@@ -55,7 +55,7 @@ impl Debug for AARect {
 }
 
 impl AARect {
-    pub const fn new_xy(metrics: AARectMetrics, material: Arc<dyn Material>) -> Self {
+    pub const fn new_xy(metrics: AARectMetrics, material: Option<Arc<dyn Material>>) -> Self {
         Self {
             metrics,
             material,
@@ -63,7 +63,7 @@ impl AARect {
         }
     }
 
-    pub const fn new_xz(metrics: AARectMetrics, material: Arc<dyn Material>) -> Self {
+    pub const fn new_xz(metrics: AARectMetrics, material: Option<Arc<dyn Material>>) -> Self {
         Self {
             metrics,
             material,
@@ -71,7 +71,7 @@ impl AARect {
         }
     }
 
-    pub const fn new_yz(metrics: AARectMetrics, material: Arc<dyn Material>) -> Self {
+    pub const fn new_yz(metrics: AARectMetrics, material: Option<Arc<dyn Material>>) -> Self {
         Self {
             metrics,
             material,
@@ -88,7 +88,7 @@ impl Hittable for AARect {
     }
 
     fn material(&self) -> Option<Arc<dyn Material>> {
-        Some(self.material.clone())
+        self.material.clone()
     }
 
     fn uv(&self, point: &Point3) -> (f64, f64) {
