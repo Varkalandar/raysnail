@@ -118,8 +118,8 @@ impl Hittable for Box {
         Vec3::new(0.0, 1.0, 0.0)
     }
 
-    fn material(&self) -> Arc<dyn Material> {
-        self.material.clone()
+    fn material(&self) -> Option<Arc<dyn Material>> {
+        Some(self.material.clone())
     }
 
     fn hit(&self, ray: &Ray, unit_limit: &Range<f64>) -> Option<HitRecord> {

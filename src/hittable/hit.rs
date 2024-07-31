@@ -11,7 +11,7 @@ use std::sync::Arc;
 pub struct HitRecord {
     pub point: Point3,
     pub normal: Vec3,
-    pub material: Arc<dyn Material>,
+    pub material: Option<Arc<dyn Material>>,
     pub t1: f64,
     pub t2: f64,
     pub u: f64,
@@ -52,7 +52,7 @@ impl HitRecord {
         }
     }
 
-    pub fn with_normal(point: Point3, normal: Vec3, material: Arc<dyn Material>, uv: (f64, f64), t1: f64, t2: f64) -> Self {
+    pub fn with_normal(point: Point3, normal: Vec3, material: Option<Arc<dyn Material>>, uv: (f64, f64), t1: f64, t2: f64) -> Self {
 
         Self {
             point,
@@ -75,7 +75,7 @@ pub trait Hittable: Send + Sync {
             std::any::type_name::<Self>()
         )
     }
-    fn material(&self) -> Arc<dyn Material> {
+    fn material(&self) -> Option<Arc<dyn Material>> {
         unimplemented!(
             "{}'s material function should not be called directly",
             std::any::type_name::<Self>()

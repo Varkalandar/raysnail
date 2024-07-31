@@ -57,8 +57,8 @@ impl Hittable for Sphere {
         (point - &self.center) / self.radius
     }
 
-    fn material(&self) -> Arc<dyn Material> {
-        self.material.clone()
+    fn material(&self) -> Option<Arc<dyn Material>> {
+        Some(self.material.clone())
     }
 
     fn uv(&self, point: &Point3) -> (f64, f64) {

@@ -12,6 +12,10 @@ use {
     },
 };
 
+use std::sync::Arc;
+
+use crate::material::Lambertian;
+
 #[must_use]
 pub fn default_background(ray: &Ray) -> Color {
     let t = 0.5 * (ray.direction.y + 1.0);
@@ -22,6 +26,7 @@ pub struct World {
     bvh: BVH,
     pub lights: HittableList,
     bg_func: Box<dyn Fn(&Ray) -> Color + Send + Sync>,
+    pub default_material: Arc<Lambertian>,
 }
 
 impl Debug for World {
@@ -37,6 +42,7 @@ impl World {
             bvh: BVH::new(list, time_range),
             lights,
             bg_func: Box::new(default_background),
+            default_material: Arc::new(Lambertian::new(Arc::new(Color::new(1.0, 1.0, 1.0, 1.0)))),
         }
     }
 

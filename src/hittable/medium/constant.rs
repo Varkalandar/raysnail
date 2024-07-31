@@ -70,7 +70,7 @@ impl<T: Hittable> Hittable for ConstantMedium<T> {
         Some(HitRecord {
             point: ray.at(hit_point_unit),
             normal: Vec3::new(1.0, 0.0, 0.0), // useless,
-            material: self.material.clone(),
+            material: Some(self.material.clone()),
             t1: hit_point_unit,
             t2: hit_point_unit,
             u: 0.0,         // useless

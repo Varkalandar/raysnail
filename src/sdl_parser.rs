@@ -555,13 +555,12 @@ fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
             let v2 = parse_vector(input).unwrap();
 
             let mut material: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::new(Color::new(1.0, 1.0, 1.0, 1.0))));
-            let mut stack = TransformStack::new();
 
             if let Some(mat) = parse_texture(input) {
                 material = mat;
             }
 
-            stack = parse_object_modifiers(input);
+            let stack = parse_object_modifiers(input);
 
             let gbox = Box::new(GeometryBox::new(v1, v2, material));
             println!("parse_box: ok -> {:?}", gbox);
@@ -601,7 +600,7 @@ fn parse_quadric(input: &mut Input, scene: &mut SceneData) -> bool {
                 material = mat;
             }
 
-            let mut stack = parse_object_modifiers(input);
+            let stack = parse_object_modifiers(input);
 
             let quadric = 
                 Quadric::new(v1.x, v2.x, v2.y, v3.x, v1.y, v2.z, v3.y, v1.z, v3.z, j,
@@ -799,7 +798,7 @@ fn parse_texture(input: &mut Input) -> Option<Arc<dyn Material>> {
                     Arc::new(Color::new(1.0, 1.0, 1.0, 1.0))
                 };
 
-            let mut material = parse_finish(input, texture);
+            let material = parse_finish(input, texture);
 
             expect(input, Symbol::BlockClose);
 

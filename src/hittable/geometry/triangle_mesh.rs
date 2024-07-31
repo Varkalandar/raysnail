@@ -73,8 +73,8 @@ impl Triangle {
 
 impl Hittable for Triangle {
 
-    fn material(&self) -> Arc<dyn Material> {
-        self.material.clone()
+    fn material(&self) -> Option<Arc<dyn Material>> {
+        Some(self.material.clone())
     }
 
     fn uv(&self, _point: &Point3) -> (f64, f64) {
