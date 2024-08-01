@@ -630,9 +630,10 @@ fn parse_difference(input: &mut Input, scene: &mut SceneData) -> bool {
                         let minus = objects.remove(1);
                         let plus = objects.remove(0);
 
-                        let difference = Box::new(Difference::new(plus, minus));
-
+                        let material = parse_texture(input);
                         let stack = parse_object_modifiers(input);
+
+                        let difference = Box::new(Difference::new(plus, minus, material));
 
                         scene.hittables.add_ref(build_transform_facade(stack, difference));
 

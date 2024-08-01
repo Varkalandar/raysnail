@@ -15,7 +15,8 @@ use crate::hittable::Hittable;
 
 pub struct Difference {
     plus: Box<dyn Hittable>, 
-    minus: Box<dyn Hittable>
+    minus: Box<dyn Hittable>,
+    material: Option<Arc<dyn Material>>,
 }
 
 impl Debug for Difference {
@@ -28,10 +29,11 @@ impl Debug for Difference {
 
 
 impl Difference {
-    pub fn new(plus: Box<dyn Hittable>, minus: Box<dyn Hittable>) -> Self {
+    pub fn new(plus: Box<dyn Hittable>, minus: Box<dyn Hittable>, material: Option<Arc<dyn Material>>) -> Self {
         Difference {
             plus,
             minus,
+            material,
         }
     }
 }
@@ -68,7 +70,7 @@ impl Hittable for Difference {
                     // but there are strange cases if the ray starts in just this object
 
                     if !self.minus.contains(&hit_plus.point) {
-                        return Some(hit_plus);
+                        return Some(hit_plus.set_material_if_none(self.material.clone()));
                     }
                 }
                 else {
@@ -76,7 +78,7 @@ impl Hittable for Difference {
 
                     if hit_minus.t2 < hit_plus.t1 {
                         // negative object if fully in front of positive object
-                        return Some(hit_plus);
+                        return Some(hit_plus.set_material_if_none(self.material.clone()));
                     }
                     else if hit_minus.t2 < hit_plus.t2 {
                         let p = ray.at(hit_minus.t2);
@@ -89,7 +91,9 @@ impl Hittable for Difference {
                                                         self.minus.material().clone(), 
                                                         (0.0, 0.0), // (hit_minus.u, hit_minus.v), 
                                                         hit_minus.t2, 
-                                                        hit_plus.t2));
+                                                        hit_plus.t2)
+                                                        .set_material_if_none(self.material.clone())
+                                                    );
                     }
                 }
             }

@@ -1,5 +1,4 @@
 use vecmath::Matrix4;
-use vecmath::Vector4;
 use vecmath::row_mat4_transform;
 use vecmath::mat4_id;
 use vecmath::mat4_inv;
