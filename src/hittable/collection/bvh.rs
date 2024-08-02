@@ -36,8 +36,8 @@ fn cmp_geometry_by(axis: usize, a: &dyn Hittable, b: &dyn Hittable) -> Ordering 
         .bbox(&time_limit)
         .expect("No bounding box in bvh_node constructor");
 
-    box_a.min()[axis]
-        .partial_cmp(&box_b.min()[axis])
+    box_a.min[axis]
+        .partial_cmp(&box_b.min[axis])
         .expect("Bounding box contains NaN")
 }
 
@@ -144,7 +144,7 @@ fn find_best_axis(objects: &mut Vec<Option<Box<dyn Hittable>>>, time_limit: &Ran
         bbox = bbox | o2.bbox(time_limit).unwrap();
     }
 
-    let size = bbox.max() - bbox.min();
+    let size = bbox.max - bbox.min;
 
     let axis =
         if size.x > size.y && size.x > size.z {

@@ -100,7 +100,20 @@ impl Hittable for Intersection {
     }
 
     fn bbox(&self, time_limit: &Range<f64>) -> Option<AABB> {
-        Some(self.o1.bbox(time_limit).unwrap() | self.o2.bbox(time_limit).unwrap())
+        // Some(self.o1.bbox(time_limit).unwrap() | self.o2.bbox(time_limit).unwrap())
+
+        let b1 = self.o1.bbox(time_limit).unwrap();
+        let b2 = self.o2.bbox(time_limit).unwrap();
+
+        let min = Point3::new(b1.min.x.max(b2.min.x),
+                              b1.min.y.max(b2.min.y),
+                              b1.min.y.max(b2.min.z));
+
+        let max = Point3::new(b1.max.x.min(b2.max.x),
+                              b1.max.y.min(b2.max.y),
+                              b1.max.z.min(b2.max.z));
+
+        Some(AABB::new(min, max))
     }
 
     /**

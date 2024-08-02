@@ -6,24 +6,14 @@ use {
 /// Axis aligned bounding box
 #[derive(Debug, Clone)]
 pub struct AABB {
-    min: Point3,
-    max: Point3,
+    pub min: Point3,
+    pub max: Point3,
 }
 
 impl AABB {
     #[must_use]
     pub const fn new(min: Point3, max: Point3) -> Self {
         Self { min, max }
-    }
-
-    #[must_use]
-    pub const fn min(&self) -> &Point3 {
-        &self.min
-    }
-
-    #[must_use]
-    pub const fn max(&self) -> &Point3 {
-        &self.max
     }
 
     #[must_use]

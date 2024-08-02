@@ -65,11 +65,11 @@ impl Hittable for TfFacade {
                         for j in 0..2_usize {
                             for k in 0..2_usize {
                                 let x =
-                                    (i as f64).mul_add(bbox.max().x, (1 - i) as f64 * bbox.min().x);
+                                    (i as f64).mul_add(bbox.max.x, (1 - i) as f64 * bbox.min.x);
                                 let y =
-                                    (j as f64).mul_add(bbox.max().y, (1 - j) as f64 * bbox.min().y);
+                                    (j as f64).mul_add(bbox.max.y, (1 - j) as f64 * bbox.min.y);
                                 let z =
-                                    (k as f64).mul_add(bbox.max().z, (1 - k) as f64 * bbox.min().z);
+                                    (k as f64).mul_add(bbox.max.z, (1 - k) as f64 * bbox.min.z);
 
                                 let tf_point = self.stack.forward(&Point3::new(x, y, z), 1.0);
 
