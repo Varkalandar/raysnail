@@ -2,6 +2,8 @@
 use std::fs::read_to_string;
 use std::sync::Arc;
 use std::collections::HashMap;
+use std::fmt::Formatter;
+use std::fmt::Debug;
 
 use crate::prelude::Vec3;
 use crate::prelude::Color;
@@ -47,14 +49,14 @@ impl SceneData {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct CameraData {
     pub location: Vec3,
     pub look_at: Vec3,
     pub fov_angle: f64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct LightData {
     pub location: Vec3, 
     pub color: Color, 
@@ -66,6 +68,22 @@ struct Token {
     line: u32,
 }
 
+enum DeclaredEntity {
+    Light(LightData),
+    Camera(CameraData),
+    Hittable(Box<dyn Hittable>),
+    Invalid,
+}
+
+impl Debug for DeclaredEntity {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "DeclaredEntity",
+        ))
+    }
+}
+
+
 #[derive(Debug)]
 struct Input {
     symbol_map: HashMap<String, Symbol>,
@@ -73,6 +91,8 @@ struct Input {
     tokens: Vec<Token>,
     
     symbol: Symbol,
+
+    declares: HashMap <String, DeclaredEntity>,
 }
 
 impl Input {
@@ -109,12 +129,13 @@ enum Symbol {
 
     Intersection,
     Difference,
+    Object,
 
     Plus,
     Minus,
     Multiply,
     Divide,
-
+    Equal,
 
     BlockOpen,
     BlockClose,
@@ -144,6 +165,7 @@ enum Symbol {
 
     Checker,
     
+    Declare,
     Id,
     Eof,
     None
@@ -161,6 +183,7 @@ impl SdlParser {
             pos: 0,
             tokens: read_tokens(filename),
             symbol: Symbol::None,
+            declares: HashMap::new(),
         };
 
         let mut scene = SceneData::new();
@@ -184,6 +207,7 @@ fn build_symbol_map() -> HashMap<String, Symbol> {
     
     map.insert("intersection".to_string(), Symbol::Intersection);
     map.insert("difference".to_string(), Symbol::Difference);
+    map.insert("object".to_string(), Symbol::Object);
 
     map.insert("<".to_string(), Symbol::VectorOpen);
     map.insert(">".to_string(), Symbol::VectorClose);
@@ -218,6 +242,9 @@ fn build_symbol_map() -> HashMap<String, Symbol> {
     map.insert("/".to_string(), Symbol::Divide);
     map.insert("(".to_string(), Symbol::ParenOpen);
     map.insert(")".to_string(), Symbol::ParenClose);
+    map.insert("=".to_string(), Symbol::Equal);
+
+    map.insert("#declare".to_string(), Symbol::Declare);
 
     map
 }
@@ -362,48 +389,67 @@ fn parse_statement_list(input: &mut Input, scene: &mut SceneData) -> bool {
     println!("Line {}, parse_statement_list called", input.current_line());
 
     while input.pos < input.tokens.len() {
-        if !parse_statement(input, scene) {
-            // something went wrong
-            return false;
+        let entity = parse_statement(input);
+
+        match entity {
+            DeclaredEntity::Hittable(object) => {
+                scene.hittables.add_ref(object);
+            },
+            DeclaredEntity::Light(light) => {
+                scene.lights.push(light);
+            },
+            DeclaredEntity::Camera(camera) => {
+                scene.camera = Some(camera);
+            },
+            DeclaredEntity::Invalid => {
+                // something went wrong
+                return false;
+            }
         }
     }
 
     true
 }
 
-fn parse_statement(input: &mut Input, scene: &mut SceneData) -> bool {
+fn parse_statement(input: &mut Input) -> DeclaredEntity {
 
     println!("Line {}, parse_statement: '{}'", input.current_line(), input.current_text());
 
-    if parse_camera(input, scene) {
-    }
-    else if parse_light(input, scene) {
-    }
-    else if parse_sphere(input, scene) {
-    }
-    else if parse_box(input, scene) {
-    }
-    else if parse_quadric(input, scene) {
-    }
-    else if parse_difference(input, scene) {
-    }
-    else if parse_intersection(input, scene) {
-    }
-    else if input.symbol == Symbol::Eof {
-        println!("EOF, stop parsing");
-        return false;
-    }
-    else {
-        println!("Line {}, Invalid statement found: {}", input.current_line(), input.current_text());
-        return false;
-    }
-    println!("Line {}, statement done: {}", input.current_line(), input.current_text());
+    let entity = parse_camera(input);
+    match entity { DeclaredEntity::Invalid => {}, _ => { return entity; },}
 
-    true
+    let entity = parse_light(input);
+    match entity { DeclaredEntity::Invalid => {}, _ => { return entity; },}
+
+    let entity = parse_sphere(input);
+    match entity { DeclaredEntity::Invalid => {}, _ => { return entity; },}
+
+    let entity = parse_box(input);
+    match entity { DeclaredEntity::Invalid => {}, _ => { return entity; },}
+
+    let entity = parse_quadric(input);
+    match entity { DeclaredEntity::Invalid => {}, _ => { return entity; },}
+
+    let entity = parse_difference(input);
+    match entity { DeclaredEntity::Invalid => {}, _ => { return entity; },}
+
+    let entity = parse_intersection(input);
+    match entity { DeclaredEntity::Invalid => {}, _ => { return entity; },}
+
+    let entity = parse_declare(input);
+    match entity { DeclaredEntity::Invalid => {}, _ => { return entity; },}
+    
+    if input.symbol == Symbol::Eof {
+        println!("EOF, stop parsing");
+        return DeclaredEntity::Invalid;
+    }
+
+    println!("Line {}, Invalid statement found: {}", input.current_line(), input.current_text());
+    return DeclaredEntity::Invalid;
 }
 
 
-fn parse_camera(input: &mut Input, scene: &mut SceneData) -> bool {
+fn parse_camera(input: &mut Input) -> DeclaredEntity {
     if expect_quiet(input, Symbol::Camera) {
 
         // println!("Line {}, parse_camera: parsing camera data");
@@ -421,26 +467,25 @@ fn parse_camera(input: &mut Input, scene: &mut SceneData) -> bool {
 
                 if !ok {
                     println!("Line {}, parse_camera: expected camera vector or }}, found {}", input.current_line(), input.current_text());
-                    return false;
+                    return DeclaredEntity::Invalid;
                 }
             }
 
             println!("parse_camera: ok -> {:?}", camera);
-            scene.camera = Some(camera);
             nextsym(input);
 
-            return true;
+            return DeclaredEntity::Camera(camera);
         }
         println!("Line {}, parse_camera: expected {{, found {}", input.current_line(), input.current_text());
     }
 
     // println!("Line {}, parse_camera: statement is no camera, {}", input.current_line(), input.current_text());
 
-    false
+    DeclaredEntity::Invalid
 }
 
 
-fn parse_light(input: &mut Input, scene: &mut SceneData) -> bool {
+fn parse_light(input: &mut Input) -> DeclaredEntity {
     if expect_quiet(input, Symbol::Light) {
 
         if expect(input, Symbol::BlockOpen) {
@@ -460,23 +505,22 @@ fn parse_light(input: &mut Input, scene: &mut SceneData) -> bool {
                 }
                 else {
                     println!("Line {}, parse_light: expected color vector, found {}", input.current_line(), input.current_text());
-                    return false;
+                    return DeclaredEntity::Invalid;
                 }
             }
             else {
                 println!("Line {}, parse_light: expected location vector, found {}", input.current_line(), input.current_text());
-                return false;
+                return DeclaredEntity::Invalid;
             }
 
             println!("parse_light: ok -> {:?}", light);
-            scene.lights.push(light);
 
-            return true;
+            return DeclaredEntity::Light(light);
         }
         println!("Line {}, parse_camera: expected {{, found {}", input.current_line(), input.current_text());
     }
 
-    false
+    DeclaredEntity::Invalid
 }
 
 
@@ -504,7 +548,7 @@ fn parse_camera_item(input: &mut Input, camera: &mut CameraData) -> bool {
     false
 }
 
-fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
+fn parse_sphere(input: &mut Input) -> DeclaredEntity {
 
     println!("Line {}, parse_sphere: called, current symbol is {:?}", input.current_line(), input.current_text());
 
@@ -521,22 +565,23 @@ fn parse_sphere(input: &mut Input, scene: &mut SceneData) -> bool {
 
             println!("parse_sphere: ok -> {:?}", sphere);
 
-            scene.hittables.add_ref(build_transform_facade(stack, sphere));
-
             expect(input, Symbol::BlockClose);
 
-            return true;
+            return DeclaredEntity::Hittable(build_transform_facade(stack, sphere));
         }
         else {
             println!("Line {}, parse_sphere: expected {{, found {}", input.current_line(), input.current_text());
         }
     }
+    else {
+        println!("Line {}, parse_sphere: not a sphere", input.current_line());
+    }
 
-    false
+    DeclaredEntity::Invalid
 }
 
 
-fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
+fn parse_box(input: &mut Input) -> DeclaredEntity {
 
     println!("Line {}, parse_box: called, current symbol is {:?}", input.current_line(), input.current_text());
 
@@ -552,22 +597,20 @@ fn parse_box(input: &mut Input, scene: &mut SceneData) -> bool {
             let gbox = Box::new(GeometryBox::new(v1, v2, material));
             println!("parse_box: ok -> {:?}", gbox);
 
-            scene.hittables.add_ref(build_transform_facade(stack, gbox));
-
             expect(input, Symbol::BlockClose);
 
-            return true;
+            return DeclaredEntity::Hittable(build_transform_facade(stack, gbox));
         }
         else {
             println!("Line {}, parse_box: expected {{, found {}", input.current_line(), input.current_text());
         }
     }
 
-    false
+    DeclaredEntity::Invalid
 }
 
 
-fn parse_quadric(input: &mut Input, scene: &mut SceneData) -> bool {
+fn parse_quadric(input: &mut Input) -> DeclaredEntity {
 
     println!("Line {}, parse_quadric: called, current symbol is {:?}", input.current_line(), input.current_text());
 
@@ -590,65 +633,50 @@ fn parse_quadric(input: &mut Input, scene: &mut SceneData) -> bool {
 
             println!("parse_quadric: ok -> {:?}", quadric);
 
-            scene.hittables.add_ref(build_transform_facade(stack, Box::new(quadric)));
-
             expect(input, Symbol::BlockClose);
 
-            return true;
+            return DeclaredEntity::Hittable(build_transform_facade(stack, Box::new(quadric)));
         }
         else {
             println!("Line {}, parse_box: expected {{, found {}", input.current_line(), input.current_text());
         }
     }
 
-    false
+    DeclaredEntity::Invalid
 }
 
 
-fn parse_difference(input: &mut Input, scene: &mut SceneData) -> bool {
+fn parse_difference(input: &mut Input) -> DeclaredEntity {
 
     println!("Line {}, parse_difference: called, current symbol is {:?}", input.current_line(), input.current_text());
 
     if expect_quiet(input, Symbol::Difference) {
         if expect(input, Symbol::BlockOpen) {
 
-            let mut list = SceneData::new();
-
             println!("parse_difference: looking for first statement");
 
             // we need two objects for a difference, how to deal with cameras?
-            if parse_statement(input, &mut list) {
+            if let DeclaredEntity::Hittable(plus) = parse_statement(input) {
 
                 println!("parse_difference: parsed first statement");
 
-                if parse_statement(input, &mut list) {
-                    let mut objects = list.hittables.into_objects();
+                if let DeclaredEntity::Hittable(minus) = parse_statement(input) {
 
                     println!("parse_difference: parsed second statement, now checking objects");
 
-                    if objects.len() == 2  {
-                        let minus = objects.remove(1);
-                        let plus = objects.remove(0);
+                    let material = parse_texture(input);
+                    let stack = parse_object_modifiers(input);
 
-                        let material = parse_texture(input);
-                        let stack = parse_object_modifiers(input);
+                    let difference = Box::new(Difference::new(plus, minus, material));
 
-                        let difference = Box::new(Difference::new(plus, minus, material));
+                    println!("Line {}, parse_difference -> ok", input.current_line());
 
-                        scene.hittables.add_ref(build_transform_facade(stack, difference));
+                    expect(input, Symbol::BlockClose);
 
-                        println!("Line {}, parse_difference -> ok", input.current_line());
-
-                        expect(input, Symbol::BlockClose);
-
-                        return true;
-                    }
-                    else {
-                        println!("Line {}, parse_difference: need two objects for a difference, found {}", input.current_line(), objects.len());
-                    }
+                    return DeclaredEntity::Hittable(build_transform_facade(stack, difference));
                 }
                 else {
-                    println!("Line {}, parse_difference: statement expected, found {}", input.current_line(), input.current_text());
+                    println!("Line {}, parse_difference: second statement expected, found {}", input.current_line(), input.current_text());
                 }    
             }
             else {
@@ -660,54 +688,42 @@ fn parse_difference(input: &mut Input, scene: &mut SceneData) -> bool {
         }
     }
 
-    false
+    DeclaredEntity::Invalid
 }
 
 
-fn parse_intersection(input: &mut Input, scene: &mut SceneData) -> bool {
+fn parse_intersection(input: &mut Input) -> DeclaredEntity {
 
     println!("Line {}, parse_intersection: called, current symbol is {:?}", input.current_line(), input.current_text());
 
     if expect_quiet(input, Symbol::Intersection) {
         if expect(input, Symbol::BlockOpen) {
 
-            let mut list = SceneData::new();
-
             println!("parse_intersection: looking for first statement");
 
             // we need two objects for a difference, how to deal with cameras?
-            if parse_statement(input, &mut list) {
+            if let DeclaredEntity::Hittable(o1) = parse_statement(input) {
 
                 println!("parse_intersection: parsed first statement");
 
-                if parse_statement(input, &mut list) {
-                    let mut objects = list.hittables.into_objects();
+                if let DeclaredEntity::Hittable(o2) = parse_statement(input) {
 
                     println!("parse_intersection: parsed second statement, now checking objects");
+                    let material = parse_texture(input);
+                    let stack = parse_object_modifiers(input);
 
-                    if objects.len() == 2  {
-                        let o2 = objects.remove(1);
-                        let o1 = objects.remove(0);
+                    let intersection = Box::new(Intersection::new(o1, o2, material));
 
-                        let material = parse_texture(input);
-                        let stack = parse_object_modifiers(input);
+                    // scene.hittables.add_ref(build_transform_facade(stack, intersection));
 
-                        let intersection = Box::new(Intersection::new(o1, o2, material));
+                    println!("Line {}, parse_intersection -> ok", input.current_line());
 
-                        scene.hittables.add_ref(build_transform_facade(stack, intersection));
+                    expect(input, Symbol::BlockClose);
 
-                        println!("Line {}, parse_intersection -> ok", input.current_line());
-
-                        expect(input, Symbol::BlockClose);
-
-                        return true;
-                    }
-                    else {
-                        println!("Line {}, parse_intersection: need two objects for a difference, found {}", input.current_line(), objects.len());
-                    }
+                    return DeclaredEntity::Hittable(build_transform_facade(stack, intersection));
                 }
                 else {
-                    println!("Line {}, parse_intersection: statement expected, found {}", input.current_line(), input.current_text());
+                    println!("Line {}, parse_intersection: second statement expected, found {}", input.current_line(), input.current_text());
                 }    
             }
             else {
@@ -719,9 +735,23 @@ fn parse_intersection(input: &mut Input, scene: &mut SceneData) -> bool {
         }
     }
 
-    false
+    DeclaredEntity::Invalid
 }
 
+
+fn parse_declare(input: &mut Input) -> DeclaredEntity {
+
+    println!("Line {}, parse_declare: called, current symbol is {:?}", input.current_line(), input.current_text());
+
+    if expect_quiet(input, Symbol::Declare) {
+        if expect(input, Symbol::Equal) {
+
+            return DeclaredEntity::Invalid;
+        }
+    }
+
+    DeclaredEntity::Invalid
+}
 
 fn build_transform_facade(stack: TransformStack, hittable: Box<dyn Hittable>) ->  Box<dyn Hittable> {
 

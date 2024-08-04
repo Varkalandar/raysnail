@@ -7,7 +7,7 @@ use {
 };
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Color {
     pub r: f32,
     pub g: f32,
