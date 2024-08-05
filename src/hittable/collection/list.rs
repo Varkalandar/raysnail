@@ -9,9 +9,11 @@ use {
     },
 };
 
+use std::sync::Arc;
+
 #[derive(Default)]
 pub struct HittableList {
-    objects: Vec<Box<dyn Hittable>>,
+    objects: Vec<Arc<dyn Hittable>>,
 }
 
 impl Debug for HittableList {
@@ -25,12 +27,12 @@ impl Debug for HittableList {
 
 impl HittableList {
     pub fn add<G: Hittable + 'static>(&mut self, object: G) -> &mut Self {
-        let object: Box<dyn Hittable> = Box::new(object);
+        let object: Arc<dyn Hittable> = Arc::new(object);
         self.objects.push(object);
         self
     }
 
-    pub fn add_ref(&mut self, object: Box<dyn Hittable>) -> &mut Self {
+    pub fn add_ref(&mut self, object: Arc<dyn Hittable>) -> &mut Self {
         self.objects.push(object);
         self
     }
@@ -40,7 +42,7 @@ impl HittableList {
     }
 
     #[must_use]
-    pub fn into_objects(self) -> Vec<Box<dyn Hittable>> {
+    pub fn into_objects(self) -> Vec<Arc<dyn Hittable>> {
         self.objects
     }
 

@@ -79,7 +79,7 @@ impl<T: Hittable> Hittable for ConstantMedium<T> {
         })
     }
 
-    fn contains(&self, point: &Vec3) -> bool
+    fn contains(&self, _point: &Vec3) -> bool
     {
         unimplemented!(
             "{}'s constains function is not yet implemented",

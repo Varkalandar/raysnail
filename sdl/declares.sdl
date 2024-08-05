@@ -27,6 +27,11 @@ intersection {
 	}
 }
 
+
+object {
+	LEMON_CYLINDER
+}
+
 box {
 	<-3.5, -1.2, -8>,
 	<3.5, -1, 6>

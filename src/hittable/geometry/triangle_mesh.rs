@@ -130,7 +130,7 @@ impl Hittable for Triangle {
         }
     }
 
-    fn contains(&self, point: &Vec3) -> bool
+    fn contains(&self, _point: &Vec3) -> bool
     {
         false
     }

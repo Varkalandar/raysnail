@@ -14,8 +14,8 @@ use crate::hittable::Hittable;
 
 
 pub struct Difference {
-    plus: Box<dyn Hittable>, 
-    minus: Box<dyn Hittable>,
+    plus: Arc<dyn Hittable>, 
+    minus: Arc<dyn Hittable>,
     material: Option<Arc<dyn Material>>,
 }
 
@@ -29,7 +29,7 @@ impl Debug for Difference {
 
 
 impl Difference {
-    pub fn new(plus: Box<dyn Hittable>, minus: Box<dyn Hittable>, material: Option<Arc<dyn Material>>) -> Self {
+    pub fn new(plus: Arc<dyn Hittable>, minus: Arc<dyn Hittable>, material: Option<Arc<dyn Material>>) -> Self {
         Difference {
             plus,
             minus,

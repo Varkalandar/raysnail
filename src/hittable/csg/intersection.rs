@@ -14,8 +14,8 @@ use crate::hittable::Hittable;
 use crate::material::Material;
 
 pub struct Intersection {
-    o1: Box<dyn Hittable>, 
-    o2: Box<dyn Hittable>,
+    o1: Arc<dyn Hittable>, 
+    o2: Arc<dyn Hittable>,
     material: Option<Arc<dyn Material>>,
 }
 
@@ -30,7 +30,7 @@ impl Debug for Intersection {
 
 
 impl Intersection {
-    pub fn new(o1: Box<dyn Hittable>, o2: Box<dyn Hittable>, material: Option<Arc<dyn Material>>) -> Self {
+    pub fn new(o1: Arc<dyn Hittable>, o2: Arc<dyn Hittable>, material: Option<Arc<dyn Material>>) -> Self {
         Intersection {
             o1,
             o2,

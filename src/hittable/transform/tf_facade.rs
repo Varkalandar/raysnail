@@ -5,13 +5,14 @@ use crate::{
 
 use crate::hittable::transform::TransformStack;
 
+use std::sync::Arc;
 use std::ops::Range;
 use std::fmt::Formatter;
 use std::fmt::Debug;
 use once_cell::sync::OnceCell;
 
 pub struct TfFacade {
-    object: Box<dyn Hittable>,
+    object: Arc<dyn Hittable>,
     stack: TransformStack,
     bbox_cache: OnceCell<Option<AABB>>,
 }
@@ -26,7 +27,7 @@ impl Debug for TfFacade {
 }
 
 impl TfFacade {
-    pub const fn new(object: Box<dyn Hittable>, stack: TransformStack) -> Self {
+    pub const fn new(object: Arc<dyn Hittable>, stack: TransformStack) -> Self {
         Self { 
             object,
             stack,

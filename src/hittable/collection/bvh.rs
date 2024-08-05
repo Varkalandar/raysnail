@@ -11,13 +11,14 @@ use {
 };
 
 use log::info;
+use std::sync::Arc;
 
 
 #[derive(Default)]
 pub struct BVH {
     bbox: Option<AABB>,
-    left: Option<Box<dyn Hittable>>,
-    right: Option<Box<dyn Hittable>>,
+    left: Option<Arc<dyn Hittable>>,
+    right: Option<Arc<dyn Hittable>>,
 }
 
 impl Debug for BVH {
@@ -55,7 +56,7 @@ impl BVH {
     }
 
     fn new_internal(
-        objects: &mut Vec<Option<Box<dyn Hittable>>>, index: Range<usize>, time_limit: &Range<f64>,
+        objects: &mut Vec<Option<Arc<dyn Hittable>>>, index: Range<usize>, time_limit: &Range<f64>,
     ) -> Self {
         let count = index.end - index.start;
 
@@ -96,12 +97,12 @@ impl BVH {
                 )
             });
             let mid = index.start + count / 2;
-            let left = Box::new(Self::new_internal(
+            let left = Arc::new(Self::new_internal(
                 objects,
                 index.start..mid,
                 time_limit,
             ));
-            let right = Box::new(Self::new_internal(objects, mid..index.end, time_limit));
+            let right = Arc::new(Self::new_internal(objects, mid..index.end, time_limit));
             Self {
                 bbox: Some(left.bbox.as_ref().unwrap() | right.bbox.as_ref().unwrap()),
                 left: Some(left),
@@ -112,7 +113,7 @@ impl BVH {
 }
 
 
-fn find_best_axis(objects: &mut Vec<Option<Box<dyn Hittable>>>, time_limit: &Range<f64>) -> usize {
+fn find_best_axis(objects: &mut Vec<Option<Arc<dyn Hittable>>>, time_limit: &Range<f64>) -> usize {
 
     let mut n = 0;
     
@@ -190,7 +191,7 @@ impl Hittable for BVH {
         hit_right.or(hit_left)
     }
 
-    fn contains(&self, point: &Vec3) -> bool
+    fn contains(&self, _point: &Vec3) -> bool
     {
         unimplemented!(
             "{}'s constains function is not yet implemented",

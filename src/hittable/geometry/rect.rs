@@ -119,7 +119,7 @@ impl Hittable for AARect {
         Some(HitRecord::new(ray, self, t1, f64::MAX))
     }
 
-    fn contains(&self, point: &Vec3) -> bool
+    fn contains(&self, _point: &Vec3) -> bool
     {
         false
     }

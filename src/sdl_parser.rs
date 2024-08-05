@@ -71,7 +71,7 @@ struct Token {
 enum DeclaredEntity {
     Light(LightData),
     Camera(CameraData),
-    Hittable(Box<dyn Hittable>),
+    Hittable(Arc<dyn Hittable>),
     Declare(String),
     Invalid,
 }
@@ -402,7 +402,7 @@ fn parse_statement_list(input: &mut Input, scene: &mut SceneData) -> bool {
             DeclaredEntity::Camera(camera) => {
                 scene.camera = Some(camera);
             },
-            DeclaredEntity::Declare(ident) => {
+            DeclaredEntity::Declare(_ident) => {
                 // nothing to do here
             },
             DeclaredEntity::Invalid => {
@@ -432,6 +432,9 @@ fn parse_statement(input: &mut Input) -> DeclaredEntity {
     match entity { DeclaredEntity::Invalid => {}, _ => { return entity; },}
 
     let entity = parse_quadric(input);
+    match entity { DeclaredEntity::Invalid => {}, _ => { return entity; },}
+
+    let entity = parse_object(input);
     match entity { DeclaredEntity::Invalid => {}, _ => { return entity; },}
 
     let entity = parse_difference(input);
@@ -565,7 +568,7 @@ fn parse_sphere(input: &mut Input) -> DeclaredEntity {
             let material = parse_texture(input);
             let stack = parse_object_modifiers(input);
 
-            let sphere = Box::new(Sphere::new(v, r, material));
+            let sphere = Arc::new(Sphere::new(v, r, material));
 
             println!("parse_sphere: ok -> {:?}", sphere);
 
@@ -598,7 +601,7 @@ fn parse_box(input: &mut Input) -> DeclaredEntity {
             let material = parse_texture(input);
             let stack = parse_object_modifiers(input);
 
-            let gbox = Box::new(GeometryBox::new(v1, v2, material));
+            let gbox = Arc::new(GeometryBox::new(v1, v2, material));
             println!("parse_box: ok -> {:?}", gbox);
 
             expect(input, Symbol::BlockClose);
@@ -639,10 +642,55 @@ fn parse_quadric(input: &mut Input) -> DeclaredEntity {
 
             expect(input, Symbol::BlockClose);
 
-            return DeclaredEntity::Hittable(build_transform_facade(stack, Box::new(quadric)));
+            return DeclaredEntity::Hittable(build_transform_facade(stack, Arc::new(quadric)));
         }
         else {
             println!("Line {}, parse_box: expected {{, found {}", input.current_line(), input.current_text());
+        }
+    }
+
+    DeclaredEntity::Invalid
+}
+
+
+fn parse_object(input: &mut Input) -> DeclaredEntity {
+
+    println!("Line {}, parse_object: called, current symbol is {:?}", input.current_line(), input.current_text());
+
+    if expect_quiet(input, Symbol::Object) {
+        if expect(input, Symbol::BlockOpen) {
+
+            let ident_opt = parse_identifier(input);
+
+            if ident_opt.is_some() {
+                let ident = ident_opt.unwrap();
+                println!("parse_object: identifier is {:?}, now looking for declared data", ident);
+
+                let stack = parse_object_modifiers(input);
+
+                expect(input, Symbol::BlockClose);
+
+                let entity = input.declares.get(&ident);
+
+                match entity.unwrap() {
+                    DeclaredEntity::Hittable(object) => {
+                        println!("parse_object: got valid entity");
+                        println!("Line {}, parse_object -> ok", input.current_line());
+
+                        let copy = object.clone();
+                        return DeclaredEntity::Hittable(build_transform_facade(stack, copy));
+                    },
+                    _ => {
+                        println!("Line {}, parse_object: got no entity for identifier", input.current_line());
+                    }
+                }
+            }
+            else {
+                println!("Line {}, parse_object: undeclared identifier {:?}", input.current_line(), ident_opt);
+            }
+        }
+        else {
+            println!("Line {}, parse_object: expected {{, found {}", input.current_line(), input.current_text());
         }
     }
 
@@ -671,7 +719,7 @@ fn parse_difference(input: &mut Input) -> DeclaredEntity {
                     let material = parse_texture(input);
                     let stack = parse_object_modifiers(input);
 
-                    let difference = Box::new(Difference::new(plus, minus, material));
+                    let difference = Arc::new(Difference::new(plus, minus, material));
 
                     println!("Line {}, parse_difference -> ok", input.current_line());
 
@@ -716,7 +764,7 @@ fn parse_intersection(input: &mut Input) -> DeclaredEntity {
                     let material = parse_texture(input);
                     let stack = parse_object_modifiers(input);
 
-                    let intersection = Box::new(Intersection::new(o1, o2, material));
+                    let intersection = Arc::new(Intersection::new(o1, o2, material));
 
                     // scene.hittables.add_ref(build_transform_facade(stack, intersection));
 
@@ -767,10 +815,10 @@ fn parse_declare(input: &mut Input) -> DeclaredEntity {
 }
 
 
-fn build_transform_facade(stack: TransformStack, hittable: Box<dyn Hittable>) ->  Box<dyn Hittable> {
+fn build_transform_facade(stack: TransformStack, hittable: Arc<dyn Hittable>) ->  Arc<dyn Hittable> {
 
     if stack.len() > 0 {
-        return Box::new(TfFacade::new(hittable, stack))
+        return Arc::new(TfFacade::new(hittable, stack))
     }
 
     hittable
