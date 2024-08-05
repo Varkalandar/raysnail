@@ -72,6 +72,7 @@ enum DeclaredEntity {
     Light(LightData),
     Camera(CameraData),
     Hittable(Box<dyn Hittable>),
+    Declare(String),
     Invalid,
 }
 
@@ -400,6 +401,9 @@ fn parse_statement_list(input: &mut Input, scene: &mut SceneData) -> bool {
             },
             DeclaredEntity::Camera(camera) => {
                 scene.camera = Some(camera);
+            },
+            DeclaredEntity::Declare(ident) => {
+                // nothing to do here
             },
             DeclaredEntity::Invalid => {
                 // something went wrong
@@ -744,14 +748,24 @@ fn parse_declare(input: &mut Input) -> DeclaredEntity {
     println!("Line {}, parse_declare: called, current symbol is {:?}", input.current_line(), input.current_text());
 
     if expect_quiet(input, Symbol::Declare) {
-        if expect(input, Symbol::Equal) {
+        if let Some(ident) = parse_identifier(input) {
+            if expect(input, Symbol::Equal) {
 
-            return DeclaredEntity::Invalid;
+                let entity = parse_statement(input);
+
+                input.declares.insert(ident.to_string(), entity);
+
+                println!("Line {}, parse_declare -> ok, current symbol is {:?}", input.current_line(), input.current_text());
+
+                return DeclaredEntity::Declare(ident);
+            }
         }
     }
 
+    println!("Line {}, parse_declare: failed, current symbol is {:?}", input.current_line(), input.current_text());
     DeclaredEntity::Invalid
 }
+
 
 fn build_transform_facade(stack: TransformStack, hittable: Box<dyn Hittable>) ->  Box<dyn Hittable> {
 
@@ -990,6 +1004,16 @@ fn parse_checker(input: &mut Input) -> Option<(Color, Color)> {
 }
 
 
+fn parse_identifier(input: &mut Input) -> Option<String> {
+    let ident = input.current_text().to_string();
+    nextsym(input);
+
+    println!("Line {}, parse_identifier: found '{}'", input.current_line(), ident);
+
+    Some(ident)
+}
+
+
 fn parse_translate(input: &mut Input) -> Option<Vec3> {
 
     println!("parse_translate: called");
@@ -1085,7 +1109,7 @@ fn parse_expression(input: &mut Input) -> Option<f64> {
 
     let mut e;
 
-    if expect(input, Symbol::Minus) {
+    if expect_quiet(input, Symbol::Minus) {
         if let Some(value) = parse_term(input) {
             e = -value;
         }
@@ -1104,7 +1128,7 @@ fn parse_expression(input: &mut Input) -> Option<f64> {
 
     loop {
 
-        if expect(input, Symbol::Minus) {
+        if expect_quiet(input, Symbol::Minus) {
             if let Some(value) = parse_term(input) {
                 e -= value;
             }    
@@ -1113,7 +1137,7 @@ fn parse_expression(input: &mut Input) -> Option<f64> {
                 return None;
             }    
         }            
-        else if expect(input, Symbol::Plus) {
+        else if expect_quiet(input, Symbol::Plus) {
             if let Some(value) = parse_term(input) {
                 e += value;
             }
@@ -1138,7 +1162,7 @@ fn parse_term(input: &mut Input) -> Option<f64> {
     if let Some(mut f) = parse_factor(input) {
 
         loop {
-            if expect(input, Symbol::Multiply) {
+            if expect_quiet(input, Symbol::Multiply) {
                 if let Some(value) = parse_factor(input) {
                     f *= value;
                 }    
@@ -1147,7 +1171,7 @@ fn parse_term(input: &mut Input) -> Option<f64> {
                     return None;
                 }    
             }            
-            else if expect(input, Symbol::Divide) {
+            else if expect_quiet(input, Symbol::Divide) {
                 if let Some(value) = parse_factor(input) {
                     f /= value;
                 }
@@ -1165,7 +1189,7 @@ fn parse_term(input: &mut Input) -> Option<f64> {
         return Some(f);
     }
     else {
-        println!("Line {}, parse_term: expected factor, found {}", input.current_line(), input.current_text());
+//        println!("Line {}, parse_term: expected factor, found {}", input.current_line(), input.current_text());
     }
 
     None
@@ -1173,7 +1197,7 @@ fn parse_term(input: &mut Input) -> Option<f64> {
 
 
 fn parse_factor(input: &mut Input) -> Option<f64> {
-    if expect(input, Symbol::ParenOpen) {
+    if expect_quiet(input, Symbol::ParenOpen) {
         let e = parse_expression(input);
 
         if expect(input, Symbol::ParenClose) {
@@ -1202,7 +1226,7 @@ fn parse_float(input: &mut Input) -> Option<f64> {
         return Some(v);
     }
     else {
-        println!("Line {}, parse_float: expected float number, found {}", input.current_line(), input.current_text());
+//        println!("Line {}, parse_float: expected float number, found {}", input.current_line(), input.current_text());
     }
 
     None
