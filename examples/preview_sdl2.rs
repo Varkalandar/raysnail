@@ -244,9 +244,9 @@ fn render_time_test(width: usize, height: usize,
     */
 /*
     world.add(Intersection::new(
-        Box::new(Quadric::new(1.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0,
+        Arc::new(Quadric::new(1.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0,
                      Arc::new(Lambertian::new(Arc::new(Color::new(0.3, 0.7, 0.2, 1.0)))))),
-        Box::new(GeometryBox::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0),
+        Arc::new(GeometryBox::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0),
                          Arc::new(Lambertian::new(Arc::new(Color::new(0.7, 0.3, 0.2, 1.0)))))),
         )             
     );
@@ -263,9 +263,9 @@ fn render_time_test(width: usize, height: usize,
 
 
     world.add(Intersection::new(
-        Box::new(Sphere::new(Point3::new(0.0, 0.0, 0.0), 1.35, 
+        Arc::new(Sphere::new(Point3::new(0.0, 0.0, 0.0), 1.35, 
                  Some(Arc::new(Lambertian::new(Arc::new(Color::new(0.1, 0.2, 0.7, 1.0))))))),
-        Box::new(GeometryBox::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0),
+        Arc::new(GeometryBox::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0),
                  Some(Arc::new(Lambertian::new(Arc::new(Color::new(0.8, 0.6, 0.3, 1.0))))))),
         None
         )             

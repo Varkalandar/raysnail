@@ -85,7 +85,7 @@ fn add_box(world: &mut HittableList, material: Arc<dyn Material>, center: &Vec3,
     tf_stack.push(Transform::rotate_by_x_axis(rng.normal() * 180.0));
     tf_stack.push(Transform::rotate_by_y_axis(rng.normal() * 180.0));
     tf_stack.push(Transform::translate(Vec3::new(center.x, height, center.z)));
-    world.add(TfFacade::new(Box::new(GeometryBox::new(-size.clone(), size, Some(material))), tf_stack));
+    world.add(TfFacade::new(Arc::new(GeometryBox::new(-size.clone(), size, Some(material))), tf_stack));
 }
 
 
@@ -257,7 +257,7 @@ pub fn cornell_box_scene(
             let mut tf_stack = TransformStack::new();
             tf_stack.push(Transform::rotate_by_y_axis(-18.0));
             tf_stack.push(Transform::translate(Vec3::new(130.0, 0.0, 65.0)));
-            let box1 = TfFacade::new(Box::new(
+            let box1 = TfFacade::new(Arc::new(
                 GeometryBox::new(
                     Point3::new(0.0, 0.0, 0.0),
                     Point3::new(165.0, 165.0, 165.0),
@@ -266,7 +266,7 @@ pub fn cornell_box_scene(
             let mut tf_stack = TransformStack::new();
             tf_stack.push(Transform::rotate_by_y_axis(15.0));
             tf_stack.push(Transform::translate(Vec3::new(265.0, 0.0, 295.0)));
-            let box2 = TfFacade::new(Box::new(
+            let box2 = TfFacade::new(Arc::new(
                 GeometryBox::new(
                     Point3::new(0.0, 0.0, 0.0),
                     Point3::new(165.0, 330.0, 165.0),
@@ -447,7 +447,7 @@ pub fn all_feature_scene(seed: Option<u64>) -> (Camera, HittableList) {
         let mut tf_stack = TransformStack::new();
         tf_stack.push(Transform::rotate_by_y_axis(15.0));
         tf_stack.push(Transform::translate(Vec3::new(-100.0, 270.0, 395.0)));
-        let rotation = TfFacade::new(Box::new(BVH::new(boxes2, &time_limit)), tf_stack);
+        let rotation = TfFacade::new(Arc::new(BVH::new(boxes2, &time_limit)), tf_stack);
     }
 
     /*
