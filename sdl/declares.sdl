@@ -17,21 +17,37 @@ light {
 
 #declare LEMON_CYLINDER =
 intersection {
-	quadric {
-		<1.0, 0, 1.0>, <0, 0, 0>, <0, 0, 0>, -1.0
-        translate <0, 0, -0.8>
+	intersection {
+		quadric {
+			<1.0, 0, 1.0>, <0, 0, 0>, <0, 0, 0>, -1.0
+			translate <0, 0, -0.8>
+		}
+		quadric {
+			<1.0, 0, 1.0>, <0, 0, 0>, <0, 0, 0>, -1.0
+			translate <0, 0, 0.8>
+		}
 	}
-	quadric {
-		<1.0, 0, 1.0>, <0, 0, 0>, <0, 0, 0>, -1.0
-        translate <0, 0, 0.8>
+	box {
+		<-1, 0, -1>
+		<1, 4, 1>
 	}
+
+	// rotate <0, 30, 0>
 }
 
-#declare n = 1;
+#declare n = 0;
 
-object {
-	LEMON_CYLINDER
-}
+#while(n < 7) 
+	object {
+		LEMON_CYLINDER
+
+		rotate <0, 0, 90>
+		rotate <60, 0, 0>
+		rotate <0, n * 360/7, 0>
+	}
+
+	#declare n = n + 1;
+#end
 
 box {
 	<-3.5, -1.2, -8>,

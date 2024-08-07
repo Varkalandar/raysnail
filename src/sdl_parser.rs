@@ -283,7 +283,7 @@ fn tokenize(line_in: &String, line_no: u32) -> Vec<Token> {
 
     let line = strip_line_comments(line_in);
     
-    let seps = [' ', ',', ';', '<', '>', '{', '}', '+', '-', '*', '/', '\n'];
+    let seps = [' ', ',', ';', '(', ')', '<', '>', '{', '}', '+', '-', '*', '/', '\n'];
 
     let mut v = Vec::new();
 
@@ -415,10 +415,10 @@ fn parse_statement_list(input: &mut Input, scene: &mut SceneData) -> bool {
             DeclaredEntity::Directive(_ident) => {
                 // nothing to do here
             },
-            DeclaredEntity::Float(v) => {
+            DeclaredEntity::Float(_v) => {
                 // nothing to do here
             },
-            DeclaredEntity::Vector(v) => {
+            DeclaredEntity::Vector(_v) => {
                 // nothing to do here
             },
             DeclaredEntity::Invalid => {
@@ -826,6 +826,7 @@ fn parse_declare(input: &mut Input) -> DeclaredEntity {
                 // test non-statement cases first
 
                 if let Some(v) = parse_expression(input) {
+                    nextsym(input);
                     expect(input, Symbol::Semicolon);
                     println!("Line {}, parse_declare -> scalar expression ok {:?}, current symbol is {:?}", input.current_line(), v, input.current_text());
                     input.declares.insert(ident.to_string(), DeclaredEntity::Float(v));
@@ -859,22 +860,30 @@ fn parse_while(input: &mut Input) -> DeclaredEntity {
     let loop_start = input.pos;
 
     if expect_quiet(input, Symbol::While) {
-        if let Some(ident) = parse_identifier(input) {
-            if expect(input, Symbol::ParenOpen) {
+        if expect(input, Symbol::ParenOpen) {
 
-                println!("Line {}, parse_while: checking condition {:?}", input.current_line(), input.current_text());
+            println!("Line {}, parse_while: checking condition {:?}", input.current_line(), input.current_text());
 
-                if let Some(v1) = parse_expression(input) {
-                    expect(input, Symbol::VectorOpen);
+            if let Some(v1) = parse_expression(input) {
+                nextsym(input);
 
-                    if let Some(v2) = parse_expression(input) {
+                expect(input, Symbol::VectorOpen);
 
+                if let Some(v2) = parse_expression(input) {
+                    nextsym(input);
+
+                    if v1 < v2 {
                         println!("Line {}, parse_while -> comparision ok {:?} < {:?}, current symbol is {:?}", input.current_line(), v1, v2, input.current_text());
 
                         input.loops.push(loop_start);
-
-                        return DeclaredEntity::Directive("#while".to_string());
                     }
+                    else {
+                        println!("Line {}, parse_while -> goto loop end", input.current_line());
+
+                        fast_forward_to_end(input);
+                    }
+
+                    return DeclaredEntity::Directive("#while".to_string());                    
                 }
             }
         }
@@ -885,12 +894,22 @@ fn parse_while(input: &mut Input) -> DeclaredEntity {
 }
 
 
+fn fast_forward_to_end(input: &mut Input) {
+    while input.symbol != Symbol::End {
+        nextsym(input);
+    }
+
+    nextsym(input);
+}
+
+
 fn parse_end(input: &mut Input) -> DeclaredEntity {
     if expect_quiet(input, Symbol::End) {
         let loop_start = input.loops.pop().unwrap();
 
         // Continue parsing at loop start
-        input.pos = loop_start;
+        input.pos = loop_start - 1;
+        nextsym(input);
 
         println!("Line {}, parse_end: ok, loop start is {}, current symbol is {:?}", input.pos, input.current_line(), input.current_text());
         return DeclaredEntity::Directive("#end".to_string());
@@ -1239,7 +1258,7 @@ fn parse_vector(input: &mut Input) -> Option<Vec3> {
 
 fn parse_expression(input: &mut Input) -> Option<f64> {
 
-    println!("Line {}, parse_expression: called with {}", input.current_line(), input.current_text());
+    println!("Line {}, parse_expression called, current symbol is {}", input.current_line(), input.current_text());
 
     let mut e;
 
@@ -1342,6 +1361,25 @@ fn parse_factor(input: &mut Input) -> Option<f64> {
         }
     }
     else {
+        let ident = input.current_text();
+        println!("Line {}, parse_factor: testing identifier: {}", input.current_line(), ident);
+
+        let symbol_opt = input.declares.get(ident);
+
+        if symbol_opt.is_some() {
+            let e = symbol_opt.unwrap(); 
+            match e {
+                DeclaredEntity::Float(f) => {
+                    let v = *f;
+                    nextsym(input);
+                    return Some(v);
+                }
+                _ => {
+                    println!("Line {}, parse_factor: expected declared float, found {:?}", input.current_line(), e);
+                }
+            }
+        }
+        
         return parse_float(input)
     }
 

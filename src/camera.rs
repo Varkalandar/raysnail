@@ -11,7 +11,8 @@ use {
 };
 use crate::painter::PainterController;
 use crate::painter::PassivePainterController;
-use log::info;
+// use log::info;
+
 
 #[derive(Debug)]
 pub struct Camera {
@@ -94,7 +95,6 @@ impl Camera {
         let world = World::new(world, lights, &(0.0..self.shutter_speed));
         TakePhotoSettings::new(self, world)
     }
-
 }
 
 
