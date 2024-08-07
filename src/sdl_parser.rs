@@ -72,7 +72,9 @@ enum DeclaredEntity {
     Light(LightData),
     Camera(CameraData),
     Hittable(Arc<dyn Hittable>),
-    Declare(String),
+    Directive(String),
+    Float(f64),
+    Vector(Vec3),
     Invalid,
 }
 
@@ -94,6 +96,7 @@ struct Input {
     symbol: Symbol,
 
     declares: HashMap <String, DeclaredEntity>,
+    loops: Vec<usize>,  // to mark input positions of the start of loop statements
 }
 
 impl Input {
@@ -145,6 +148,7 @@ enum Symbol {
     ParenOpen,
     ParenClose,
     Comma,
+    Semicolon,
 
     Translate,
     Rotate,
@@ -167,6 +171,8 @@ enum Symbol {
     Checker,
     
     Declare,
+    While,
+    End,
     Id,
     Eof,
     None
@@ -185,6 +191,7 @@ impl SdlParser {
             tokens: read_tokens(filename),
             symbol: Symbol::None,
             declares: HashMap::new(),
+            loops: Vec::new(),
         };
 
         let mut scene = SceneData::new();
@@ -213,6 +220,7 @@ fn build_symbol_map() -> HashMap<String, Symbol> {
     map.insert("<".to_string(), Symbol::VectorOpen);
     map.insert(">".to_string(), Symbol::VectorClose);
     map.insert(",".to_string(), Symbol::Comma);
+    map.insert(";".to_string(), Symbol::Semicolon);
     map.insert("sphere".to_string(), Symbol::Sphere);
     map.insert("box".to_string(), Symbol::Box);
     map.insert("quadric".to_string(), Symbol::Quadric);
@@ -246,6 +254,8 @@ fn build_symbol_map() -> HashMap<String, Symbol> {
     map.insert("=".to_string(), Symbol::Equal);
 
     map.insert("#declare".to_string(), Symbol::Declare);
+    map.insert("#while".to_string(), Symbol::While);
+    map.insert("#end".to_string(), Symbol::End);
 
     map
 }
@@ -273,7 +283,7 @@ fn tokenize(line_in: &String, line_no: u32) -> Vec<Token> {
 
     let line = strip_line_comments(line_in);
     
-    let seps = [' ', ',', '<', '>', '{', '}', '+', '-', '*', '/', '\n'];
+    let seps = [' ', ',', ';', '<', '>', '{', '}', '+', '-', '*', '/', '\n'];
 
     let mut v = Vec::new();
 
@@ -402,7 +412,13 @@ fn parse_statement_list(input: &mut Input, scene: &mut SceneData) -> bool {
             DeclaredEntity::Camera(camera) => {
                 scene.camera = Some(camera);
             },
-            DeclaredEntity::Declare(_ident) => {
+            DeclaredEntity::Directive(_ident) => {
+                // nothing to do here
+            },
+            DeclaredEntity::Float(v) => {
+                // nothing to do here
+            },
+            DeclaredEntity::Vector(v) => {
                 // nothing to do here
             },
             DeclaredEntity::Invalid => {
@@ -445,7 +461,13 @@ fn parse_statement(input: &mut Input) -> DeclaredEntity {
 
     let entity = parse_declare(input);
     match entity { DeclaredEntity::Invalid => {}, _ => { return entity; },}
-    
+
+    let entity = parse_while(input);
+    match entity { DeclaredEntity::Invalid => {}, _ => { return entity; },}
+
+    let entity = parse_end(input);
+    match entity { DeclaredEntity::Invalid => {}, _ => { return entity; },}
+
     if input.symbol == Symbol::Eof {
         println!("EOF, stop parsing");
         return DeclaredEntity::Invalid;
@@ -799,18 +821,82 @@ fn parse_declare(input: &mut Input) -> DeclaredEntity {
         if let Some(ident) = parse_identifier(input) {
             if expect(input, Symbol::Equal) {
 
-                let entity = parse_statement(input);
+                println!("Line {}, parse_declare: checking value {:?}", input.current_line(), input.current_text());
 
-                input.declares.insert(ident.to_string(), entity);
+                // test non-statement cases first
 
-                println!("Line {}, parse_declare -> ok, current symbol is {:?}", input.current_line(), input.current_text());
-
-                return DeclaredEntity::Declare(ident);
+                if let Some(v) = parse_expression(input) {
+                    expect(input, Symbol::Semicolon);
+                    println!("Line {}, parse_declare -> scalar expression ok {:?}, current symbol is {:?}", input.current_line(), v, input.current_text());
+                    input.declares.insert(ident.to_string(), DeclaredEntity::Float(v));
+                    return DeclaredEntity::Directive("#declare".to_string());
+                }
+                else if let Some(v) = parse_vector(input) {
+                    expect(input, Symbol::Semicolon);
+                    println!("Line {}, parse_declare -> vector expression ok {:?}, current symbol is {:?}", input.current_line(), v, input.current_text());
+                    input.declares.insert(ident.to_string(), DeclaredEntity::Vector(v));
+                    return DeclaredEntity::Directive("#declare".to_string());
+                }
+                else {
+                    let entity = parse_statement(input);
+                    input.declares.insert(ident.to_string(), entity);
+                    println!("Line {}, parse_declare -> statement ok, current symbol is {:?}", input.current_line(), input.current_text());
+                    return DeclaredEntity::Directive("#declare".to_string());
+                }
             }
         }
     }
 
     println!("Line {}, parse_declare: failed, current symbol is {:?}", input.current_line(), input.current_text());
+    DeclaredEntity::Invalid
+}
+
+
+fn parse_while(input: &mut Input) -> DeclaredEntity {
+
+    println!("Line {}, parse_while: called, current symbol is {:?}", input.current_line(), input.current_text());
+
+    let loop_start = input.pos;
+
+    if expect_quiet(input, Symbol::While) {
+        if let Some(ident) = parse_identifier(input) {
+            if expect(input, Symbol::ParenOpen) {
+
+                println!("Line {}, parse_while: checking condition {:?}", input.current_line(), input.current_text());
+
+                if let Some(v1) = parse_expression(input) {
+                    expect(input, Symbol::VectorOpen);
+
+                    if let Some(v2) = parse_expression(input) {
+
+                        println!("Line {}, parse_while -> comparision ok {:?} < {:?}, current symbol is {:?}", input.current_line(), v1, v2, input.current_text());
+
+                        input.loops.push(loop_start);
+
+                        return DeclaredEntity::Directive("#while".to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    println!("Line {}, parse_while: failed, current symbol is {:?}", input.current_line(), input.current_text());
+    DeclaredEntity::Invalid
+}
+
+
+fn parse_end(input: &mut Input) -> DeclaredEntity {
+    if expect_quiet(input, Symbol::End) {
+        let loop_start = input.loops.pop().unwrap();
+
+        // Continue parsing at loop start
+        input.pos = loop_start;
+
+        println!("Line {}, parse_end: ok, loop start is {}, current symbol is {:?}", input.pos, input.current_line(), input.current_text());
+        return DeclaredEntity::Directive("#end".to_string());
+    }
+
+    println!("Line {}, parse_end: failed, current symbol is {:?}", input.current_line(), input.current_text());
     DeclaredEntity::Invalid
 }
 

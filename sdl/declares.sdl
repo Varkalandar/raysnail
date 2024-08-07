@@ -27,6 +27,7 @@ intersection {
 	}
 }
 
+#declare n = 1;
 
 object {
 	LEMON_CYLINDER
