@@ -6,7 +6,7 @@
 
 camera {
 	location <10.0, 2.0, 4.0>  // the location of the camera
-	look_at <0, -0.5, 1.0>     // where the camera is aimed at
+	look_at <0, -0.95, -0.1>     // where the camera is aimed at
 	angle 40
 }
 
@@ -20,23 +20,31 @@ intersection {
 	intersection {
 		quadric {
 			<1.0, 0, 1.0>, <0, 0, 0>, <0, 0, 0>, -1.0
-			translate <0, 0, -0.8>
+			translate <0, 0, -0.85>
 		}
 		quadric {
 			<1.0, 0, 1.0>, <0, 0, 0>, <0, 0, 0>, -1.0
-			translate <0, 0, 0.8>
+			translate <0, 0, 0.85>
 		}
 	}
 	box {
-		<-1, 0, -1>
-		<1, 4, 1>
+		<-0.6, 0, -0.6>
+		<0.6, 5.5, 0.6>
 	}
 
-	// rotate <0, 30, 0>
+	texture {
+		pigment { 
+			color rgb <0.6, 0.5, 0.4> 
+		}
+		finish {
+			reflection 0.5
+		}
+	}
 }
 
-#declare n = 0;
+// fan blades
 
+#declare n = 0;
 #while(n < 7) 
 	object {
 		LEMON_CYLINDER
@@ -48,6 +56,77 @@ intersection {
 
 	#declare n = n + 1;
 #end
+
+
+// propeller nose
+
+intersection {
+	sphere {
+		<0, 0, 0>, 1
+	}
+	box {
+		<-1, -0.3, -1>
+		<1, 1.1, 1>
+	}
+	texture {
+		pigment { 
+			color rgb <0.8, 0.8, 0.8> 
+		}
+		finish {
+			phong 0.1
+			phong_size 100
+		}
+	}
+
+	scale <0.7, 1.2, 0.7>
+}
+
+
+// axle
+
+intersection {
+	quadric {
+		<1.0, 0, 1.0>, <0, 0, 0>, <0, 0, 0>, -0.5
+	}
+	box {
+		<-1, -1, -1>
+		<1, -0.2, 1>
+	}
+	texture {
+		pigment { 
+			color rgb <0.7, 0.8, 0.9> 
+		}
+		finish {
+			reflection 0.7
+		}
+	}
+
+	scale <0.7, 1.2, 0.7>
+}
+
+
+// bearing
+
+intersection {
+	quadric {
+		<1.0, 0, 1.0>, <0, 0, 0>, <0, 0, 0>, -1.0
+	}
+	box {
+		<-1, -1.1, -1>
+		<1, -0.5, 1>
+	}
+	texture {
+		pigment { 
+			color rgb <0.8, 0.8, 0.8> 
+		}
+		finish {
+			phong 0.1
+			phong_size 100
+		}
+	}
+
+	scale <0.7, 1.2, 0.7>
+}
 
 box {
 	<-3.5, -1.2, -8>,
@@ -67,6 +146,6 @@ sphere {
 	<0, -10002, 0>, 10000
 
 	texture {
-		pigment { color rgb <0.07, 0.06, 0.05> }
+		pigment { color rgb <0.06, 0.06, 0.04> }
 	}
 }
