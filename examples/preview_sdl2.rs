@@ -24,6 +24,7 @@ use raysnail::prelude::Ray;
 use raysnail::prelude::Color;
 use raysnail::prelude::Vec3;
 use raysnail::prelude::Point3;
+use raysnail::prelude::clamp;
 use raysnail::camera::CameraBuilder;
 
 use raysnail::painter::PainterTarget;
@@ -82,11 +83,11 @@ impl Renderer {
 }
 
 struct PixelQueue {
-    sender: SyncSender<(usize, Vec<[u8; 4]>)>,
+    sender: SyncSender<(usize, Vec<[f32; 4]>)>,
 }
 
 impl PainterTarget for PixelQueue {
-    fn register_pixels(&self, y: usize, pixels: &Vec<[u8; 4]>) {
+    fn register_pixels(&self, y: usize, pixels: &Vec<[f32; 4]>) {
         // println!("Got {} pixels", pixels.len());
 
         let status = self.sender.send((y, pixels.clone()));
@@ -116,7 +117,7 @@ impl PainterController for RenderPainterController {
 
 pub fn main() -> Result<(), String> {
 
-    let (sender, receiver) = sync_channel::<(usize, Vec<[u8; 4]>)>(1 << 16);
+    let (sender, receiver) = sync_channel::<(usize, Vec<[f32; 4]>)>(1 << 16);
     let (command_sender, command_receiver) = sync_channel::<PainterCommand>(256);
 
     let mut queue = PixelQueue {sender};
@@ -137,7 +138,7 @@ pub fn main() -> Result<(), String> {
 }
 
 
-fn boot_sdl(width: usize, height: usize, receiver: Receiver<(usize, Vec<[u8; 4]>)>, command_sender: SyncSender<PainterCommand>) {
+fn boot_sdl(width: usize, height: usize, receiver: Receiver<(usize, Vec<[f32; 4]>)>, command_sender: SyncSender<PainterCommand>) {
     common::init_log("info");
 
     let sdl_context = sdl2::init().unwrap();
@@ -181,9 +182,9 @@ fn boot_sdl(width: usize, height: usize, receiver: Receiver<(usize, Vec<[u8; 4]>
             let (y, data) = data_result.unwrap();
 
             for pixel in data {
-                pixels.push(pixel[0]);
-                pixels.push(pixel[1]);
-                pixels.push(pixel[2]);
+                pixels.push((clamp(pixel[0] as f64, 0.0 .. 1.0) * 255.5) as u8);
+                pixels.push((clamp(pixel[1] as f64, 0.0 .. 1.0) * 255.5) as u8);
+                pixels.push((clamp(pixel[2] as f64, 0.0 .. 1.0) * 255.5) as u8);
             }
 
             renderer.flush_line(y, &pixels, &mut line);

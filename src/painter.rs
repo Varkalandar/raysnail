@@ -21,7 +21,7 @@ pub enum PainterCommand {
 
 
 pub trait PainterTarget : Send + Sync {
-    fn register_pixels(&self, _y:usize, _pixels: &Vec<[u8; 4]>) {
+    fn register_pixels(&self, _y:usize, _pixels: &Vec<[f32; 4]>) {
     }
 }
 
@@ -271,7 +271,7 @@ impl Painter {
     }
 
 
-    fn render_pixel<F>(&self, row: usize, column: usize, rng: &mut FastRng, uv_color: &F) -> [u8; 4]
+    fn render_pixel<F>(&self, row: usize, column: usize, rng: &mut FastRng, uv_color: &F) -> [f32; 4]
     where
         F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync,
     {
@@ -318,15 +318,15 @@ impl Painter {
 
         let color = color_vec.into_color(self.samples, self.gamma);
 
-        [(clamp(color.r as f64, 0.0..1.0) * 255.0) as u8, 
-         (clamp(color.g as f64, 0.0..1.0) * 255.0) as u8, 
-         (clamp(color.b as f64, 0.0..1.0) * 255.0) as u8, 
-         255]
+        [color.r, 
+         color.g, 
+         color.b, 
+         1.0]
     }
 
     fn parallel_render_row<F>(&self, row: usize, uv_color: &F, cancel: &AtomicBool,
                               target: &dyn PainterTarget
-    ) -> Vec<[u8; 4]>
+    ) -> Vec<[f32; 4]>
     where
         F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync,
     {
@@ -338,7 +338,7 @@ impl Painter {
             (0..self.width)
             .map(|column| {
                 if cancel.load(Ordering::Relaxed) {
-                    return [0, 0, 0, 255];
+                    return [0.0, 0.0, 0.0, 1.0];
                 }
                 self.render_pixel(row, column, &mut rng, &uv_color)
             })
@@ -366,7 +366,7 @@ impl Painter {
 
     fn parallel_render_row_iter<'c, F>(&'c self, uv_color: F, cancel: &'c AtomicBool,
                                 target: &'c dyn PainterTarget,
-    ) -> impl IndexedParallelIterator<Item = Vec<[u8; 4]>> + 'c
+    ) -> impl IndexedParallelIterator<Item = Vec<[f32; 4]>> + 'c
     where
         F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync + 'c,
     {
@@ -387,11 +387,14 @@ impl Painter {
     */
 
     fn real_row_pixels_to_file(
-        context: &mut PainterOutputContext<'_>, pixels: Vec<[u8; 4]>,
+        context: &mut PainterOutputContext<'_>, pixels: Vec<[f32; 4]>,
     ) -> std::io::Result<()> {
 
         for pixel in &pixels {
-            writeln!(context.file, "{} {} {}", pixel[0], pixel[1], pixel[2])?;
+            writeln!(context.file, "{} {} {}", 
+            (clamp(pixel[0] as f64, 0.0 .. 1.0) * 255.5) as u8,
+            (clamp(pixel[1] as f64, 0.0 .. 1.0) * 255.5) as u8,
+            (clamp(pixel[2] as f64, 0.0 .. 1.0) * 255.5) as u8)?;
         }
 
         if let Some(controller) = &mut context.controller {
@@ -406,7 +409,7 @@ impl Painter {
     }
 
     fn row_pixels_to_file(
-        context: &mut PainterOutputContext<'_>, pixels: Vec<[u8; 4]>,
+        context: &mut PainterOutputContext<'_>, pixels: Vec<[f32; 4]>,
     ) -> std::io::Result<()> {
         Self::real_row_pixels_to_file(context, pixels).map_err(|e| {
             context.cancel.store(true, Ordering::Relaxed);
