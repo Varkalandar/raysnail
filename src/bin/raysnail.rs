@@ -31,6 +31,9 @@ use raysnail::camera::CameraBuilder;
 use raysnail::painter::PainterTarget;
 use raysnail::painter::PainterCommand;
 use raysnail::painter::PainterController;
+use raysnail::painter::PixelController;
+use raysnail::painter::PassivePixelController;
+
 use raysnail::hittable::collection::HittableList;
 use raysnail::sdl_parser::SdlParser;
 
@@ -179,7 +182,9 @@ fn boot_sdl(width: usize, height: usize, receiver: Receiver<(usize, Vec<[f32; 4]
 }
 
 fn parse_and_render(width: usize, height: usize, samples: usize, filename: &str,
-                    target: &mut dyn PainterTarget, controller: &mut dyn PainterController) -> bool {
+                    target: &mut dyn PainterTarget, 
+                    controller: &mut dyn PainterController,
+                    pixel_map: &dyn PixelController) -> bool {
 
     let scene_data_result = SdlParser::parse(filename);
 
@@ -225,7 +230,7 @@ fn parse_and_render(width: usize, height: usize, samples: usize, filename: &str,
         .background(background)
         .samples(samples)
         .depth(8)
-        .shot_to_target(Some("sample_scene.ppm"), target, controller)
+        .shot_to_target(Some("sample_scene.ppm"), target, controller, pixel_map)
         .unwrap();
 
     true
@@ -272,6 +277,7 @@ pub fn main() -> Result<(), String> {
 
     let mut queue = PixelQueue {sender};
     let mut controller = RenderPainterController {command_receiver};
+    let pixel_map = PassivePixelController {};
 
     let mut width: usize = 800;
     let mut height: usize = 600;
@@ -296,7 +302,7 @@ pub fn main() -> Result<(), String> {
 
     spawn(move || boot_sdl(width, height, receiver, command_sender));
 
-    parse_and_render(width, height, samples, scene, &mut queue, &mut controller);
+    parse_and_render(width, height, samples, scene, &mut queue, &mut controller, &pixel_map);
 
     Ok(())
 }

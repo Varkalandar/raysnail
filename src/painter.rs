@@ -21,13 +21,19 @@ pub enum PainterCommand {
 
 
 pub trait PainterTarget : Send + Sync {
-    fn register_pixels(&self, _y:usize, _pixels: &Vec<[f32; 4]>) {
+    fn register_pixels(&self, _y: usize, _pixels: &Vec<[f32; 4]>) {
     }
 }
 
 pub trait PainterController : Send {
     fn receive_command(&self) -> PainterCommand {
         PainterCommand::None
+    }
+}
+
+pub trait PixelController : Send + Sync {
+    fn calculate_pixel(&self, _x: usize, _y: usize) -> bool {
+        true
     }
 }
 
@@ -46,6 +52,15 @@ pub struct PassivePainterController {
 
 
 impl PainterController for PassivePainterController {
+}
+
+
+#[derive(Debug)]
+pub struct PassivePixelController {
+}
+
+
+impl PixelController for PassivePixelController {
 }
 
 
@@ -224,19 +239,6 @@ impl Painter {
     #[allow(clippy::cast_precision_loss)] // because row and column is small enough in practice
     fn calculate_uv(&self, x: f64, y: f64) -> [f64; 2]  {
 
-        // before stratification
-        /*
-        if self.samples == 1 {
-            let u = (column as f64) / self.width as f64;
-            let v = ((self.height - 1 - row) as f64) / self.height as f64;
-            (u, v)
-        } else {
-            let u = (column as f64 + Random::normal()) / self.width as f64;
-            let v = ((self.height - 1 - row) as f64 + Random::normal()) / self.height as f64;
-            (u, v)
-        }
-        */
-
         let h = self.height as f64;
         let u = x / self.width as f64;
         let v = (h - 1.0 - y) / h;
@@ -325,8 +327,8 @@ impl Painter {
     }
 
     fn parallel_render_row<F>(&self, row: usize, uv_color: &F, cancel: &AtomicBool,
-                              target: &dyn PainterTarget
-    ) -> Vec<[f32; 4]>
+                              target: &dyn PainterTarget, 
+                              pixel_map: &dyn PixelController) -> Vec<[f32; 4]>
     where
         F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync,
     {
@@ -340,51 +342,33 @@ impl Painter {
                 if cancel.load(Ordering::Relaxed) {
                     return [0.0, 0.0, 0.0, 1.0];
                 }
-                self.render_pixel(row, column, &mut rng, &uv_color)
+                if pixel_map.calculate_pixel(column, row) {
+                    return self.render_pixel(row, column, &mut rng, &uv_color)
+                }
+
+                // return a fully transparent black pixel for the parts
+                // which are not calculated in this pass
+                return [0.0, 0.0, 0.0, 0.0];
             })
             .collect::<Vec<_>>();
 
         target.register_pixels(row, &pixels);
-/*
-        if command == PainterCommand::Quit {
-            cancel.store(true, Ordering::Relaxed);
-        }
-*/
+
         pixels
     }
 
-    /*
-    fn seq_render_row<F>(&self, row: usize, uv_color: &F) -> Vec<[u8; 4]>
-    where
-        F: Fn(f64, f64) -> Vec3 + Send + Sync,
-    {
-        (0..self.width)
-            .map(|column| self.render_pixel(row, column, &uv_color))
-            .collect::<Vec<_>>()
-    }
-    */
 
-    fn parallel_render_row_iter<'c, F>(&'c self, uv_color: F, cancel: &'c AtomicBool,
-                                target: &'c dyn PainterTarget,
-    ) -> impl IndexedParallelIterator<Item = Vec<[f32; 4]>> + 'c
+    fn parallel_render_row_iter<'a, F>(&'a self, uv_color: F, cancel: &'a AtomicBool,
+                                target: &'a dyn PainterTarget, 
+                                pixel_map: &'a dyn PixelController,) -> impl IndexedParallelIterator<Item = Vec<[f32; 4]>> + 'a
     where
-        F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync + 'c,
+        F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync + 'a,
     {
         (0..self.height)
             .into_par_iter()
-            .map(move |row| self.parallel_render_row(row, &uv_color, cancel, target))
+            .map(move |row| self.parallel_render_row(row, &uv_color, cancel, target, pixel_map))
     }
 
-    /*
-    fn seq_render_row_iter<'c, F>(
-        &'c self, uv_color: F,
-    ) -> impl Iterator<Item = Vec<[u8; 4]>> + 'c
-    where
-        F: Fn(f64, f64) -> Vec3 + Send + Sync + 'c,
-    {
-        (0..self.height).map(move |row| self.seq_render_row(row, &uv_color))
-    }
-    */
 
     fn real_row_pixels_to_file(
         context: &mut PainterOutputContext<'_>, pixels: Vec<[f32; 4]>,
@@ -408,6 +392,7 @@ impl Painter {
         context.file.flush()
     }
 
+
     fn row_pixels_to_file(
         context: &mut PainterOutputContext<'_>, pixels: Vec<[f32; 4]>,
     ) -> std::io::Result<()> {
@@ -417,9 +402,11 @@ impl Painter {
         })
     }
 
+
     fn parallel_render_and_output<F>(&self, uv_color: F, path: Option<&Path>, 
                                      target: &mut dyn PainterTarget,
-                                     controller: &mut dyn PainterController) -> std::io::Result<()>
+                                     controller: &mut dyn PainterController,
+                                     pixel_map: &dyn PixelController) -> std::io::Result<()>
     where
         F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync,
     {
@@ -427,7 +414,7 @@ impl Painter {
 
         info!("Starting parallel render");
 
-        self.parallel_render_row_iter(uv_color, &cancel, target)
+        self.parallel_render_row_iter(uv_color, &cancel, target, pixel_map)
             .seq_for_each_with(
                 || self.create_output_context(path, controller, &cancel),
                 |context, pixels| Self::row_pixels_to_file(context, pixels),
@@ -446,11 +433,14 @@ impl Painter {
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
     }
 
+
     /// # Errors
     ///
     /// When open or save to file failed
     pub fn draw<P, F>(&self, path: &Option<P>, 
-                      target: &mut dyn PainterTarget, controller: &mut dyn PainterController,
+                      target: &mut dyn PainterTarget, 
+                      controller: &mut dyn PainterController,
+                      pixel_map: &dyn PixelController,
                       uv_color: F) -> std::io::Result<()>
     where
         P: AsRef<Path>,
@@ -465,6 +455,6 @@ impl Painter {
 
         info!("Worker thread count: {}", pool.current_num_threads());
 
-        pool.install(|| self.parallel_render_and_output(uv_color, path, target, controller))
+        pool.install(|| self.parallel_render_and_output(uv_color, path, target, controller, pixel_map))
     }
 }

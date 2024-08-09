@@ -11,7 +11,8 @@ use {
 };
 use crate::painter::PainterController;
 use crate::painter::PassivePainterController;
-// use log::info;
+use crate::painter::PixelController;
+use crate::painter::PassivePixelController;
 
 
 #[derive(Debug)]
@@ -274,7 +275,8 @@ impl<'c> TakePhotoSettings<'c> {
     #[allow(clippy::needless_pass_by_value)] // Directly used public API, add & will make it harder to use
     pub fn shot_to_target<P: AsRef<Path>>(&self, path: Option<P>, 
                                           target: &mut dyn PainterTarget,
-                                          controller: &mut dyn PainterController) -> std::io::Result<()> {
+                                          controller: &mut dyn PainterController,
+                                          pixel_map: &dyn PixelController) -> std::io::Result<()> {
         // because picture height/width is always positive and small enough in practice
         #[allow(
             clippy::cast_sign_loss,
@@ -283,26 +285,27 @@ impl<'c> TakePhotoSettings<'c> {
         )]
         
         Painter::new(self.camera.picture_width, self.camera.picture_height)
-        .gamma(self.gamma)
-        .samples(self.samples)
-        .threads(self.threads)
-        .parallel(self.parallel)
-        .draw(&path, target, controller,
-            |i: f64, j: f64, rng: &mut FastRng| -> Vec3 {
+            .gamma(self.gamma)
+            .samples(self.samples)
+            .threads(self.threads)
+            .parallel(self.parallel)
+            .draw(&path, target, controller, pixel_map,
+                |i: f64, j: f64, rng: &mut FastRng| -> Vec3 {
 
-                // info!("uv_color 1 {}, {}", i, j);
+                    // info!("uv_color 1 {}, {}", i, j);
 
-                let ray = self.camera.ray(i, j, rng);
-                // info!("uv_color 2 {}, {}", i, j);
-                Self::ray_color(&ray, &self.world, self.depth, rng)
-            })
+                    let ray = self.camera.ray(i, j, rng);
+                    // info!("uv_color 2 {}, {}", i, j);
+                    Self::ray_color(&ray, &self.world, self.depth, rng)
+                })
     }
 
 
     pub fn shot<P: AsRef<Path>>(&self, path: Option<P>) -> std::io::Result<()> {
         let mut target = PassivePainterTarget {};
         let mut controller = PassivePainterController {};
-        self.shot_to_target(path, &mut target, &mut controller)
+        let pixel_map = PassivePixelController {};
+        self.shot_to_target(path, &mut target, &mut controller, &pixel_map)
     }
 }
 
