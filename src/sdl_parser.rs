@@ -353,7 +353,7 @@ fn nextsym(input: &mut Input) {
         input.symbol = Symbol::Eof;
     }
 
-    println!("Line {}, Current symbol is: {}", input.current_line(), input.current_text());
+    //marked println!("Line {}, Current symbol is: {}", input.current_line(), input.current_text());
 }
 
 fn accept(input: &mut Input, s: Symbol) -> bool {
@@ -380,7 +380,7 @@ fn expect(input: &mut Input, s: Symbol) -> bool {
         true
     }
     else {
-        println!("Expected {:?}, found {}", s, input.current_text());
+        //marked println!("Expected {:?}, found {}", s, input.current_text());
         false
     }
 }    
@@ -397,7 +397,7 @@ fn parse_root(input: &mut Input, scene: &mut SceneData) -> bool {
 
 fn parse_statement_list(input: &mut Input, scene: &mut SceneData) -> bool {
 
-    println!("Line {}, parse_statement_list called", input.current_line());
+    //marked println!("Line {}, parse_statement_list called", input.current_line());
 
     while input.pos < input.tokens.len() {
         let entity = parse_statement(input);
@@ -433,7 +433,7 @@ fn parse_statement_list(input: &mut Input, scene: &mut SceneData) -> bool {
 
 fn parse_statement(input: &mut Input) -> DeclaredEntity {
 
-    println!("Line {}, parse_statement: '{}'", input.current_line(), input.current_text());
+    //marked println!("Line {}, parse_statement: '{}'", input.current_line(), input.current_text());
 
     let entity = parse_camera(input);
     match entity { DeclaredEntity::Invalid => {}, _ => { return entity; },}
@@ -469,11 +469,11 @@ fn parse_statement(input: &mut Input) -> DeclaredEntity {
     match entity { DeclaredEntity::Invalid => {}, _ => { return entity; },}
 
     if input.symbol == Symbol::Eof {
-        println!("EOF, stop parsing");
+        //marked println!("EOF, stop parsing");
         return DeclaredEntity::Invalid;
     }
 
-    println!("Line {}, Invalid statement found: {}", input.current_line(), input.current_text());
+    //marked println!("Line {}, Invalid statement found: {}", input.current_line(), input.current_text());
     return DeclaredEntity::Invalid;
 }
 
@@ -495,17 +495,17 @@ fn parse_camera(input: &mut Input) -> DeclaredEntity {
                 let ok = parse_camera_item(input, &mut camera);
 
                 if !ok {
-                    println!("Line {}, parse_camera: expected camera vector or }}, found {}", input.current_line(), input.current_text());
+                    //marked println!("Line {}, parse_camera: expected camera vector or }}, found {}", input.current_line(), input.current_text());
                     return DeclaredEntity::Invalid;
                 }
             }
 
-            println!("parse_camera: ok -> {:?}", camera);
+            //marked println!("parse_camera: ok -> {:?}", camera);
             nextsym(input);
 
             return DeclaredEntity::Camera(camera);
         }
-        println!("Line {}, parse_camera: expected {{, found {}", input.current_line(), input.current_text());
+        //marked println!("Line {}, parse_camera: expected {{, found {}", input.current_line(), input.current_text());
     }
 
     // println!("Line {}, parse_camera: statement is no camera, {}", input.current_line(), input.current_text());
@@ -533,20 +533,20 @@ fn parse_light(input: &mut Input) -> DeclaredEntity {
                     light.color = color;
                 }
                 else {
-                    println!("Line {}, parse_light: expected color vector, found {}", input.current_line(), input.current_text());
+                    //marked println!("Line {}, parse_light: expected color vector, found {}", input.current_line(), input.current_text());
                     return DeclaredEntity::Invalid;
                 }
             }
             else {
-                println!("Line {}, parse_light: expected location vector, found {}", input.current_line(), input.current_text());
+                //marked println!("Line {}, parse_light: expected location vector, found {}", input.current_line(), input.current_text());
                 return DeclaredEntity::Invalid;
             }
 
-            println!("parse_light: ok -> {:?}", light);
+            //marked println!("parse_light: ok -> {:?}", light);
 
             return DeclaredEntity::Light(light);
         }
-        println!("Line {}, parse_camera: expected {{, found {}", input.current_line(), input.current_text());
+        //marked println!("Line {}, parse_camera: expected {{, found {}", input.current_line(), input.current_text());
     }
 
     DeclaredEntity::Invalid
@@ -571,7 +571,7 @@ fn parse_camera_item(input: &mut Input, camera: &mut CameraData) -> bool {
         return true;
     }
     else {
-        println!("Line {}, parse_camera_vector: expected 'location' or 'look_at', found '{}'", input.current_line(), input.current_text());
+        //marked println!("Line {}, parse_camera_vector: expected 'location' or 'look_at', found '{}'", input.current_line(), input.current_text());
     }
 
     false
@@ -579,7 +579,7 @@ fn parse_camera_item(input: &mut Input, camera: &mut CameraData) -> bool {
 
 fn parse_sphere(input: &mut Input) -> DeclaredEntity {
 
-    println!("Line {}, parse_sphere: called, current symbol is {:?}", input.current_line(), input.current_text());
+    //marked println!("Line {}, parse_sphere: called, current symbol is {:?}", input.current_line(), input.current_text());
 
     if expect_quiet(input, Symbol::Sphere) {
         if expect(input, Symbol::BlockOpen) {
@@ -592,18 +592,18 @@ fn parse_sphere(input: &mut Input) -> DeclaredEntity {
 
             let sphere = Arc::new(Sphere::new(v, r, material));
 
-            println!("parse_sphere: ok -> {:?}", sphere);
+            //marked println!("parse_sphere: ok -> {:?}", sphere);
 
             expect(input, Symbol::BlockClose);
 
             return DeclaredEntity::Hittable(build_transform_facade(stack, sphere));
         }
         else {
-            println!("Line {}, parse_sphere: expected {{, found {}", input.current_line(), input.current_text());
+            //marked println!("Line {}, parse_sphere: expected {{, found {}", input.current_line(), input.current_text());
         }
     }
     else {
-        println!("Line {}, parse_sphere: not a sphere", input.current_line());
+        //marked println!("Line {}, parse_sphere: not a sphere", input.current_line());
     }
 
     DeclaredEntity::Invalid
@@ -612,7 +612,7 @@ fn parse_sphere(input: &mut Input) -> DeclaredEntity {
 
 fn parse_box(input: &mut Input) -> DeclaredEntity {
 
-    println!("Line {}, parse_box: called, current symbol is {:?}", input.current_line(), input.current_text());
+    //marked println!("Line {}, parse_box: called, current symbol is {:?}", input.current_line(), input.current_text());
 
     if expect_quiet(input, Symbol::Box) {
         if expect(input, Symbol::BlockOpen) {
@@ -624,14 +624,14 @@ fn parse_box(input: &mut Input) -> DeclaredEntity {
             let stack = parse_object_modifiers(input);
 
             let gbox = Arc::new(GeometryBox::new(v1, v2, material));
-            println!("parse_box: ok -> {:?}", gbox);
+            //marked println!("parse_box: ok -> {:?}", gbox);
 
             expect(input, Symbol::BlockClose);
 
             return DeclaredEntity::Hittable(build_transform_facade(stack, gbox));
         }
         else {
-            println!("Line {}, parse_box: expected {{, found {}", input.current_line(), input.current_text());
+            //marked println!("Line {}, parse_box: expected {{, found {}", input.current_line(), input.current_text());
         }
     }
 
@@ -641,7 +641,7 @@ fn parse_box(input: &mut Input) -> DeclaredEntity {
 
 fn parse_quadric(input: &mut Input) -> DeclaredEntity {
 
-    println!("Line {}, parse_quadric: called, current symbol is {:?}", input.current_line(), input.current_text());
+    //marked println!("Line {}, parse_quadric: called, current symbol is {:?}", input.current_line(), input.current_text());
 
     if expect_quiet(input, Symbol::Quadric) {
         if expect(input, Symbol::BlockOpen) {
@@ -660,14 +660,14 @@ fn parse_quadric(input: &mut Input) -> DeclaredEntity {
                 Quadric::new(v1.x, v2.x, v2.y, v3.x, v1.y, v2.z, v3.y, v1.z, v3.z, j,
                              material);
 
-            println!("parse_quadric: ok -> {:?}", quadric);
+            //marked println!("parse_quadric: ok -> {:?}", quadric);
 
             expect(input, Symbol::BlockClose);
 
             return DeclaredEntity::Hittable(build_transform_facade(stack, Arc::new(quadric)));
         }
         else {
-            println!("Line {}, parse_box: expected {{, found {}", input.current_line(), input.current_text());
+            //marked println!("Line {}, parse_quadric: expected {{, found {}", input.current_line(), input.current_text());
         }
     }
 
@@ -677,7 +677,7 @@ fn parse_quadric(input: &mut Input) -> DeclaredEntity {
 
 fn parse_object(input: &mut Input) -> DeclaredEntity {
 
-    println!("Line {}, parse_object: called, current symbol is {:?}", input.current_line(), input.current_text());
+    //marked println!("Line {}, parse_object: called, current symbol is {:?}", input.current_line(), input.current_text());
 
     if expect_quiet(input, Symbol::Object) {
         if expect(input, Symbol::BlockOpen) {
@@ -686,7 +686,7 @@ fn parse_object(input: &mut Input) -> DeclaredEntity {
 
             if ident_opt.is_some() {
                 let ident = ident_opt.unwrap();
-                println!("parse_object: identifier is {:?}, now looking for declared data", ident);
+                //marked println!("parse_object: identifier is {:?}, now looking for declared data", ident);
 
                 let stack = parse_object_modifiers(input);
 
@@ -696,23 +696,23 @@ fn parse_object(input: &mut Input) -> DeclaredEntity {
 
                 match entity.unwrap() {
                     DeclaredEntity::Hittable(object) => {
-                        println!("parse_object: got valid entity");
-                        println!("Line {}, parse_object -> ok", input.current_line());
+                        //marked println!("parse_object: got valid entity");
+                        //marked println!("Line {}, parse_object -> ok", input.current_line());
 
                         let copy = object.clone();
                         return DeclaredEntity::Hittable(build_transform_facade(stack, copy));
                     },
                     _ => {
-                        println!("Line {}, parse_object: got no entity for identifier", input.current_line());
+                        //marked println!("Line {}, parse_object: got no entity for identifier", input.current_line());
                     }
                 }
             }
             else {
-                println!("Line {}, parse_object: undeclared identifier {:?}", input.current_line(), ident_opt);
+                //marked println!("Line {}, parse_object: undeclared identifier {:?}", input.current_line(), ident_opt);
             }
         }
         else {
-            println!("Line {}, parse_object: expected {{, found {}", input.current_line(), input.current_text());
+            //marked println!("Line {}, parse_object: expected {{, found {}", input.current_line(), input.current_text());
         }
     }
 
@@ -722,43 +722,43 @@ fn parse_object(input: &mut Input) -> DeclaredEntity {
 
 fn parse_difference(input: &mut Input) -> DeclaredEntity {
 
-    println!("Line {}, parse_difference: called, current symbol is {:?}", input.current_line(), input.current_text());
+    //marked println!("Line {}, parse_difference: called, current symbol is {:?}", input.current_line(), input.current_text());
 
     if expect_quiet(input, Symbol::Difference) {
         if expect(input, Symbol::BlockOpen) {
 
-            println!("parse_difference: looking for first statement");
+            //marked println!("parse_difference: looking for first statement");
 
             // we need two objects for a difference, how to deal with cameras?
             if let DeclaredEntity::Hittable(plus) = parse_statement(input) {
 
-                println!("parse_difference: parsed first statement");
+                //marked println!("parse_difference: parsed first statement");
 
                 if let DeclaredEntity::Hittable(minus) = parse_statement(input) {
 
-                    println!("parse_difference: parsed second statement, now checking objects");
+                    //marked println!("parse_difference: parsed second statement, now checking objects");
 
                     let material = parse_texture(input);
                     let stack = parse_object_modifiers(input);
 
                     let difference = Arc::new(Difference::new(plus, minus, material));
 
-                    println!("Line {}, parse_difference -> ok", input.current_line());
+                    //marked println!("Line {}, parse_difference -> ok", input.current_line());
 
                     expect(input, Symbol::BlockClose);
 
                     return DeclaredEntity::Hittable(build_transform_facade(stack, difference));
                 }
                 else {
-                    println!("Line {}, parse_difference: second statement expected, found {}", input.current_line(), input.current_text());
+                    //marked println!("Line {}, parse_difference: second statement expected, found {}", input.current_line(), input.current_text());
                 }    
             }
             else {
-                println!("Line {}, parse_difference: first statement expected, found {}", input.current_line(), input.current_text());
+                //marked println!("Line {}, parse_difference: first statement expected, found {}", input.current_line(), input.current_text());
             }
         }
         else {
-            println!("Line {}, parse_difference: expected {{, found {}", input.current_line(), input.current_text());
+            //marked println!("Line {}, parse_difference: expected {{, found {}", input.current_line(), input.current_text());
         }
     }
 
@@ -768,44 +768,42 @@ fn parse_difference(input: &mut Input) -> DeclaredEntity {
 
 fn parse_intersection(input: &mut Input) -> DeclaredEntity {
 
-    println!("Line {}, parse_intersection: called, current symbol is {:?}", input.current_line(), input.current_text());
+    //marked println!("Line {}, parse_intersection: called, current symbol is {:?}", input.current_line(), input.current_text());
 
     if expect_quiet(input, Symbol::Intersection) {
         if expect(input, Symbol::BlockOpen) {
 
-            println!("parse_intersection: looking for first statement");
+            //marked println!("parse_intersection: looking for first statement");
 
             // we need two objects for a difference, how to deal with cameras?
             if let DeclaredEntity::Hittable(o1) = parse_statement(input) {
 
-                println!("parse_intersection: parsed first statement");
+                //marked println!("parse_intersection: parsed first statement");
 
                 if let DeclaredEntity::Hittable(o2) = parse_statement(input) {
 
-                    println!("parse_intersection: parsed second statement, now checking objects");
+                    //marked println!("parse_intersection: parsed second statement, now checking objects");
                     let material = parse_texture(input);
                     let stack = parse_object_modifiers(input);
 
                     let intersection = Arc::new(Intersection::new(o1, o2, material));
 
-                    // scene.hittables.add_ref(build_transform_facade(stack, intersection));
-
-                    println!("Line {}, parse_intersection -> ok", input.current_line());
+                    //marked println!("Line {}, parse_intersection -> ok", input.current_line());
 
                     expect(input, Symbol::BlockClose);
 
                     return DeclaredEntity::Hittable(build_transform_facade(stack, intersection));
                 }
                 else {
-                    println!("Line {}, parse_intersection: second statement expected, found {}", input.current_line(), input.current_text());
+                    //marked println!("Line {}, parse_intersection: second statement expected, found {}", input.current_line(), input.current_text());
                 }    
             }
             else {
-                println!("Line {}, parse_intersection: first statement expected, found {}", input.current_line(), input.current_text());
+                //marked println!("Line {}, parse_intersection: first statement expected, found {}", input.current_line(), input.current_text());
             }
         }
         else {
-            println!("Line {}, parse_intersection: expected {{, found {}", input.current_line(), input.current_text());
+            //marked println!("Line {}, parse_intersection: expected {{, found {}", input.current_line(), input.current_text());
         }
     }
 
@@ -815,54 +813,54 @@ fn parse_intersection(input: &mut Input) -> DeclaredEntity {
 
 fn parse_declare(input: &mut Input) -> DeclaredEntity {
 
-    println!("Line {}, parse_declare: called, current symbol is {:?}", input.current_line(), input.current_text());
+    //marked println!("Line {}, parse_declare: called, current symbol is {:?}", input.current_line(), input.current_text());
 
     if expect_quiet(input, Symbol::Declare) {
         if let Some(ident) = parse_identifier(input) {
             if expect(input, Symbol::Equal) {
 
-                println!("Line {}, parse_declare: checking value {:?}", input.current_line(), input.current_text());
+                //marked println!("Line {}, parse_declare: checking value {:?}", input.current_line(), input.current_text());
 
                 // test non-statement cases first
 
                 if let Some(v) = parse_expression(input) {
                     nextsym(input);
                     expect(input, Symbol::Semicolon);
-                    println!("Line {}, parse_declare -> scalar expression ok {:?}, current symbol is {:?}", input.current_line(), v, input.current_text());
+                    //marked println!("Line {}, parse_declare -> scalar expression ok {:?}, current symbol is {:?}", input.current_line(), v, input.current_text());
                     input.declares.insert(ident.to_string(), DeclaredEntity::Float(v));
                     return DeclaredEntity::Directive("#declare".to_string());
                 }
                 else if let Some(v) = parse_vector(input) {
                     expect(input, Symbol::Semicolon);
-                    println!("Line {}, parse_declare -> vector expression ok {:?}, current symbol is {:?}", input.current_line(), v, input.current_text());
+                    //marked println!("Line {}, parse_declare -> vector expression ok {:?}, current symbol is {:?}", input.current_line(), v, input.current_text());
                     input.declares.insert(ident.to_string(), DeclaredEntity::Vector(v));
                     return DeclaredEntity::Directive("#declare".to_string());
                 }
                 else {
                     let entity = parse_statement(input);
                     input.declares.insert(ident.to_string(), entity);
-                    println!("Line {}, parse_declare -> statement ok, current symbol is {:?}", input.current_line(), input.current_text());
+                    //marked println!("Line {}, parse_declare -> statement ok, current symbol is {:?}", input.current_line(), input.current_text());
                     return DeclaredEntity::Directive("#declare".to_string());
                 }
             }
         }
     }
 
-    println!("Line {}, parse_declare: failed, current symbol is {:?}", input.current_line(), input.current_text());
+    //marked println!("Line {}, parse_declare: failed, current symbol is {:?}", input.current_line(), input.current_text());
     DeclaredEntity::Invalid
 }
 
 
 fn parse_while(input: &mut Input) -> DeclaredEntity {
 
-    println!("Line {}, parse_while: called, current symbol is {:?}", input.current_line(), input.current_text());
+    //marked println!("Line {}, parse_while: called, current symbol is {:?}", input.current_line(), input.current_text());
 
     let loop_start = input.pos;
 
     if expect_quiet(input, Symbol::While) {
         if expect(input, Symbol::ParenOpen) {
 
-            println!("Line {}, parse_while: checking condition {:?}", input.current_line(), input.current_text());
+            //marked println!("Line {}, parse_while: checking condition {:?}", input.current_line(), input.current_text());
 
             if let Some(v1) = parse_expression(input) {
                 nextsym(input);
@@ -873,12 +871,12 @@ fn parse_while(input: &mut Input) -> DeclaredEntity {
                     nextsym(input);
 
                     if v1 < v2 {
-                        println!("Line {}, parse_while -> comparision ok {:?} < {:?}, current symbol is {:?}", input.current_line(), v1, v2, input.current_text());
+                        //marked println!("Line {}, parse_while -> comparision ok {:?} < {:?}, current symbol is {:?}", input.current_line(), v1, v2, input.current_text());
 
                         input.loops.push(loop_start);
                     }
                     else {
-                        println!("Line {}, parse_while -> goto loop end", input.current_line());
+                        //marked println!("Line {}, parse_while -> goto loop end", input.current_line());
 
                         fast_forward_to_end(input);
                     }
@@ -889,7 +887,7 @@ fn parse_while(input: &mut Input) -> DeclaredEntity {
         }
     }
 
-    println!("Line {}, parse_while: failed, current symbol is {:?}", input.current_line(), input.current_text());
+    //marked println!("Line {}, parse_while: failed, current symbol is {:?}", input.current_line(), input.current_text());
     DeclaredEntity::Invalid
 }
 
@@ -911,11 +909,11 @@ fn parse_end(input: &mut Input) -> DeclaredEntity {
         input.pos = loop_start - 1;
         nextsym(input);
 
-        println!("Line {}, parse_end: ok, loop start is {}, current symbol is {:?}", input.pos, input.current_line(), input.current_text());
+        //marked println!("Line {}, parse_end: ok, loop start is {}, current symbol is {:?}", input.pos, input.current_line(), input.current_text());
         return DeclaredEntity::Directive("#end".to_string());
     }
 
-    println!("Line {}, parse_end: failed, current symbol is {:?}", input.current_line(), input.current_text());
+    //marked println!("Line {}, parse_end: failed, current symbol is {:?}", input.current_line(), input.current_text());
     DeclaredEntity::Invalid
 }
 
@@ -936,11 +934,11 @@ fn parse_object_modifiers(input: &mut Input) -> TransformStack {
 
     loop {
         if let Some(v) = parse_translate(input) {
-            println!("parse_object_modifiers: translate ok");
+            //marked println!("parse_object_modifiers: translate ok");
             stack.push(Transform::translate(v));
         }
         else if let Some(v) = parse_rotate(input) {
-            println!("parse_object_modifiers: rotate ok {:?}", v);
+            //marked println!("parse_object_modifiers: rotate ok {:?}", v);
 
             if v.x != 0.0 {
                 stack.push(Transform::rotate_by_x_axis(v.x * PI / 180.0));
@@ -955,7 +953,7 @@ fn parse_object_modifiers(input: &mut Input) -> TransformStack {
             }
         }
         else if let Some(v) = parse_scale(input) {
-            println!("parse_object_modifiers: scale ok {:?}", v);
+            //marked println!("parse_object_modifiers: scale ok {:?}", v);
             stack.push(Transform::scale(v));
         }
         else {
@@ -975,7 +973,7 @@ fn parse_texture(input: &mut Input) -> Option<Arc<dyn Material>> {
                 if let Some(texture) = parse_pigment(input) {
                     texture
                 } else {
-                    println!("Line {}, parse_texture: no pigment found, using default white", input.current_line());
+                    //marked println!("Line {}, parse_texture: no pigment found, using default white", input.current_line());
                     Arc::new(Color::new(1.0, 1.0, 1.0, 1.0))
                 };
 
@@ -983,7 +981,7 @@ fn parse_texture(input: &mut Input) -> Option<Arc<dyn Material>> {
 
             expect(input, Symbol::BlockClose);
 
-            println!("Line {}, parse_texture -> ok", input.current_line());
+            //marked println!("Line {}, parse_texture -> ok", input.current_line());
 
             return material;
         }
@@ -1052,8 +1050,7 @@ fn parse_finish(input: &mut Input, texture: Arc<dyn Texture>) -> Option<Arc<dyn 
                     let mut metal = Metal::new(texture);
                     metal.set(settings(phong, phong_size));
 
-                    println!("Line {}, parse_finish: using mixed material, reflection={}",
-                            input.current_line(), reflection);
+                    //marked println!("Line {}, parse_finish: using mixed material, reflection={}", input.current_line(), reflection);
 
                     Arc::new(MixedMaterial::new(Arc::new(metal), Arc::new(lambertian), reflection))
                 };
@@ -1068,12 +1065,12 @@ fn parse_finish(input: &mut Input, texture: Arc<dyn Texture>) -> Option<Arc<dyn 
                 if expect_quiet(input, Symbol::Metallic) {
 
                     if expect_quiet(input, Symbol::Diffuse) {
-                        println!("Line {}, parse_surface: using diffuse metal", input.current_line());
+                        //marked println!("Line {}, parse_surface: using diffuse metal", input.current_line());
                         let v = parse_float(input).unwrap();
                         Arc::new(DiffuseMetal::new(v, texture))
                     }
                     else {
-                        println!("Line {}, parse_surface: using specular metal", input.current_line());
+                        //marked println!("Line {}, parse_surface: using specular metal", input.current_line());
                         Arc::new(Metal::new(texture))
                     }
                 }
@@ -1111,12 +1108,12 @@ fn parse_surface(input: &mut Input, texture: Arc<dyn Texture>) -> Option<Arc<dyn
                 if expect_quiet(input, Symbol::Metallic) {
 
                     if expect_quiet(input, Symbol::Diffuse) {
-                        println!("Line {}, parse_surface: using diffuse metal", input.current_line());
+                        //marked println!("Line {}, parse_surface: using diffuse metal", input.current_line());
                         let v = parse_float(input).unwrap();
                         Arc::new(DiffuseMetal::new(v, texture))
                     }
                     else {
-                        println!("Line {}, parse_surface: using specular metal", input.current_line());
+                        //marked println!("Line {}, parse_surface: using specular metal", input.current_line());
                         Arc::new(Metal::new(texture))
                     }
                 }
@@ -1142,15 +1139,15 @@ fn parse_checker(input: &mut Input) -> Option<(Color, Color)> {
             expect(input, Symbol::Comma);
 
             if let Some(color2) = parse_color(input) {
-                println!("parse_checker: -> ok ({:?}, {:?})", color1, color2);
+                //marked println!("parse_checker: -> ok ({:?}, {:?})", color1, color2);
                 return Some((color1, color2));
             }
             else {
-                println!("Line {}, parse_checker: expected color, found '{}'", input.current_line(), input.current_text());
+                //marked println!("Line {}, parse_checker: expected color, found '{}'", input.current_line(), input.current_text());
             }
         }
         else {
-            println!("Line {}, parse_checker: expected color, found '{}'", input.current_line(), input.current_text());
+            //marked println!("Line {}, parse_checker: expected color, found '{}'", input.current_line(), input.current_text());
         }
     }
     None
@@ -1161,7 +1158,7 @@ fn parse_identifier(input: &mut Input) -> Option<String> {
     let ident = input.current_text().to_string();
     nextsym(input);
 
-    println!("Line {}, parse_identifier: found '{}'", input.current_line(), ident);
+    //marked println!("Line {}, parse_identifier: found '{}'", input.current_line(), ident);
 
     Some(ident)
 }
@@ -1169,14 +1166,14 @@ fn parse_identifier(input: &mut Input) -> Option<String> {
 
 fn parse_translate(input: &mut Input) -> Option<Vec3> {
 
-    println!("parse_translate: called");
+    //marked println!("parse_translate: called");
 
     if expect_quiet(input, Symbol::Translate) {
         if let Some(v) = parse_vector(input) {
             return Some(v);
         }
         else {
-            println!("Line {}, parse_translate: expected vector, found '{}'", input.current_line(), input.current_text());
+            //marked println!("Line {}, parse_translate: expected vector, found '{}'", input.current_line(), input.current_text());
         }
     }
 
@@ -1186,14 +1183,14 @@ fn parse_translate(input: &mut Input) -> Option<Vec3> {
 
 fn parse_rotate(input: &mut Input) -> Option<Vec3> {
 
-    println!("parse_rotate: called");
+    //marked println!("parse_rotate: called");
 
     if expect_quiet(input, Symbol::Rotate) {
         if let Some(v) = parse_vector(input) {
             return Some(v);
         }
         else {
-            println!("Line {}, parse_rotate: expected vector, found '{}'", input.current_line(), input.current_text());
+            //marked println!("Line {}, parse_rotate: expected vector, found '{}'", input.current_line(), input.current_text());
         }
     }
 
@@ -1203,7 +1200,7 @@ fn parse_rotate(input: &mut Input) -> Option<Vec3> {
 
 fn parse_scale(input: &mut Input) -> Option<Vec3> {
 
-    println!("parse_scale: called");
+    //marked println!("parse_scale: called");
 
     if expect_quiet(input, Symbol::Scale) {
         if let Some(v) = parse_vector(input) {
@@ -1213,7 +1210,7 @@ fn parse_scale(input: &mut Input) -> Option<Vec3> {
             return Some(Vec3::new(v, v, v));
         }
         else {
-            println!("Line {}, parse_scale: expected float or vector, found '{}'", input.current_line(), input.current_text());
+            //marked println!("Line {}, parse_scale: expected float or vector, found '{}'", input.current_line(), input.current_text());
         }
     }
 
@@ -1228,7 +1225,7 @@ fn parse_color(input: &mut Input) -> Option<Color> {
         if let Some(v) = parse_vector(input) {
             return Some(Color::new64(v.x, v.y, v.z, 1.0))
         } else {
-            println!("Line {}, parse_color: expected color vector, but found '{}'", input.current_line(), input.current_text());
+            //marked println!("Line {}, parse_color: expected color vector, but found '{}'", input.current_line(), input.current_text());
         }
     }
     None
@@ -1249,7 +1246,7 @@ fn parse_vector(input: &mut Input) -> Option<Vec3> {
         return Some(Vec3::new(v1, v2, v3));
     }
     else {
-        println!("Line {}, parse_vector: expected <, found {}", input.current_line(), input.current_text());
+        //marked println!("Line {}, parse_vector: expected <, found {}", input.current_line(), input.current_text());
     }
 
     None
@@ -1258,7 +1255,7 @@ fn parse_vector(input: &mut Input) -> Option<Vec3> {
 
 fn parse_expression(input: &mut Input) -> Option<f64> {
 
-    println!("Line {}, parse_expression called, current symbol is {}", input.current_line(), input.current_text());
+    //marked println!("Line {}, parse_expression called, current symbol is {}", input.current_line(), input.current_text());
 
     let mut e;
 
@@ -1286,7 +1283,7 @@ fn parse_expression(input: &mut Input) -> Option<f64> {
                 e -= value;
             }    
             else {
-                println!("Line {}, parse_expression: expected term, found {}", input.current_line(), input.current_text());
+                //marked println!("Line {}, parse_expression: expected term, found {}", input.current_line(), input.current_text());
                 return None;
             }    
         }            
@@ -1295,7 +1292,7 @@ fn parse_expression(input: &mut Input) -> Option<f64> {
                 e += value;
             }
             else {
-                println!("Line {}, parse_expression: expected term, found {}", input.current_line(), input.current_text());
+                //marked println!("Line {}, parse_expression: expected term, found {}", input.current_line(), input.current_text());
                 return None;
             }    
         }
@@ -1305,7 +1302,7 @@ fn parse_expression(input: &mut Input) -> Option<f64> {
         }
     }
 
-    println!("Line {}, parse_expression: -> ok, value is {}", input.current_line(), e);
+    //marked println!("Line {}, parse_expression: -> ok, value is {}", input.current_line(), e);
 
     Some(e)
 }
@@ -1320,7 +1317,7 @@ fn parse_term(input: &mut Input) -> Option<f64> {
                     f *= value;
                 }    
                 else {
-                    println!("Line {}, parse_term: expected factor, found {}", input.current_line(), input.current_text());
+                    //marked println!("Line {}, parse_term: expected factor, found {}", input.current_line(), input.current_text());
                     return None;
                 }    
             }            
@@ -1329,7 +1326,7 @@ fn parse_term(input: &mut Input) -> Option<f64> {
                     f /= value;
                 }
                 else {
-                    println!("Line {}, parse_term: expected factor, found {}", input.current_line(), input.current_text());
+                    //marked println!("Line {}, parse_term: expected factor, found {}", input.current_line(), input.current_text());
                     return None;
                 }    
             }
@@ -1357,12 +1354,12 @@ fn parse_factor(input: &mut Input) -> Option<f64> {
             return e; 
         }
         else {
-            println!("Line {}, parse_factor: expected closing parenthesis, found {}", input.current_line(), input.current_text());
+            //marked println!("Line {}, parse_factor: expected closing parenthesis, found {}", input.current_line(), input.current_text());
         }
     }
     else {
         let ident = input.current_text();
-        println!("Line {}, parse_factor: testing identifier: {}", input.current_line(), ident);
+        //marked println!("Line {}, parse_factor: testing identifier: {}", input.current_line(), ident);
 
         let symbol_opt = input.declares.get(ident);
 
@@ -1375,7 +1372,7 @@ fn parse_factor(input: &mut Input) -> Option<f64> {
                     return Some(v);
                 }
                 _ => {
-                    println!("Line {}, parse_factor: expected declared float, found {:?}", input.current_line(), e);
+                    //marked println!("Line {}, parse_factor: expected declared float, found {:?}", input.current_line(), e);
                 }
             }
         }
@@ -1383,7 +1380,7 @@ fn parse_factor(input: &mut Input) -> Option<f64> {
         return parse_float(input)
     }
 
-    println!("Line {}, parse_factor: expected float value or openening parenthesis, found {}", input.current_line(), input.current_text());
+    //marked println!("Line {}, parse_factor: expected float value or openening parenthesis, found {}", input.current_line(), input.current_text());
 
     None
 }
@@ -1393,7 +1390,7 @@ fn parse_float(input: &mut Input) -> Option<f64> {
     
     if v.is_ok() {
         let v = v.unwrap();
-        println!("Line {}, parse_float: -> ok, value is {}", input.current_line(), v);
+        //marked println!("Line {}, parse_float: -> ok, value is {}", input.current_line(), v);
         nextsym(input);
         return Some(v);
     }

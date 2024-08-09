@@ -1,5 +1,7 @@
 extern crate sdl2;
 
+use log::info;
+
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color as SDLColor;
@@ -113,6 +115,94 @@ impl PainterController for RenderPainterController {
 }
 
 
+struct RedoController {
+    redo_map: Vec<u8>,
+    width: usize,
+}
+
+
+impl PixelController for RedoController {
+    fn calculate_pixel(&self, x: usize, y: usize) -> bool {
+        let result = self.redo_map[y * self.width + x];
+        // info!("Redo pixel {}, {} -> {}", x, y, result);
+        result > 0
+    }
+}
+
+
+fn color_diff(a: &[f32; 4], b: &[f32; 4]) -> f32 {
+    let rd = a[0] - b[0];
+    let gd = a[1] - b[1];
+    let bd = a[2] - b[2];
+
+    rd * rd + gd * gd + bd * bd
+}
+
+fn get_pixel(x: i32, y: i32, def: [f32; 4],
+             pixels: &Vec<[f32; 4]>, width: i32, height: i32) -> [f32; 4] {
+
+    if x >= 0 && y >= 0 && x < width && y < height {
+        pixels[(y * width + x) as usize]
+    }
+    else {
+        def
+    }
+}
+
+fn calc_noise(x: usize, y: usize, 
+              pixels: &Vec<[f32; 4]>, width: usize, height: usize) -> f32 {
+
+    let def = pixels[y * width + x];
+    let mut diff = 0.0;
+    
+    let x = y as i32;
+    let y = y as i32;
+
+    for yy in y-2 .. y+3 {
+        for xx in x-2 .. x+3 {
+            diff += color_diff(&def, &get_pixel(xx, yy, def, pixels, width as i32, height as i32));
+        }
+    }
+
+    diff
+}
+
+
+fn combine_pixel(old: &[f32; 4], new: &[f32; 4], p: f32) -> [f32; 4] {
+    if new[0] == 0.0 && new[1] == 0.0 && new[2] == 0.0 && new[3] == 0.0 {
+        // no new data for this pixel, keep old
+        *old
+    }
+    else {
+        let d = p + 1.0;
+
+        let r = old[0] * p + new[0];
+        let g = old[1] * p + new[1];
+        let b = old[2] * p + new[2];
+        let a = old[3] * p + new[3];
+    
+        // if p > 0.0 { info!("old {} new {} combined {}", old[0], new[0], r/d);}
+
+        [r/d, g/d, b/d, a/d]
+    }
+}
+
+
+fn combine_pixels(old_pixels: &Vec<[f32; 4]>, pixels:&Vec<[f32; 4]>, p: f32) -> Vec<[f32; 4]> {
+
+    let mut result = Vec::with_capacity(pixels.len());
+
+    for i in 0 .. pixels.len() {
+        let old = &old_pixels[i];
+        let new = &pixels[i];
+
+        result.push(combine_pixel(old, new, p));
+    }
+
+    result
+}
+
+
 fn boot_sdl(width: usize, height: usize, receiver: Receiver<(usize, Vec<[f32; 4]>)>, command_sender: SyncSender<PainterCommand>) {
     
     let sdl_context = sdl2::init().unwrap();
@@ -137,6 +227,13 @@ fn boot_sdl(width: usize, height: usize, receiver: Receiver<(usize, Vec<[f32; 4]
     println!("query={:?}", line.query());
 
     let mut event_pump = sdl_context.event_pump().unwrap();
+    let mut pass = 0.0;
+    let mut all_pixels: Vec<[f32; 4]> = Vec::with_capacity(width * height);
+
+    for _i in 0 .. width * height {
+        all_pixels.push([0.0, 0.0, 0.0, 0.0]);
+    }
+
 
     'running: loop {
         for event in event_pump.poll_iter() {
@@ -155,16 +252,39 @@ fn boot_sdl(width: usize, height: usize, receiver: Receiver<(usize, Vec<[f32; 4]
         if data_result.is_ok() {
             let (y, data) = data_result.unwrap();
 
-            for pixel in data {
-                pixels.push((clamp(pixel[0] as f64, 0.0 .. 1.0) * 255.5) as u8);
-                pixels.push((clamp(pixel[1] as f64, 0.0 .. 1.0) * 255.5) as u8);
-                pixels.push((clamp(pixel[2] as f64, 0.0 .. 1.0) * 255.5) as u8);
+            // did a pass fully complete?
+            if y == height && data.len() == 0 {
+                info!("Pass {} completed.", pass);
+                pass += 1.0;
             }
+            else {
+                // display the received data after combining it with the existing data
+                let mut x = 0;
 
-            renderer.flush_line(y, &pixels, &mut line);
+                for pixel in data {
+                
+                    let c = if pass > 0.0 && pixel[3] > 0.0 {
+                        // [1.0, 0.0, 0.0, 1.0]
+                        combine_pixel(&all_pixels[y * width + x], &pixel, pass)
+                    }    
+                    else {    
+                        combine_pixel(&all_pixels[y * width + x], &pixel, pass)
+                    };
 
-            renderer.present();
-            pixels.clear();
+                    pixels.push((clamp(c[0] as f64, 0.0 .. 1.0) * 255.5) as u8);
+                    pixels.push((clamp(c[1] as f64, 0.0 .. 1.0) * 255.5) as u8);
+                    pixels.push((clamp(c[2] as f64, 0.0 .. 1.0) * 255.5) as u8);
+                    
+                    all_pixels[y * width + x] = c;
+    
+                    x += 1;
+                }
+    
+                renderer.flush_line(y, &pixels, &mut line);
+    
+                renderer.present();
+                pixels.clear();
+            }
         } 
         else {
             // let error = data_result.err().unwrap();
@@ -179,59 +299,121 @@ fn boot_sdl(width: usize, height: usize, receiver: Receiver<(usize, Vec<[f32; 4]
     let _status = command_sender.send(PainterCommand::Quit);
 
     println!("Sending Quit to render engine.");
+    std::process::exit(1);
 }
+
 
 fn parse_and_render(width: usize, height: usize, samples: usize, filename: &str,
                     target: &mut dyn PainterTarget, 
-                    controller: &mut dyn PainterController,
-                    pixel_map: &dyn PixelController) -> bool {
+                    controller: &mut dyn PainterController) -> bool {
 
-    let scene_data_result = SdlParser::parse(filename);
 
-    if let Err(message) = scene_data_result {
-        println!("Could not parse scene data: {}", message);
-        return false;
-    } 
-
-    let mut scene_data = scene_data_result.unwrap();
-    let camera_data = &scene_data.camera.unwrap();
-
-    let builder = CameraBuilder::default()
-        .look_from(camera_data.location.clone())
-        .look_at(camera_data.look_at.clone())
-        .fov(camera_data.fov_angle)
-        .aperture(0.01)
-        .focus(10.0)
-        .width(width)
-        .height(height);
-
-    let camera = builder.build();    
-
-    let mut lights = HittableList::default();
-
-    for light in scene_data.lights {
-        let rs = 
-            Sphere::new(light.location, 
-                12.0, 
-                Some(Arc::new(DiffuseLight::new(light.color).multiplier(1.7)))
-            );
-
-        lights.add(rs.clone());
-        scene_data.hittables.add(rs);
+    // in the first pass all pixels must be calculated
+    let mut redo_map: Vec<u8> = Vec::with_capacity(width * height);
+    let mut old_pixels: Vec<[f32; 4]> = Vec::with_capacity(width * height);
+    for y in 0 .. height {
+        for x in 0 .. width {
+            old_pixels.push([0.0, 0.0, 0.0, 1.0]);
+            redo_map.push(1);
+        }
     }
 
-    fn background(ray: &Ray) -> Color {
-        let t = (ray.direction.y + 1.0) * 0.5;  // norm to range 0..1
-        Color::new(0.3, 0.4, 0.5, 1.0).gradient(&Color::new(0.7, 0.89, 1.0, 1.0), t)
-    }
+    let mut pass = 0.0;
 
-    camera
-        .take_photo_with_lights(scene_data.hittables, lights)
-        .background(background)
-        .samples(samples)
-        .depth(8)
-        .shot_to_target(Some("sample_scene.ppm"), target, controller, pixel_map)
-        .unwrap();
+    loop {
+        let scene_data_result = SdlParser::parse(filename);
+
+        if let Err(message) = scene_data_result {
+            println!("Could not parse scene data: {}", message);
+            return false;
+        } 
+
+        let mut scene_data = scene_data_result.unwrap();
+        let camera_data = &scene_data.camera.unwrap();
+
+        let builder = CameraBuilder::default()
+            .look_from(camera_data.location.clone())
+            .look_at(camera_data.look_at.clone())
+            .fov(camera_data.fov_angle)
+            .aperture(0.01)
+            .focus(10.0)
+            .width(width)
+            .height(height);
+
+        let camera = builder.build();    
+
+        let mut lights = HittableList::default();
+
+        for light in scene_data.lights {
+            let rs = 
+                Sphere::new(light.location, 
+                    12.0, 
+                    Some(Arc::new(DiffuseLight::new(light.color).multiplier(1.7)))
+                );
+
+            lights.add(rs.clone());
+            scene_data.hittables.add(rs);
+        }
+
+        fn background(ray: &Ray) -> Color {
+            let t = (ray.direction.y + 1.0) * 0.5;  // norm to range 0..1
+            Color::new(0.3, 0.4, 0.5, 1.0).gradient(&Color::new(0.7, 0.89, 1.0, 1.0), t)
+        }
+
+        let redo_controller = RedoController {
+            redo_map: redo_map.clone(),
+            width,
+        };
+
+        let pixels = 
+            camera
+                .take_photo_with_lights(scene_data.hittables, lights)
+                .background(background)
+                .samples(samples)
+                .depth(8)
+                .shot_to_target(Some("sample_scene.ppm"), target, controller, &redo_controller);
+
+
+        let pixels = combine_pixels(&old_pixels, &pixels, pass);
+        pass += 1.0;
+
+        info!("Render resulted in {} pixels", pixels.len());
+
+        let mut min = 3.0;
+        let mut max = 1.0;
+
+        for y in 0 .. height {
+            for x in 0 .. width {
+                let noise = calc_noise(x, y, &pixels, width, height);
+
+                if noise < min {min = noise;}
+                if noise > max {max = noise;}
+            }
+        }
+
+        let t = 0.01;
+        info!("noise min={} max={} t={} pass={}", min, max, t, pass);
+
+        redo_map.clear();
+
+        let mut count = 0; 
+        for y in 0 .. height {
+            for x in 0 .. width {
+                let noise = calc_noise(x, y, &pixels, width, height);
+
+                if noise >= t {
+                    redo_map.push(1);
+                    count += 1;
+                }
+                else {
+                    redo_map.push(0);
+                }
+            }
+        }
+        info!("oversampling {} pixels", count);
+
+        old_pixels = pixels;
+    }
 
     true
 }
@@ -277,7 +459,6 @@ pub fn main() -> Result<(), String> {
 
     let mut queue = PixelQueue {sender};
     let mut controller = RenderPainterController {command_receiver};
-    let pixel_map = PassivePixelController {};
 
     let mut width: usize = 800;
     let mut height: usize = 600;
@@ -302,7 +483,7 @@ pub fn main() -> Result<(), String> {
 
     spawn(move || boot_sdl(width, height, receiver, command_sender));
 
-    parse_and_render(width, height, samples, scene, &mut queue, &mut controller, &pixel_map);
+    parse_and_render(width, height, samples, scene, &mut queue, &mut controller);
 
     Ok(())
 }

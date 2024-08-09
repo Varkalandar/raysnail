@@ -269,7 +269,12 @@ impl Painter {
         &self, path: Option<&Path>, controller: &'c mut dyn PainterController, cancel: &'c AtomicBool,
     ) -> std::io::Result<PainterOutputContext<'c>> {
         let file = self.create_output_file(path)?;
-        Ok(PainterOutputContext { file, cancel, controller: Some(Box::new(controller)) })
+        Ok(PainterOutputContext { 
+            file,
+            cancel, 
+            controller: 
+            Some(Box::new(controller)) 
+        })
     }
 
 
@@ -288,30 +293,12 @@ impl Painter {
 
         for s_j in 0 .. self.sqrt_spp {
             for s_i in 0 .. self.sqrt_spp {
-                let last_color = Vec3::new(0.5, 0.5, 0.5);
-
                 let xo = x + (s_i as f64 + rng.gen()) / self.sqrt_spp as f64;
                 let yo = y + (s_j as f64 + rng.gen()) / self.sqrt_spp as f64;
                 
                 let uv = self.calculate_uv(xo, yo);
                 
-                // info!("Subpixel {}, {}", xo, yo);
-
-                let mut color = uv_color(uv[0], uv[1], rng);
-                let diff = (&color - &last_color).length_squared();
-
-                if diff > 10.0 {
-                    let limit = (diff.sqrt() as usize).min(100);
-                    let mut counter = 1;
-                    
-                    println!("Oversampling pixel {} times due to big color diff", limit);
-                    while counter < limit {
-                        color = color + uv_color(uv[0], uv[1], rng);
-                        counter += 1;
-                    }
-                    
-                    color = color * (1.0 / limit as f64);
-                }
+                let color = uv_color(uv[0], uv[1], rng);
 
                 color_vec = color_vec + &color;
                 // last_color = color;
@@ -332,7 +319,7 @@ impl Painter {
     where
         F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync,
     {
-        info!("Processing line: {}", row);
+        // info!("Processing line: {}", row);
 
         let mut rng = FastRng::new();
 
@@ -406,19 +393,30 @@ impl Painter {
     fn parallel_render_and_output<F>(&self, uv_color: F, path: Option<&Path>, 
                                      target: &mut dyn PainterTarget,
                                      controller: &mut dyn PainterController,
-                                     pixel_map: &dyn PixelController) -> std::io::Result<()>
+                                     pixel_map: &dyn PixelController) -> Vec<[f32; 4]>
     where
         F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync,
+
     {
         let cancel = AtomicBool::new(false);
 
         info!("Starting parallel render");
 
-        self.parallel_render_row_iter(uv_color, &cancel, target, pixel_map)
-            .seq_for_each_with(
-                || self.create_output_context(path, controller, &cancel),
-                |context, pixels| Self::row_pixels_to_file(context, pixels),
-            )
+        let mut result = Vec::with_capacity(1 << 15);
+
+        let ok =
+            self.parallel_render_row_iter(uv_color, &cancel, target, pixel_map)
+                .seq_for_each_with(
+                    || self.create_output_context(path, controller, &cancel),
+                    |context, pixels| {
+                        for pixel in &pixels {
+                            result.push(*pixel);
+                        }
+                        Self::row_pixels_to_file(context, pixels)
+                    },
+                );
+
+        result
     }
 
     fn setup_thread_pool(&self) -> std::io::Result<ThreadPool> {
@@ -441,7 +439,7 @@ impl Painter {
                       target: &mut dyn PainterTarget, 
                       controller: &mut dyn PainterController,
                       pixel_map: &dyn PixelController,
-                      uv_color: F) -> std::io::Result<()>
+                      uv_color: F) -> Vec<[f32; 4]>
     where
         P: AsRef<Path>,
         F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync,
@@ -451,10 +449,20 @@ impl Painter {
             None => None,
         };
 
-        let pool = self.setup_thread_pool()?;
+        let pool = self.setup_thread_pool();
+        let mut result = Vec::new();
 
-        info!("Worker thread count: {}", pool.current_num_threads());
+        if pool.is_ok() {
+            let pool = pool.unwrap();
+            info!("Worker thread count: {}", pool.current_num_threads());
 
-        pool.install(|| self.parallel_render_and_output(uv_color, path, target, controller, pixel_map))
+            result = 
+                pool.install(|| self.parallel_render_and_output(uv_color, path, target, controller, pixel_map));
+        }
+
+        target.register_pixels(self.height, &Vec::new());
+
+
+        return result;            
     }
 }

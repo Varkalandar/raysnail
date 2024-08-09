@@ -276,7 +276,7 @@ impl<'c> TakePhotoSettings<'c> {
     pub fn shot_to_target<P: AsRef<Path>>(&self, path: Option<P>, 
                                           target: &mut dyn PainterTarget,
                                           controller: &mut dyn PainterController,
-                                          pixel_map: &dyn PixelController) -> std::io::Result<()> {
+                                          pixel_map: &dyn PixelController) -> Vec<[f32; 4]> {
         // because picture height/width is always positive and small enough in practice
         #[allow(
             clippy::cast_sign_loss,
@@ -301,7 +301,7 @@ impl<'c> TakePhotoSettings<'c> {
     }
 
 
-    pub fn shot<P: AsRef<Path>>(&self, path: Option<P>) -> std::io::Result<()> {
+    pub fn shot<P: AsRef<Path>>(&self, path: Option<P>) -> Vec<[f32; 4]> {
         let mut target = PassivePainterTarget {};
         let mut controller = PassivePainterController {};
         let pixel_map = PassivePixelController {};

@@ -115,7 +115,8 @@ impl FastRng {
 
     pub fn new() -> FastRng {
         FastRng {
-            rng: XorShiftRng::from_rng(thread_rng()).unwrap()
+            // rng: XorShiftRng::from_rng(thread_rng()).unwrap()
+            rng: XorShiftRng::seed_from_u64(thread_rng().next_u64())
         }
     }
 
