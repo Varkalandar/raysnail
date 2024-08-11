@@ -1,11 +1,12 @@
-
 use std::sync::Arc;
 
 use raysnail::prelude::Color;
 use raysnail::prelude::Vec3;
+use raysnail::prelude::Ray;
 use raysnail::material::DiffuseLight;
 use raysnail::hittable::Sphere;
 use raysnail::hittable::collection::HittableList;
+use raysnail::hittable::collection::World;
 
 
 #[allow(dead_code)]
@@ -34,9 +35,18 @@ fn main() {
         .height(500)
         .build();
 
+    fn background(ray: &Ray) -> Color {
+        let t = (ray.direction.y + 1.0) * 0.5;  // norm to range 0..1
+        Color::new(0.3, 0.4, 0.5, 1.0).gradient(&Color::new(0.7, 0.89, 1.0, 1.0), t)
+    }
+    
+    let world = World::new(world, 
+                           lights, 
+                           background,
+                           &(0.0 .. camera.shutter_speed));
+
     camera
-        .take_photo_with_lights(world, lights)
+        .take_photo()
         .samples(122)
-        .shot(Some("rtow_13_1.ppm"))
-        .unwrap();
+        .shot(Some("rtow_13_1.ppm"), &world);
 }

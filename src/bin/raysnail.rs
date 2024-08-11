@@ -26,7 +26,10 @@ use raysnail::prelude::Ray;
 use raysnail::prelude::Color;
 use raysnail::prelude::clamp;
 use raysnail::material::DiffuseLight;
+
 use raysnail::hittable::Sphere;
+use raysnail::hittable::collection::HittableList;
+use raysnail::hittable::collection::World;
 
 use raysnail::camera::CameraBuilder;
 
@@ -36,7 +39,6 @@ use raysnail::painter::PainterController;
 use raysnail::painter::PixelController;
 use raysnail::painter::PassivePixelController;
 
-use raysnail::hittable::collection::HittableList;
 use raysnail::sdl_parser::SdlParser;
 
 
@@ -223,8 +225,8 @@ fn boot_sdl(width: usize, height: usize, receiver: Receiver<(usize, Vec<[f32; 4]
         creator 
         .create_texture(PixelFormatEnum::RGB24, TextureAccess::Streaming, width as u32, height as u32).unwrap();
 
-    println!("Color mod={:?}", line.color_mod());
-    println!("query={:?}", line.query());
+    // println!("Color mod={:?}", line.color_mod());
+    // println!("query={:?}", line.query());
 
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut pass = 0.0;
@@ -320,58 +322,63 @@ fn parse_and_render(width: usize, height: usize, samples: usize, filename: &str,
 
     let mut pass = 0.0;
 
+    let scene_data_result = SdlParser::parse(filename);
+
+    if let Err(message) = scene_data_result {
+        println!("Could not parse scene data: {}", message);
+        return false;
+    } 
+
+    let mut scene_data = scene_data_result.unwrap();
+    let camera_data = &scene_data.camera.unwrap();
+
+    let builder = CameraBuilder::default()
+        .look_from(camera_data.location.clone())
+        .look_at(camera_data.look_at.clone())
+        .fov(camera_data.fov_angle)
+        .aperture(0.01)
+        .focus(10.0)
+        .width(width)
+        .height(height);
+
+    let camera = builder.build();    
+
+    let mut lights = HittableList::default();
+
+    for light in scene_data.lights {
+        let rs = 
+            Sphere::new(light.location, 
+                12.0, 
+                Some(Arc::new(DiffuseLight::new(light.color).multiplier(1.7)))
+            );
+
+        lights.add(rs.clone());
+        scene_data.hittables.add(rs);
+    }
+
+    fn background(ray: &Ray) -> Color {
+        let t = (ray.direction.y + 1.0) * 0.5;  // norm to range 0..1
+        Color::new(0.3, 0.4, 0.5, 1.0).gradient(&Color::new(0.7, 0.89, 1.0, 1.0), t)
+    }
+
+    let redo_controller = RedoController {
+        redo_map: redo_map.clone(),
+        width,
+    };
+
+    let world = World::new(scene_data.hittables, 
+                           lights, 
+                           background,
+                           &(0.0 .. camera.shutter_speed));
+
     loop {
-        let scene_data_result = SdlParser::parse(filename);
-
-        if let Err(message) = scene_data_result {
-            println!("Could not parse scene data: {}", message);
-            return false;
-        } 
-
-        let mut scene_data = scene_data_result.unwrap();
-        let camera_data = &scene_data.camera.unwrap();
-
-        let builder = CameraBuilder::default()
-            .look_from(camera_data.location.clone())
-            .look_at(camera_data.look_at.clone())
-            .fov(camera_data.fov_angle)
-            .aperture(0.01)
-            .focus(10.0)
-            .width(width)
-            .height(height);
-
-        let camera = builder.build();    
-
-        let mut lights = HittableList::default();
-
-        for light in scene_data.lights {
-            let rs = 
-                Sphere::new(light.location, 
-                    12.0, 
-                    Some(Arc::new(DiffuseLight::new(light.color).multiplier(1.7)))
-                );
-
-            lights.add(rs.clone());
-            scene_data.hittables.add(rs);
-        }
-
-        fn background(ray: &Ray) -> Color {
-            let t = (ray.direction.y + 1.0) * 0.5;  // norm to range 0..1
-            Color::new(0.3, 0.4, 0.5, 1.0).gradient(&Color::new(0.7, 0.89, 1.0, 1.0), t)
-        }
-
-        let redo_controller = RedoController {
-            redo_map: redo_map.clone(),
-            width,
-        };
-
-        let pixels = 
+            let pixels = 
             camera
-                .take_photo_with_lights(scene_data.hittables, lights)
-                .background(background)
+                .take_photo()
                 .samples(samples)
                 .depth(8)
-                .shot_to_target(Some("sample_scene.ppm"), target, controller, &redo_controller);
+                .shot_to_target(Some("sample_scene.ppm"), 
+                                &world, target, controller, &redo_controller);
 
 
         let pixels = combine_pixels(&old_pixels, &pixels, pass);

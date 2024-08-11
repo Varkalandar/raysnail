@@ -1,7 +1,7 @@
 use {
     crate::{
         hittable::{
-            collection::{HittableList, World},
+            collection::World,
             Hittable,
         },
         painter::{Painter, PainterTarget, PassivePainterTarget},
@@ -24,7 +24,7 @@ pub struct Camera {
     horizontal_unit: Vec3,
     vertical_unit: Vec3,
     aperture: f64,
-    shutter_speed: f64,
+    pub shutter_speed: f64,
 
     picture_width: usize,
     picture_height: usize,
@@ -85,16 +85,8 @@ impl Camera {
     }
 
 
-    #[must_use]
-    pub fn take_photo(&self, world: HittableList) -> TakePhotoSettings<'_> {
-        let world = World::new(world, HittableList::default(), &(0.0..self.shutter_speed));
-        TakePhotoSettings::new(self, world)
-    }
-
-
-    pub fn take_photo_with_lights(&self, world: HittableList, lights: HittableList) -> TakePhotoSettings<'_> {
-        let world = World::new(world, lights, &(0.0..self.shutter_speed));
-        TakePhotoSettings::new(self, world)
+    pub fn take_photo(&self) -> TakePhotoSettings<'_> {
+        TakePhotoSettings::new(self)
     }
 }
 
@@ -111,7 +103,6 @@ fn phong_highlight(dir_to_light: &Vec3, ray_dir: &Vec3, normal: &Vec3, exponent:
 #[derive(Debug)]
 pub struct TakePhotoSettings<'c> {
     camera: &'c Camera,
-    world: World,
     depth: usize,
     gamma: bool,
     samples: usize,
@@ -121,21 +112,15 @@ pub struct TakePhotoSettings<'c> {
 
 impl<'c> TakePhotoSettings<'c> {
     #[must_use]
-    pub const fn new(camera: &'c Camera, world: World) -> Self {
+    pub const fn new(camera: &'c Camera) -> Self {
         Self {
             camera,
-            world,
             depth: 8,
             gamma: true,
             samples: 50,
             threads: 0,
             parallel: true,
         }
-    }
-
-    pub fn background<BG: Fn(&Ray) -> Color + Send + Sync + 'static>(mut self, bg: BG) -> Self {
-        self.world.set_bg(bg);
-        self
     }
 
     #[must_use]
@@ -273,7 +258,8 @@ impl<'c> TakePhotoSettings<'c> {
     /// # Errors
     /// When open or save to file failed
     #[allow(clippy::needless_pass_by_value)] // Directly used public API, add & will make it harder to use
-    pub fn shot_to_target<P: AsRef<Path>>(&self, path: Option<P>, 
+    pub fn shot_to_target<P: AsRef<Path>>(&self, path: Option<P>,
+                                          world: &World, 
                                           target: &mut dyn PainterTarget,
                                           controller: &mut dyn PainterController,
                                           pixel_map: &dyn PixelController) -> Vec<[f32; 4]> {
@@ -296,16 +282,16 @@ impl<'c> TakePhotoSettings<'c> {
 
                     let ray = self.camera.ray(i, j, rng);
                     // info!("uv_color 2 {}, {}", i, j);
-                    Self::ray_color(&ray, &self.world, self.depth, rng)
+                    Self::ray_color(&ray, world, self.depth, rng)
                 })
     }
 
 
-    pub fn shot<P: AsRef<Path>>(&self, path: Option<P>) -> Vec<[f32; 4]> {
+    pub fn shot<P: AsRef<Path>>(&self, path: Option<P>, world: &World,) -> Vec<[f32; 4]> {
         let mut target = PassivePainterTarget {};
         let mut controller = PassivePainterController {};
         let pixel_map = PassivePixelController {};
-        self.shot_to_target(path, &mut target, &mut controller, &pixel_map)
+        self.shot_to_target(path, world, &mut target, &mut controller, &pixel_map)
     }
 }
 

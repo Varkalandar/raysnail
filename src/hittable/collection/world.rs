@@ -37,20 +37,19 @@ impl Debug for World {
 
 impl World {
     #[must_use]
-    pub fn new(list: HittableList, lights: HittableList, time_range: &Range<f64>) -> Self {
+    pub fn new<F>(list: HittableList, 
+                  lights: HittableList, 
+                  background: F,
+                  time_range: &Range<f64>) -> Self
+        where
+                F: Fn(&Ray) -> Color + Send + Sync + 'static,
+    {
         Self {
             bvh: BVH::new(list, time_range),
             lights,
-            bg_func: Box::new(default_background),
+            bg_func: Box::new(background),
             default_material: Arc::new(Lambertian::new(Arc::new(Color::new(1.0, 1.0, 1.0, 1.0)))),
         }
-    }
-
-    pub fn set_bg<F>(&mut self, f: F)
-    where
-        F: Fn(&Ray) -> Color + Send + Sync + 'static,
-    {
-        self.bg_func = Box::new(f);
     }
 
     #[must_use]

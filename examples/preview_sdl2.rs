@@ -30,6 +30,8 @@ use raysnail::camera::CameraBuilder;
 use raysnail::painter::PainterTarget;
 use raysnail::painter::PainterCommand;
 use raysnail::painter::PainterController;
+use raysnail::painter::PassivePixelController;
+
 use raysnail::material::*;
 use raysnail::hittable::Sphere;
 use raysnail::hittable::Box as GeometryBox;
@@ -37,6 +39,7 @@ use raysnail::hittable::geometry::Quadric;
 use raysnail::hittable::geometry::RayMarcher;
 use raysnail::hittable::geometry::TriangleMesh;
 use raysnail::hittable::collection::HittableList;
+use raysnail::hittable::collection::World;
 use raysnail::hittable::Intersection;
 use raysnail::texture::Checker;
 use raysnail::sdl_parser::SdlParser;
@@ -317,13 +320,17 @@ fn render_time_test(width: usize, height: usize,
         // Color::new(0.1, 0.12, 0.3)
     }
 
+    let world = World::new(world, 
+        lights, 
+        background,
+        &(0.0 .. camera.shutter_speed));
+
     camera
-        .take_photo_with_lights(world, lights)
-        .background(background)
+        .take_photo()
         .samples(65)
         .depth(8)
-        .shot_to_target(Some("rtow_13_1.ppm"), target, controller)
-        .unwrap();
+        .shot_to_target(Some("rtow_13_1.ppm"), 
+                        &world, target, controller, &PassivePixelController {});
 }
 
 
@@ -383,14 +390,19 @@ fn render_raymarching_test(width: usize, height: usize,
         // Color::new(0.06, 0.06, 0.25)
     }
 
+
+    let world = World::new(world, 
+        lights, 
+        background,
+        &(0.0 .. camera.shutter_speed));
+
     camera
-        .take_photo_with_lights(world, lights)
-        .background(background)
+        .take_photo()
         .samples(122)
         .depth(8)
-        .shot_to_target(Some("raymarching.ppm"), target, controller)
-        .unwrap();
-}
+        .shot_to_target(Some("raymarching.ppm"),
+                        &world, target, controller, &PassivePixelController {});
+    }
 
 
 fn render_ball_scene(width: usize, height: usize, 
@@ -414,14 +426,25 @@ fn render_ball_scene(width: usize, height: usize,
     lights.add(rs.clone());
     world.add(rs);
 
+    pub fn background(ray: &Ray) -> Color {
+        let t = 0.5 * (ray.direction.y + 1.0);
+        Color::new(1.0, 1.0, 1.0, 1.0).gradient(&Color::new(0.5, 0.7, 1.0, 1.0), t)
+    }
+    
+
+    let world = World::new(world, 
+        lights, 
+        background,
+        &(0.0 .. 0.0));
+
     camera
         .build()
-        .take_photo_with_lights(world, lights)
+        .take_photo()
         .samples(122)
         //.samples(257)
         .depth(8)
-        .shot_to_target(Some("rtow_13_1.ppm"), target, controller)
-        .unwrap();
+        .shot_to_target(Some("rtow_13_1.ppm"),
+                        &world, target, controller, &PassivePixelController {});
 }
 
 
@@ -478,75 +501,24 @@ fn render_object_test(width: usize, height: usize,
     ));
 
     fn background(ray: &Ray) -> Color {
+        // assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
 
-    // assert!((ray.direction.length_squared() - 1.0).abs() < 0.00001);
+        let t = 0.5 * (ray.direction.y + 1.0);
+        Color::new(0.68, 0.80, 0.95, 1.0).gradient(&Color::new(0.2, 0.4, 0.7, 1.0), t)
 
-    let t = 0.5 * (ray.direction.y + 1.0);
-    Color::new(0.68, 0.80, 0.95, 1.0).gradient(&Color::new(0.2, 0.4, 0.7, 1.0), t)
-
-    // Color::new(0.9, 0.9, 0.9, 1.0)
-    // Color::new(0.06, 0.06, 0.25, 1.0)
+        // Color::new(0.9, 0.9, 0.9, 1.0)
+        // Color::new(0.06, 0.06, 0.25, 1.0)
     }
+
+    let world = World::new(world, 
+        lights, 
+        background,
+        &(0.0 .. camera.shutter_speed));
 
     camera
-        .take_photo_with_lights(world, lights)
-        .background(background)
+        .take_photo()
         .samples(122)
         .depth(8)
-        .shot_to_target(Some("raymarching.ppm"), target, controller)
-        .unwrap();
-}
-
-
-fn render_parser_test(width: usize, height: usize, 
-                      target: &mut dyn PainterTarget, controller: &mut dyn PainterController) -> bool {
-
-    let scene_data_result = SdlParser::parse("sdl/example.sdl");
-
-    if let Err(message) = scene_data_result {
-        println!("Could not parse scene data: {}", message);
-        return false;
-    } 
-
-    let mut scene_data = scene_data_result.unwrap();
-    let camera_data = &scene_data.camera.unwrap();
-
-    let builder = CameraBuilder::default()
-        .look_from(camera_data.location.clone())
-        .look_at(camera_data.look_at.clone())
-        .fov(camera_data.fov_angle)
-        .aperture(0.01)
-        .focus(10.0)
-        .width(width)
-        .height(height);
-
-    let camera = builder.build();    
-
-    let mut lights = HittableList::default();
-
-    for light in scene_data.lights {
-        let rs = 
-            Sphere::new(light.location, 
-                12.0, 
-                Some(Arc::new(DiffuseLight::new(light.color).multiplier(1.7)))
-            );
-
-        lights.add(rs.clone());
-        scene_data.hittables.add(rs);
-    }
-
-    fn background(ray: &Ray) -> Color {
-        let t = (ray.direction.y + 1.0) * 0.5;  // norm to range 0..1
-        Color::new(0.3, 0.4, 0.5, 1.0).gradient(&Color::new(0.7, 0.89, 1.0, 1.0), t)
-    }
-
-    camera
-        .take_photo_with_lights(scene_data.hittables, lights)
-        .background(background)
-        .samples(122)
-        .depth(8)
-        .shot_to_target(Some("sample_scene.ppm"), target, controller)
-        .unwrap();
-
-    true
+        .shot_to_target(Some("rtow_13_1.ppm"),
+                        &world, target, controller, &PassivePixelController {});
 }
