@@ -12,10 +12,14 @@ use sdl2::pixels::PixelFormatEnum;
 use sdl2::render::Texture;
 use sdl2::rect::Rect;
 
+use image::Rgb;
+use image::RgbImage;
+use image::ImageFormat;
+
 use clap::{Arg, Command};
 use clap::crate_version;
 
-use rayon::spawn;
+use std::thread;
 
 use std::sync::Arc;
 use std::sync::mpsc::sync_channel;
@@ -37,7 +41,6 @@ use raysnail::painter::PainterTarget;
 use raysnail::painter::PainterCommand;
 use raysnail::painter::PainterController;
 use raysnail::painter::PixelController;
-use raysnail::painter::PassivePixelController;
 
 use raysnail::sdl_parser::SdlParser;
 
@@ -226,7 +229,7 @@ fn boot_sdl(width: usize, height: usize, receiver: Receiver<(usize, Vec<[f32; 4]
         .create_texture(PixelFormatEnum::RGB24, TextureAccess::Streaming, width as u32, height as u32).unwrap();
 
     // println!("Color mod={:?}", line.color_mod());
-    // println!("query={:?}", line.query());
+    // fprintln!("query={:?}", line.query());
 
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut pass = 0.0;
@@ -305,9 +308,11 @@ fn boot_sdl(width: usize, height: usize, receiver: Receiver<(usize, Vec<[f32; 4]
 }
 
 
-fn parse_and_render(width: usize, height: usize, samples: usize, filename: &str,
+fn parse_and_render(width: usize, height: usize, samples: usize, passes: usize,
+                    filename: &str,
                     target: &mut dyn PainterTarget, 
-                    controller: &mut dyn PainterController) -> bool {
+                    controller: &mut dyn PainterController,
+                    output_file: &str) -> bool {
 
 
     // in the first pass all pixels must be calculated
@@ -371,15 +376,14 @@ fn parse_and_render(width: usize, height: usize, samples: usize, filename: &str,
                            background,
                            &(0.0 .. camera.shutter_speed));
 
-    loop {
-            let pixels = 
+    while (pass as usize) < passes {
+        let pixels = 
             camera
                 .take_photo()
                 .samples(samples)
                 .depth(8)
                 .shot_to_target(Some("sample_scene.ppm"), 
                                 &world, target, controller, &redo_controller);
-
 
         let pixels = combine_pixels(&old_pixels, &pixels, pass);
         pass += 1.0;
@@ -422,6 +426,24 @@ fn parse_and_render(width: usize, height: usize, samples: usize, filename: &str,
         old_pixels = pixels;
     }
 
+    // save the image as png
+
+    let mut img = RgbImage::new(width as u32, height as u32);
+
+    for y in 0..height {
+        for x in 0..width {
+            let c = old_pixels[y * width + x];
+
+            let r = (clamp(c[0] as f64, 0.0 .. 1.0) * 255.5) as u8;
+            let g = (clamp(c[1] as f64, 0.0 .. 1.0) * 255.5) as u8;
+            let b = (clamp(c[2] as f64, 0.0 .. 1.0) * 255.5) as u8;
+
+            img.put_pixel(x as u32, y as u32, Rgb([r, g, b]));
+        }
+    }    
+
+    img.save_with_format(output_file, ImageFormat::Png);
+
     true
 }
 
@@ -446,6 +468,12 @@ pub fn main() -> Result<(), String> {
                 .help("More samples per pixel improve the image quality. Usually in range 15 .. 10000"),
         )
         .arg(
+            Arg::new("passes")
+                .short('p')
+                .long("passes")
+                .help("No. of passes to oversample the image. Usually in range 1 .. 10"),
+        )
+        .arg(
             Arg::new("width")
                 .short('w')
                 .long("width")
@@ -456,6 +484,12 @@ pub fn main() -> Result<(), String> {
                 .short('h')
                 .long("height")
                 .help("Image wheight"),
+        )
+        .arg(
+            Arg::new("out")
+                .short('o')
+                .long("outfile")
+                .help("Image output file"),
         )
         .get_matches();
 
@@ -470,7 +504,9 @@ pub fn main() -> Result<(), String> {
     let mut width: usize = 800;
     let mut height: usize = 600;
     let mut samples: usize = 122;
+    let mut passes: usize = 1;
     let mut scene = ".";
+    let mut output_file = "output.png";
 
     if let Some(w) = matches.get_one::<String>("width") {
         width = w.parse::<usize>().unwrap();
@@ -484,13 +520,21 @@ pub fn main() -> Result<(), String> {
         samples = s.parse::<usize>().unwrap();
     }
 
+    if let Some(s) = matches.get_one::<String>("passes") {
+        passes = s.parse::<usize>().unwrap();
+    }
+
     if let Some(s) = matches.get_one::<String>("scene") {
         scene = s;
     }
 
-    spawn(move || boot_sdl(width, height, receiver, command_sender));
+    if let Some(s) = matches.get_one::<String>("out") {
+        output_file = s;
+    }
 
-    parse_and_render(width, height, samples, scene, &mut queue, &mut controller);
+    thread::spawn(move || boot_sdl(width, height, receiver, command_sender));
+
+    parse_and_render(width, height, samples, passes, scene, &mut queue, &mut controller, output_file);
 
     Ok(())
 }
