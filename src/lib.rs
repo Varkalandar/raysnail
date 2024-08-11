@@ -10,5 +10,3 @@ pub mod painter;
 pub mod prelude;
 pub mod texture;
 pub mod sdl_parser;
-
-mod internal;

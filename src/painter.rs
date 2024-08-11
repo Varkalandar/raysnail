@@ -1,7 +1,6 @@
 use {
-    crate::{internal::rayon_seq_iter::SeqForEach, prelude::*},
+    crate::prelude::*,
     log::info,
-    rayon::{prelude::*, ThreadPool, ThreadPoolBuilder},
     std::{
         fs::File,
         io::{BufWriter, Write},
@@ -12,6 +11,7 @@ use {
     },
 };
 
+use std::thread;
 
 #[derive(Debug, PartialEq)]
 pub enum PainterCommand {
@@ -64,112 +64,6 @@ impl PixelController for PassivePixelController {
 }
 
 
-#[derive(Debug)]
-pub struct PPMImage {
-    width: usize,
-    height: usize,
-    colors: Vec<Color>,
-}
-
-
-impl PPMImage {
-    #[must_use]
-    pub fn new(width: usize, height: usize) -> Self {
-        let colors = vec![Color::default(); width * height];
-        Self {
-            width,
-            height,
-            colors,
-        }
-    }
-
-    /// # Errors
-    /// When open or write to file failed
-    pub fn save<P: AsRef<Path>>(&self, path: P) -> std::io::Result<()> {
-        let mut file = File::create(path)?;
-        write!(
-            &mut file,
-            "P3\n{width} {height}\n255\n",
-            width = self.width,
-            height = self.height
-        )?;
-
-        for row in 0..self.height {
-            for column in 0..self.width {
-                let index = row * self.width + column;
-                let color = &self.colors[index];
-                writeln!(
-                    &mut file,
-                    "{r} {g} {b}",
-                    r = (clamp(color.r as f64, 0.0..1.0) * 255.0) as u8,
-                    g = (clamp(color.g as f64, 0.0..1.0) * 255.0) as u8,
-                    b = (clamp(color.b as f64, 0.0..1.0) * 255.0) as u8
-                )?;
-            }
-        }
-
-        Ok(())
-    }
-
-    /// # Errors
-    ///
-    /// When image pixel count is not divisible by new width
-    pub fn reshape(&mut self, width: usize) -> Result<(), &'static str> {
-        if self.colors.len() % width == 0 {
-            self.width = width;
-            self.height = self.colors.len() / width;
-            Ok(())
-        } else {
-            Err("Shape invalid")
-        }
-    }
-}
-
-impl FromIterator<Color> for PPMImage {
-    fn from_iter<T: IntoIterator<Item = Color>>(iter: T) -> Self {
-        Vec::from_iter(iter).into()
-    }
-}
-
-impl<T> From<T> for PPMImage
-where
-    T: Into<Vec<Color>>,
-{
-    fn from(container: T) -> Self {
-        let colors = container.into();
-        Self {
-            height: 1,
-            width: colors.len(),
-            colors,
-        }
-    }
-}
-
-impl Index<(usize, usize)> for PPMImage {
-    type Output = Color;
-    fn index(&self, (row, col): (usize, usize)) -> &Self::Output {
-        self.index(row * self.width + col)
-    }
-}
-
-impl Index<usize> for PPMImage {
-    type Output = Color;
-    fn index(&self, index: usize) -> &Self::Output {
-        self.colors.index(index)
-    }
-}
-
-impl IndexMut<(usize, usize)> for PPMImage {
-    fn index_mut(&mut self, (row, col): (usize, usize)) -> &mut Self::Output {
-        self.index_mut(row * self.width + col)
-    }
-}
-
-impl IndexMut<usize> for PPMImage {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        self.colors.index_mut(index)
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Painter {
@@ -185,7 +79,6 @@ pub struct Painter {
 
 
 struct PainterOutputContext<'c> {
-    file: BufWriter<Box<dyn Write>>,
     cancel: &'c AtomicBool,
     controller: Option<Box<&'c mut dyn PainterController>>,
 }
@@ -246,31 +139,11 @@ impl Painter {
     }
 
 
-    fn create_output_file(
-        &self, path: Option<&Path>,
-    ) -> std::io::Result<BufWriter<Box<dyn Write>>> {
-        let mut file: BufWriter<Box<dyn Write>> = if let Some(path) = path {
-            BufWriter::new(Box::new(File::create(&path)?))
-        } else {
-            BufWriter::new(Box::new(std::io::sink()))
-        };
-
-        write!(
-            &mut file,
-            "P3\n{width} {height}\n255\n",
-            width = self.width,
-            height = self.height
-        )?;
-
-        Ok(file)
-    }
-
     fn create_output_context<'c>(
         &self, path: Option<&Path>, controller: &'c mut dyn PainterController, cancel: &'c AtomicBool,
     ) -> std::io::Result<PainterOutputContext<'c>> {
-        let file = self.create_output_file(path)?;
+        
         Ok(PainterOutputContext { 
-            file,
             cancel, 
             controller: 
             Some(Box::new(controller)) 
@@ -313,15 +186,14 @@ impl Painter {
          1.0]
     }
 
-    fn parallel_render_row<F>(&self, row: usize, uv_color: &F, cancel: &AtomicBool,
+    fn render_row<F>(&self, row: usize, uv_color: &F, cancel: &AtomicBool,
                               target: &dyn PainterTarget, 
-                              pixel_map: &dyn PixelController) -> Vec<[f32; 4]>
+                              pixel_map: &dyn PixelController,
+                     rng: &mut FastRng) -> Vec<[f32; 4]>
     where
         F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync,
     {
-        // info!("Processing line: {}", row);
-
-        let mut rng = FastRng::new();
+        info!("Processing line: {}", row);
 
         let pixels = 
             (0..self.width)
@@ -330,7 +202,7 @@ impl Painter {
                     return [0.0, 0.0, 0.0, 1.0];
                 }
                 if pixel_map.calculate_pixel(column, row) {
-                    return self.render_pixel(row, column, &mut rng, &uv_color)
+                    return self.render_pixel(row, column, rng, &uv_color)
                 }
 
                 // return a fully transparent black pixel for the parts
@@ -345,55 +217,47 @@ impl Painter {
     }
 
 
-    fn parallel_render_row_iter<'a, F>(&'a self, uv_color: F, cancel: &'a AtomicBool,
-                                target: &'a dyn PainterTarget, 
-                                pixel_map: &'a dyn PixelController,) -> impl IndexedParallelIterator<Item = Vec<[f32; 4]>> + 'a
-    where
-        F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync + 'a,
-    {
-        (0..self.height)
-            .into_par_iter()
-            .map(move |row| self.parallel_render_row(row, &uv_color, cancel, target, pixel_map))
-    }
+    fn append(result: &mut Vec<[f32; 4]>, pixels: &Vec<[f32; 4]>, i: usize, step: usize, width: usize) {
 
+        let lines = pixels.len() / width;
 
-    fn real_row_pixels_to_file(
-        context: &mut PainterOutputContext<'_>, pixels: Vec<[f32; 4]>,
-    ) -> std::io::Result<()> {
+        info!("Thread {} rendered {} lines", i, lines);
 
-        for pixel in &pixels {
-            writeln!(context.file, "{} {} {}", 
-            (clamp(pixel[0] as f64, 0.0 .. 1.0) * 255.5) as u8,
-            (clamp(pixel[1] as f64, 0.0 .. 1.0) * 255.5) as u8,
-            (clamp(pixel[2] as f64, 0.0 .. 1.0) * 255.5) as u8)?;
-        }
+        for line in 0 .. lines {
+            let src = line * width;
+            let dest = line * width * step + i * width;
 
-        if let Some(controller) = &mut context.controller {
-            let command = controller.receive_command();
-
-            if command == PainterCommand::Quit {
-                context.cancel.store(true, Ordering::Relaxed);
+            if dest < result.len() {
+                for x in 0 .. width {
+                    result[dest + x] = pixels[src + x]
+                }
             }
         }
-
-        context.file.flush()
     }
 
 
-    fn row_pixels_to_file(
-        context: &mut PainterOutputContext<'_>, pixels: Vec<[f32; 4]>,
-    ) -> std::io::Result<()> {
-        Self::real_row_pixels_to_file(context, pixels).map_err(|e| {
-            context.cancel.store(true, Ordering::Relaxed);
-            e
-        })
-    }
+    fn render_rows<F>(&self, row: usize, step: usize, uv_color: &F, cancel: &AtomicBool,
+        target: &dyn PainterTarget, 
+        pixel_map: &dyn PixelController) -> Vec<[f32; 4]>
+    where
+        F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync,
+    {
+        let mut rng = FastRng::new();
+        let mut pixels = Vec::new();
 
+        for y in (row .. self.height).step_by(step ) {
+            let mut row_pixels = self.render_row(y, uv_color, cancel, target, pixel_map, &mut rng);
+            pixels.append(&mut row_pixels);
+        } 
+
+        pixels
+    }
 
     fn parallel_render_and_output<F>(&self, uv_color: F, path: Option<&Path>, 
-                                     target: &mut dyn PainterTarget,
+                                     target: &dyn PainterTarget,
                                      controller: &mut dyn PainterController,
-                                     pixel_map: &dyn PixelController) -> Vec<[f32; 4]>
+                                     pixel_map: &dyn PixelController,
+                                     threads: usize) -> Vec<[f32; 4]>
     where
         F: Fn(f64, f64, &mut FastRng) -> Vec3 + Send + Sync,
 
@@ -402,35 +266,40 @@ impl Painter {
 
         info!("Starting parallel render");
 
-        let mut result = Vec::with_capacity(1 << 15);
+        let mut result = Vec::with_capacity(self.width * self.height);
 
-        let ok =
-            self.parallel_render_row_iter(uv_color, &cancel, target, pixel_map)
-                .seq_for_each_with(
-                    || self.create_output_context(path, controller, &cancel),
-                    |context, pixels| {
-                        for pixel in &pixels {
-                            result.push(*pixel);
-                        }
-                        Self::row_pixels_to_file(context, pixels)
-                    },
-                );
+        for _i in 0 .. self.width * self.height {
+            result.push([0.0, 0.0, 0.0, 0.0]);
+        }
+        
+        thread::scope(|s| {
 
+            let mut handles = Vec::new();
+
+            for i in 0 .. threads {
+                let start_row = i;
+                let step = threads;
+                let uv = &uv_color;
+                let stop = &cancel;
+                let tar = target;
+                let map = pixel_map;
+
+                handles.push(s.spawn(move || self.render_rows(start_row, step, uv, stop, tar, map)));
+            }
+
+            for i in 0 .. threads {
+                let handle = handles.pop().unwrap();
+
+                let pixels = handle.join();
+
+                Self::append(&mut result, &pixels.unwrap(), threads-i-1, threads, self.width);
+
+                // println!("{:?}", r);            
+            }
+        });
+    
         result
     }
-
-    fn setup_thread_pool(&self) -> std::io::Result<ThreadPool> {
-        let threads = if self.threads == 0 {
-            num_cpus::get() + 1
-        } else {
-            self.threads + 1
-        };
-        ThreadPoolBuilder::default()
-            .num_threads(threads)
-            .build()
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
-    }
-
 
     /// # Errors
     ///
@@ -449,17 +318,17 @@ impl Painter {
             None => None,
         };
 
-        let pool = self.setup_thread_pool();
-        let mut result = Vec::new();
+        let threads = if self.threads == 0 {
+                num_cpus::get() + 1
+            } else {
+                self.threads + 1
+            };
 
-        if pool.is_ok() {
-            let pool = pool.unwrap();
-            info!("Worker thread count: {}", pool.current_num_threads());
+        info!("Using {} threads to render the image", threads);
 
-            result = 
-                pool.install(|| self.parallel_render_and_output(uv_color, path, target, controller, pixel_map));
-        }
+        let result = self.parallel_render_and_output(uv_color, path, target, controller, pixel_map, threads);
 
+        // mark end of rendering pass by sending height and an empty vector
         target.register_pixels(self.height, &Vec::new());
 
 
