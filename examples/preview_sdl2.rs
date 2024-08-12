@@ -44,7 +44,8 @@ use raysnail::hittable::Intersection;
 use raysnail::texture::Checker;
 use raysnail::sdl_parser::SdlParser;
 
-use rayon::spawn;
+use std::thread;
+
 use std::sync::mpsc::sync_channel;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::SyncSender;
@@ -129,7 +130,7 @@ pub fn main() -> Result<(), String> {
     let width:usize = 1000;
     let height:usize = 600;
 
-    spawn(move || boot_sdl(width, height, receiver, command_sender));
+    thread::spawn(move || boot_sdl(width, height, receiver, command_sender));
 
     // render_ball_scene(width, height, &mut queue, &mut controller);
     render_time_test(width, height, &mut queue, &mut controller);
