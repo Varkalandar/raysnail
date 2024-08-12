@@ -39,8 +39,8 @@ cargo run -r --bin raysnail -- -w 800 -h 500 --samples 65 --scene sdl/example.sd
 
 ### Further command line options
 
-* --outfile (-o) PNG image file to write. (From raysnail 0.1.5)
-* --passes (-p) Oversampling passes to improve the quality of image area with high noise and/or high contrast. The default is 1, the improvemtns of each additional pass are diminishing, so usually this will be in the range 1 .. 10
+* --outfile (-o) PNG image file to write. The default is "output.png" (Supported from raysnail 0.1.5)
+* --passes (-p) Oversampling passes to improve the quality of image area with high noise and/or high contrast. The default is 1, the improvemtns of each additional pass are diminishing, so usually this will be in the range 1 .. 10 (Supported from raysnail 0.1.5)
 
 ## LICENSE
 
