@@ -133,8 +133,8 @@ pub fn main() -> Result<(), String> {
     thread::spawn(move || boot_sdl(width, height, receiver, command_sender));
 
     // render_ball_scene(width, height, &mut queue, &mut controller);
-    render_time_test(width, height, &mut queue, &mut controller);
-    // render_raymarching_test(width, height, &mut queue, &mut controller);
+    // render_time_test(width, height, &mut queue, &mut controller);
+    render_raymarching_test(width, height, &mut queue, &mut controller);
     // render_object_test(width, height, &mut queue, &mut controller);
     // render_parser_test(width, height, &mut queue, &mut controller);
 

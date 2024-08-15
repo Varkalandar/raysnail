@@ -18,6 +18,7 @@ use crate::material::Material;
 pub struct RayMarcher {
 
     material: Option<Arc<dyn Material>>,
+    iterations: i32,
 }
 
 impl Debug for RayMarcher {
@@ -32,6 +33,7 @@ impl RayMarcher {
     pub fn new(material: Option<Arc<dyn Material>>) -> Self {
         RayMarcher {
             material,
+            iterations: 100,
         }
     }
 
@@ -43,7 +45,7 @@ impl RayMarcher {
 
         let midpoint = (outside + inside) * 0.5;
 
-        if is_inside(&midpoint, 100) {
+        if is_inside(midpoint.clone(), 100) {
             return Self::binary_search_surface(outside, &midpoint, depth - 1);
         }
         else {
@@ -58,7 +60,7 @@ impl RayMarcher {
     
         for _i in 0 .. 200 {
             // println!("step {}", i);
-            if is_inside(&v, 100) {
+            if is_inside(v.clone(), self.iterations) {
                 // println!("step {} is inside at {:?}", i, v);
                 // return Some(v - &df);
                 return Self::binary_search_surface(&(&v - &df), &v, 8);
@@ -122,8 +124,13 @@ impl Hittable for RayMarcher {
             steps += 1;
 
             // estimated distance
-            est_distance = (&current - &center).length();
+            est_distance = distance_est(current.clone(), self.iterations);
             // println!("Estimated distance from {} is {} units", current, est_distance);
+
+            // NaN check
+            if est_distance != est_distance {
+                est_distance = 0.1;
+            }
 
             if est_distance < 1.3 {
                 let check = self.search_surface(&current, &direction);
@@ -154,7 +161,7 @@ impl Hittable for RayMarcher {
 
     fn contains(&self, point: &Vec3) -> bool
     {
-        is_inside(point, 100)
+        is_inside(point.clone(), self.iterations)
     }
 
     fn bbox(&self, _time_limit: &Range<f64>) -> Option<AABB> {
@@ -179,47 +186,20 @@ impl Hittable for RayMarcher {
 }
 
 
-pub fn is_inside(p: &Vec3, iterations: i32) -> bool {
-
-    let mut x: f64 = 0.0;
-    let mut y: f64 = 0.0;
-    let mut z: f64 = 0.0;
-    let power: f64 = 8.0;
-
-    for _i in 0 .. iterations {
-        //Convert to spherical coordinates
-        let mut r: f64 = (x*x + y*y + z*z).sqrt();
-        // let mut theta: f64 = (z / r).acos();
-        let mut theta: f64 = (x*x + y*y).sqrt().atan2(z);
-        let mut phi: f64 = y.atan2(x);
-
-        //Scale and rotate
-        r = r.powf(power);
-        theta *= power;
-        phi *= power;
-
-        //Convert back to cartesian coordinates
-        x = r * theta.sin() * phi.cos();
-        y = r * theta.sin() * phi.sin(); 
-        z = r * theta.cos();
-
-        //Add c
-        x += p.x;
-        y += p.y;
-        z += p.z;
-
-        //Check if the radius is not beyond the bailout.
-        if x*x + y*y + z*z > 8.0 {
-            return false;
-        }
-    }
-
-    true
+fn is_inside(p: Vec3, iterations: i32) -> bool {
+    let (_r, _dr, inside) = iterate(p, iterations);
+    inside
 }
 
 
-pub fn distance_est(p: Vec3, iterations: i32) -> f64 {
+fn distance_est(p: Vec3, iterations: i32) -> f64 {
+    let (r, dr, _unused) = iterate(p, iterations);
 
+    0.5 * r.ln() * r / dr
+}
+
+
+fn iterate(p: Vec3, iterations: i32) -> (f64, f64, bool) {
     let mut x: f64 = 0.0;
     let mut y: f64 = 0.0;
     let mut z: f64 = 0.0;
@@ -228,32 +208,34 @@ pub fn distance_est(p: Vec3, iterations: i32) -> f64 {
     let mut dr: f64 = 0.0;
 
     for _i in 0 .. iterations {
-        //Convert to spherical coordinates
+        // Convert to spherical coordinates
         r = (x*x + y*y + z*z).sqrt();
         let mut theta: f64 = (x*x + y*y).sqrt().atan2(z);
         let mut phi: f64 = y.atan2(x);
 
-        //Scale and rotate
+        // Scale and rotate
         r = r.powf(power);
         theta *= power;
         phi *= power;
         dr =  r.powf(power-1.0) * power * dr + 1.0;
 
-        //Convert back to cartesian coordinates
+        // Convert back to cartesian coordinates
         x = r * theta.sin() * phi.cos();
         y = r * theta.sin() * phi.sin(); 
         z = r * theta.cos();
 
-        //Add c
+        // Add c
         x += p.x;
         y += p.y;
         z += p.z;
 
-        //Check if the radius is not beyond the bailout.
+        // Check if the radius is not beyond the bailout.
         if x*x + y*y + z*z > 8.0 {
-            break;
+            return (r, dr, false)
         }
     }
 
-    0.5 * r.ln() * r / dr
+    // println!("distance_est r={} dr={}", r, dr);
+
+    (r, dr, true)
 }
